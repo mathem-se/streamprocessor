@@ -330,7 +330,7 @@ public class Dynamodb {
               .<String, PubsubMessage>ofSize(1000L)
               .withMaxBufferingDuration(Duration.standardSeconds(5))
           )
-          .apply("Publish on topics", ParDo.of(new PublisherFn()))
+          .apply("Publish on topics", ParDo.of(new PublisherFn()));
       }
 
       /*
