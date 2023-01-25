@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # usage:
-# bash build_maven.sh <GCP-PROJECT-ID> <IMAGE-NAME> <IMAGE-VERSION>
-# ex: bash build_maven.sh mathem-ml-datahem-test salesforce 0.1.11
+# bash build_and_push.sh <GCP-PROJECT-ID> <IMAGE-NAME> <IMAGE-VERSION>
+# ex: bash build_and_push.sh mathem-ml-datahem-test salesforce 0.1.11
 # has to be in order
 # or no inputs and wait for prompts
 
