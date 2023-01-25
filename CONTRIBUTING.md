@@ -7,7 +7,7 @@ To get started contributing:
 1. Fork the repo, develop and test your code changes.
 2. Ensure that your code adheres to the existing style.
 3. Ensure that your code has an appropriate set of unit tests which all pass.
-4. Run `mvn verify` to verify all tests and checks pass.
+4. Run `mvn test` to verify all tests and checks pass.
 5. Submit a pull request.
 
 ## Contributor License Agreement

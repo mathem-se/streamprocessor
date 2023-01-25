@@ -29,3 +29,8 @@ jobs:
         shell: bash
         run: |
           mvn clean compile
+
+      - name: Maven test
+        shell: bash
+        run: |
+          mvn test
