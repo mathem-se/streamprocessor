@@ -12,12 +12,12 @@ To get started contributing:
 
 ## Contributor License Agreement
 
-Whenever you add Content to a repository containing notice of a license, 
-you license that Content under the same terms, and you agree that you have 
+Whenever you add Content to a repository containing notice of a license,
+you license that Content under the same terms, and you agree that you have
 the right to license that Content under those terms.
 
-Isn't this just how it works already? Yep. This is widely accepted as the 
-norm in the open-source community; it's commonly referred to by the 
+Isn't this just how it works already? Yep. This is widely accepted as the
+norm in the open-source community; it's commonly referred to by the
 shorthand "inbound=outbound". We're just making it explicit.
 
 ## Code reviews

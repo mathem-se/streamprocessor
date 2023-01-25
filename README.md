@@ -27,7 +27,7 @@
 
 This project is set up to enable you to publish an image of a Dataflow pipeline (Apache Beam@Java) to a GCP Artifact Registry. It also instructs you how to create such a container and how to test the pipeline (from topic message generation to running the StreamProcessor pipeline).
 
-**Make sure** you have java@11 installed. 
+**Make sure** you have java@11 installed.
 
 ```bash
 brew install java11
