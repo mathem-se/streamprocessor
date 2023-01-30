@@ -12,7 +12,6 @@
     </parent>
 
     <artifactId>json-tokenize</artifactId>
-    <version>0.1.4</version>
 
     <description>
         Stream and tokenize data streams to BigQuery using Dataflow

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
-import org.apache.beam.repackaged.core.org.apache.commons.lang3.StringUtils;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -236,13 +235,19 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
       );
       out.get(successTag).output(row);
     } catch (NoSchemaException e) {
-      attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
+      // TODO:
+      // instead, pass the following to deadletter: original_payload, status, error_message
+      // can't put in unmodifiable map
+      // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
       out
         .get(deadLetterTag)
         .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
     } catch (Exception e) {
       LOG.error(entity + ": " + e.toString());
-      attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
+      // TODO:
+      // instead, pass the following to deadletter: original_payload, status, error_message
+      // can't put in unmodifiable map
+      // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
       out
         .get(deadLetterTag)
         .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));

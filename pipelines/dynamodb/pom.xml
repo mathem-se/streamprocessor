@@ -12,7 +12,6 @@
     </parent>
 
     <artifactId>dynamodb</artifactId>
-    <version>0.1.11</version>
 
     <description>
         Stream and tokenize DynamoDB data streams to BigQuery using Dataflow

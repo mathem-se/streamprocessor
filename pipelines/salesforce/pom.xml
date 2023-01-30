@@ -12,7 +12,6 @@
     </parent>
 
     <artifactId>salesforce</artifactId>
-    <version>0.1.11</version>
 
     <description>
         Stream and tokenize Salesforce data streams to BigQuery using Dataflow

@@ -27,11 +27,73 @@
 
 This project is set up to enable you to publish an image of a Dataflow pipeline (Apache Beam@Java) to a GCP Artifact Registry. It also instructs you how to create such a container and how to test the pipeline (from topic message generation to running the StreamProcessor pipeline).
 
-**Make sure** you have java@11 installed.
 
+### Install Java and Maven
+
+Update brew
 ```bash
-brew install java11
+brew update && brew upgrade
 ```
+
+Install java 11 and maven
+```bash
+brew install java11 maven
+```
+
+### Compile project
+```bash
+mvn clean compile
+```
+
+### Run tests
+1. To test all modules in the package, run:
+    ```bash
+    mvn test
+    ```
+1. To test an individual module:
+    ```bash
+    mvn test -pl <MODULE>
+    ```
+    for example:
+    ```bash
+    mvn test -pl core
+    ```
+1. To test an individual class inside a module, run:
+    ```bash
+    mvn test -pl <MODULE> -Dit.test=<CLASS>
+    ```
+    for example:
+    ```bash
+    mvn test -pl core -Dit.test=SerializeMessageToRowFnTest
+    ```
+
+### Run a pipeline locally
+**TODO**
+
+### Build and push to GCP
+
+To build your project and push it to GCP artifact registry and cloud storage, run the following:
+```bash
+bash build_and_push.sh <GCP-PROJECT-ID> <MODULE> <VERSION>
+```
+where
+- `<GCP-PROJECT-ID>` is the GCP project id where you want to publish to.
+- `<MODULE>` is one of the pipelines in [./pipelines](https://github.com/mhlabs/streamprocessor/tree/DATA-2781-public-streamprocessor), e.g. `dynamodb`
+- `<VERSION>` is the version you want to publish as.
+
+This will end up with the following artifacts in your GCP project:
+
+`europe-west1-docker.pkg.dev/<GCP-PROJECT-ID>/streamprocessor/<MODULE>:<VERSION>`
+and
+`gs://<GCP-PROJECT-ID>-streamprocessor/images/<MODULE>-image-spec-<VERSION>.json`
+
+
+
+note that the `build_and_push.sh` script assumes that you have:
+- a project called `<GCP-PROJECT-ID>`
+- enabled cloud storage and artifact registry
+- created a repository in artifact registry called `streamprocessor`
+- created a bucket in cloud storage called `<GCP-PROJECT-ID>-streamprocessor`
 
 ## What's included
 ### Pipelines
