@@ -45,6 +45,11 @@ brew install java11 maven
 mvn clean compile
 ```
 
+### Format code
+```bash
+mvn spotless:apply
+```
+
 ### Run tests
 1. To test all modules in the package, run:
 	```bash
@@ -97,10 +102,7 @@ note that the `build_and_push.sh` script assumes that you have:
 
 ## What's included
 ### Pipelines
-
-#### json-tokenize
-
-Tokenizes json messages from pubsub and writes to BigQuery and Pubsub topics.
+**TODO**
 
 ## FAQ
 ### Is StreamProcessor open source?

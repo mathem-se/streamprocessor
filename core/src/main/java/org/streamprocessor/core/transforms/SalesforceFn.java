@@ -84,8 +84,8 @@ public class SalesforceFn extends DoFn<PubsubMessage, PubsubMessage> {
                 // add event_time to payload root for streaming analytics use cases
                 // TODO: consolidate to be consistent with dynamodb events
                 if (salesforceStreamObject.isNull("event_timestamp")) {
-                    if (!salesforceStreamObject.isNull("time")) {
-                        payloadObject.put(
+                        if (!salesforceStreamObject.isNull("time")) {
+                            payloadObject.put(
                                 "event_timestamp", salesforceStreamObject.getString("time"));
                     } else {
                         // NOTE: should we really infer the event_timestamp here?
