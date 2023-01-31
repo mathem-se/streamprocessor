@@ -34,3 +34,8 @@ jobs:
         shell: bash
         run: |
           mvn test
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          mvn spotless:check

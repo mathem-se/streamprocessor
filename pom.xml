@@ -25,25 +25,25 @@
         <hamcrest.version>2.1</hamcrest.version>
         <guava.version>31.0.1-jre</guava.version>
         <java.version>11</java.version>
-        <jib.maven.version>2.6.0</jib.maven.version>
+        <jib.maven.version>3.3.1</jib.maven.version>
         <junit.version>4.13</junit.version>
         <junit-dep.version>4.10</junit-dep.version>
         <opensensus.version>0.24.0</opensensus.version>
         <surefire.version>2.21.0</surefire.version>
         <maven-checkstyle-plugin.version>3.1.1</maven-checkstyle-plugin.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-        <maven-dependency-plugin.version>3.0.1</maven-dependency-plugin.version>
+        <maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
         <maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
-        <maven-javadoc-plugin.version>3.0.0-M3</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.4.1</maven-javadoc-plugin.version>
         <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
-        <maven-shade-plugin.version>3.2.3</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.4.1</maven-shade-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <mockito-core.version>3.0.0</mockito-core.version>
         <os-maven-plugin.version>1.5.0.Final</os-maven-plugin.version>
         <slf4j.version>1.7.36</slf4j.version>
         <mvn-target-dir>${basedir}/target</mvn-target-dir>
         <json.version>20200518</json.version>
-        <spotless-maven-plugin.version>2.12.1</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>2.31.0</spotless-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -735,39 +735,36 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless-maven-plugin.version}</version>
                 <configuration>
-                    <ratchetFrom>origin/main</ratchetFrom>
-                    <formats>
-                        <!-- Avoid trailing whitespace and require ending newline. -->
-                        <format>
-                            <includes>
-                                <!-- .gitignore does not need to be included here. -->
-                                <include>*.md</include>
-                            </includes>
-                            <trimTrailingWhitespace />
-                            <endWithNewline />
-                        </format>
-                    </formats>
+                <formats>
+                <!-- you can define as many formats as you want, each is independent -->
+                <format>
+                    <!-- define the files to apply to -->
+                    <includes>
+                    <include>*.md</include>
+                    <include>.gitignore</include>
+                    </includes>
+                    <!-- define the steps to apply to those files -->
+                    <trimTrailingWhitespace/>
+                    <endWithNewline/>
+                    <indent>
+                    <tabs>true</tabs>
+                    <spacesPerTab>4</spacesPerTab>
+                    </indent>
+                </format>
+                </formats>
+                    <!-- define a language-specific format -->
                     <java>
-                        <toggleOffOn />
-                        <googleJavaFormat>
-                            <!--<version>1.8</version>-->
-                            <version>1.11.0</version>
-                            <style>GOOGLE</style>
-                        </googleJavaFormat>
-                        <licenseHeader>
-                            <!--<file>LICENSE_HEADER</file>-->
+                    <!-- no need to specify files, inferred automatically, but you can if you want -->
 
-                        </licenseHeader>
+                    <!-- apply a specific flavor of google-java-format and reflow long strings -->
+                    <googleJavaFormat>
+                        <version>1.15.0</version>
+                        <style>AOSP</style>
+                        <reflowLongStrings>true</reflowLongStrings>
+                    </googleJavaFormat>
+
                     </java>
                 </configuration>
-                <!-- Bind to verify. -->
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
 

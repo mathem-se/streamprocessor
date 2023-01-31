@@ -29,77 +29,75 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A generic RowCoder class to enable Dataflow job to process Rows with different schemas.
- * It uses Caffeine as cache to avoid hitting GCP Data catalog for each Row.
- * Requires that each Row has an entity option that is used to look up the schema of a
- * linked resource.
+ * A generic RowCoder class to enable Dataflow job to process Rows with different schemas. It uses
+ * Caffeine as cache to avoid hitting GCP Data catalog for each Row. Requires that each Row has an
+ * entity option that is used to look up the schema of a linked resource.
  *
  * @author Robert Sahlin
  * @version 1.0
  * @since 2022-04-20
  */
-
 public class GenericRowCoder extends CustomCoder<Row> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CustomCoder.class);
-  String projectId;
-  String datasetId;
+    private static final Logger LOG = LoggerFactory.getLogger(CustomCoder.class);
+    String projectId;
+    String datasetId;
 
-  public static GenericRowCoder of() {
-    return new GenericRowCoder();
-  }
-
-  public GenericRowCoder() {}
-
-  public GenericRowCoder(String projectId, String datasetId) {
-    this.projectId = projectId;
-    this.datasetId = datasetId;
-  }
-
-  static final long serialVersionUID = 8767646534L;
-
-  /**
-   * Serialize Row using a schema hash reference and a RowCoder.
-   * The RowCoder is cached with the schema hash as key to avoid calls to
-   * Data catalog for each Row.
-   * @param row
-   * @param outStream
-   * @return Nothing
-   * @exception IOException
-   */
-
-  @Override
-  public void encode(Row row, OutputStream outStream) throws IOException {
-    try {
-      SerializableCoder.of(Row.class).encode(row, outStream);
-    } catch (IOException e) {
-      LOG.error("GenericRowCoder encode: ", e);
-      throw (e);
+    public static GenericRowCoder of() {
+        return new GenericRowCoder();
     }
-  }
 
-  /**
-   * Look up the RowCoder to use given the schema hash, if none use the linkedResource ref. Decode
-   * the stream to get the Row.
-   * @param inStream
-   * @return Row
-   * @exception IOException
-   */
-  @Override
-  public Row decode(InputStream inStream) throws IOException {
-    try {
-      return SerializableCoder.of(Row.class).decode(inStream);
-    } catch (IOException e) {
-      LOG.error("GenericRowCoder encode: ", e);
-      throw (e);
+    public GenericRowCoder() {}
+
+    public GenericRowCoder(String projectId, String datasetId) {
+        this.projectId = projectId;
+        this.datasetId = datasetId;
     }
-  }
 
-  @Override
-  public List<? extends Coder<?>> getCoderArguments() {
-    return Collections.emptyList();
-  }
+    static final long serialVersionUID = 8767646534L;
 
-  @Override
-  public void verifyDeterministic() throws NonDeterministicException {}
+    /**
+     * Serialize Row using a schema hash reference and a RowCoder. The RowCoder is cached with the
+     * schema hash as key to avoid calls to Data catalog for each Row.
+     *
+     * @param row
+     * @param outStream
+     * @return Nothing
+     * @exception IOException
+     */
+    @Override
+    public void encode(Row row, OutputStream outStream) throws IOException {
+        try {
+            SerializableCoder.of(Row.class).encode(row, outStream);
+        } catch (IOException e) {
+            LOG.error("GenericRowCoder encode: ", e);
+            throw (e);
+        }
+    }
+
+    /**
+     * Look up the RowCoder to use given the schema hash, if none use the linkedResource ref. Decode
+     * the stream to get the Row.
+     *
+     * @param inStream
+     * @return Row
+     * @exception IOException
+     */
+    @Override
+    public Row decode(InputStream inStream) throws IOException {
+        try {
+            return SerializableCoder.of(Row.class).decode(inStream);
+        } catch (IOException e) {
+            LOG.error("GenericRowCoder encode: ", e);
+            throw (e);
+        }
+    }
+
+    @Override
+    public List<? extends Coder<?>> getCoderArguments() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void verifyDeterministic() throws NonDeterministicException {}
 }

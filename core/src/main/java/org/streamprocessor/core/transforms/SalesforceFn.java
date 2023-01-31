@@ -30,107 +30,87 @@ import org.slf4j.LoggerFactory;
 
 public class SalesforceFn extends DoFn<PubsubMessage, PubsubMessage> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SalesforceFn.class);
-  static final long serialVersionUID = 238L;
+    private static final Logger LOG = LoggerFactory.getLogger(SalesforceFn.class);
+    static final long serialVersionUID = 238L;
 
-  String unknownFieldLogger;
-  String format;
+    String unknownFieldLogger;
+    String format;
 
-  public static <T> T getValueOrDefault(T value, T defaultValue) {
-    return value == null ? defaultValue : value;
-  }
-
-  public SalesforceFn() {}
-
-  @ProcessElement
-  public void processElement(
-    @Element PubsubMessage received,
-    OutputReceiver<PubsubMessage> out
-  ) throws Exception {
-    try {
-      String receivedPayload = new String(
-        received.getPayload(),
-        StandardCharsets.UTF_8
-      );
-      JSONObject salesforceStreamObject = new JSONObject(receivedPayload);
-
-      HashMap<String, String> attributes = new HashMap<String, String>();
-      attributes.putAll(received.getAttributeMap());
-      attributes.put(
-        "processing_timestamp",
-        Instant.now().truncatedTo(ChronoUnit.MILLIS).toString()
-      );
-
-      // use topic attribute as entity attribute if entity is missing
-      if (
-        received.getAttribute("entity") == null &&
-        received.getAttribute("topic") != null
-      ) {
-        attributes.put("entity", received.getAttribute("topic"));
-      }
-
-      JSONObject payloadObject;
-
-      try {
-        // salesforce events passed through Appflow
-        // have their payload nested within the `detail` field
-        // other fields just contain metadata from Appflow
-        // TODO: abstract this away to another service that tells you which fields to look at
-        if (
-          salesforceStreamObject.has("detail") &&
-          received.getAttribute("topic").toLowerCase().startsWith("salesforce")
-        ) {
-          payloadObject = salesforceStreamObject.getJSONObject("detail");
-        } else {
-          // Not a salesforce detail event
-          payloadObject = salesforceStreamObject;
-        }
-
-        // Add meta-data from salesforce stream event as attributes
-        if (!salesforceStreamObject.isNull("time")) {
-          attributes.put(
-            "salesforcePublished",
-            salesforceStreamObject.getString("time")
-          );
-        }
-
-        // add event_time to payload root for streaming analytics use cases
-        // TODO: consolidate to be consistent with dynamodb events
-        if (salesforceStreamObject.isNull("event_timestamp")) {
-          if (!salesforceStreamObject.isNull("time")) {
-            payloadObject.put(
-              "event_timestamp",
-              salesforceStreamObject.getString("time")
-            );
-          } else {
-            // NOTE: should we really infer the event_timestamp here?
-            payloadObject.put(
-              "event_timestamp",
-              DateTime.now().withZone(DateTimeZone.UTC).toString()
-            );
-          }
-        }
-
-        // Add meta-data from salesforce stream event as attributes
-        if (!salesforceStreamObject.isNull("id")) {
-          attributes.put("event_id", salesforceStreamObject.getString("id"));
-        }
-
-        out.output(
-          new PubsubMessage(
-            payloadObject.toString().getBytes("UTF-8"),
-            attributes
-          )
-        );
-      } catch (IllegalArgumentException e) {
-        LOG.error("IllegalArgumentException: ", e);
-      } catch (org.json.JSONException e) {
-        LOG.error("org.json.JSONException: ", e);
-      } catch (Exception e) {
-        LOG.error("Exception: ", e);
-      }
-    } catch (Exception e) {
-      LOG.error(e.getMessage());
+    public static <T> T getValueOrDefault(T value, T defaultValue) {
+        return value == null ? defaultValue : value;
     }
-  }
+
+    public SalesforceFn() {}
+
+    @ProcessElement
+    public void processElement(@Element PubsubMessage received, OutputReceiver<PubsubMessage> out)
+            throws Exception {
+        try {
+            String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
+            JSONObject salesforceStreamObject = new JSONObject(receivedPayload);
+
+            HashMap<String, String> attributes = new HashMap<String, String>();
+            attributes.putAll(received.getAttributeMap());
+            attributes.put(
+                    "processing_timestamp",
+                    Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+
+            // use topic attribute as entity attribute if entity is missing
+            if (received.getAttribute("entity") == null && received.getAttribute("topic") != null) {
+                attributes.put("entity", received.getAttribute("topic"));
+            }
+
+            JSONObject payloadObject;
+
+            try {
+                // salesforce events passed through Appflow
+                // have their payload nested within the `detail` field
+                // other fields just contain metadata from Appflow
+                // TODO: abstract this away to another service that tells you which fields to look
+                // at
+                if (salesforceStreamObject.has("detail")
+                        && received.getAttribute("topic").toLowerCase().startsWith("salesforce")) {
+                    payloadObject = salesforceStreamObject.getJSONObject("detail");
+                } else {
+                    // Not a salesforce detail event
+                    payloadObject = salesforceStreamObject;
+                }
+
+                // Add meta-data from salesforce stream event as attributes
+                if (!salesforceStreamObject.isNull("time")) {
+                    attributes.put("salesforcePublished", salesforceStreamObject.getString("time"));
+                }
+
+                // add event_time to payload root for streaming analytics use cases
+                // TODO: consolidate to be consistent with dynamodb events
+                if (salesforceStreamObject.isNull("event_timestamp")) {
+                    if (!salesforceStreamObject.isNull("time")) {
+                        payloadObject.put(
+                                "event_timestamp", salesforceStreamObject.getString("time"));
+                    } else {
+                        // NOTE: should we really infer the event_timestamp here?
+                        payloadObject.put(
+                                "event_timestamp",
+                                DateTime.now().withZone(DateTimeZone.UTC).toString());
+                    }
+                }
+
+                // Add meta-data from salesforce stream event as attributes
+                if (!salesforceStreamObject.isNull("id")) {
+                    attributes.put("event_id", salesforceStreamObject.getString("id"));
+                }
+
+                out.output(
+                        new PubsubMessage(payloadObject.toString().getBytes("UTF-8"), attributes));
+            } catch (IllegalArgumentException e) {
+                LOG.error("IllegalArgumentException: ", e);
+            } catch (org.json.JSONException e) {
+                LOG.error("org.json.JSONException: ", e);
+            } catch (Exception e) {
+                LOG.error("Exception: ", e);
+            }
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+        }
+    }
 }

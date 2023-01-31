@@ -1,20 +1,20 @@
 <p align="center">
-    <img src="./images/streamprocessor.logo.png" alt="StreamProcessor logo" width="200">
+	<img src="./images/streamprocessor.logo.png" alt="StreamProcessor logo" width="200">
 </p>
 
 <p align="center">(replace logo)</p>
 <h3 align="center">StreamProcessor</h3>
 
 <p align="center">
-  Streaming Beam pipeline to serialize, tokenize, and load data to BigQuery and Pubsub.
-  <br>
-  <a href="https://github.com/mhlabs/streamprocessor/docs/main.md">Docs</a>
-  ·
-  <a href="https://blog.mhlabs.com/">Blog</a>
-  ·
-  <a href="https://github.com/mhlabs/streamprocessor/issues/new?assignees=-&labels=bug&template=bug_report.yml">Report bug</a>
-  ·
-  <a href="https://github.com/mhlabs/streamprocessor/issues/new?assignees=&labels=feature&template=feature_request.yml">Request feature</a>
+Streaming Beam pipeline to serialize, tokenize, and load data to BigQuery and Pubsub.
+<br>
+<a href="https://github.com/mhlabs/streamprocessor/docs/main.md">Docs</a>
+·
+<a href="https://blog.mhlabs.com/">Blog</a>
+·
+<a href="https://github.com/mhlabs/streamprocessor/issues/new?assignees=-&labels=bug&template=bug_report.yml">Report bug</a>
+·
+<a href="https://github.com/mhlabs/streamprocessor/issues/new?assignees=&labels=feature&template=feature_request.yml">Request feature</a>
 </p>
 
 ## Table of contents
@@ -45,27 +45,32 @@ brew install java11 maven
 mvn clean compile
 ```
 
+### Format code
+```bash
+mvn spotless:apply
+```
+
 ### Run tests
 1. To test all modules in the package, run:
-    ```bash
-    mvn test
-    ```
+	```bash
+	mvn test
+	```
 1. To test an individual module:
-    ```bash
-    mvn test -pl <MODULE>
-    ```
-    for example:
-    ```bash
-    mvn test -pl core
-    ```
+	```bash
+	mvn test -pl <MODULE>
+	```
+	for example:
+	```bash
+	mvn test -pl core
+	```
 1. To test an individual class inside a module, run:
-    ```bash
-    mvn test -pl <MODULE> -Dit.test=<CLASS>
-    ```
-    for example:
-    ```bash
-    mvn test -pl core -Dit.test=SerializeMessageToRowFnTest
-    ```
+	```bash
+	mvn test -pl <MODULE> -Dit.test=<CLASS>
+	```
+	for example:
+	```bash
+	mvn test -pl core -Dit.test=SerializeMessageToRowFnTest
+	```
 
 ### Run a pipeline locally
 **TODO**
@@ -97,10 +102,7 @@ note that the `build_and_push.sh` script assumes that you have:
 
 ## What's included
 ### Pipelines
-
-#### json-tokenize
-
-Tokenizes json messages from pubsub and writes to BigQuery and Pubsub topics.
+**TODO**
 
 ## FAQ
 ### Is StreamProcessor open source?

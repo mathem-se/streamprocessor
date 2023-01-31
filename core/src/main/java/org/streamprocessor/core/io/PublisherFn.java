@@ -37,117 +37,93 @@ import org.apache.beam.sdk.values.KV;
 
 /**
  * A class to fan out pubsub messages to different topics according to their entity attribute.
- * @author Robert Sahlin
  *
+ * @author Robert Sahlin
  */
+public class PublisherFn extends DoFn<KV<String, Iterable<PubsubMessage>>, Integer> {
 
-public class PublisherFn
-  extends DoFn<KV<String, Iterable<PubsubMessage>>, Integer> {
+    static final long serialVersionUID = 234L;
+    private static final int MAX_PUBLISH_BATCH_BYTE_SIZE_DEFAULT = ((10 * 1000 * 1000) / 4) * 3;
+    private static final int MAX_PUBLISH_BATCH_SIZE = 100;
 
-  static final long serialVersionUID = 234L;
-  private static final int MAX_PUBLISH_BATCH_BYTE_SIZE_DEFAULT =
-    ((10 * 1000 * 1000) / 4) * 3;
-  private static final int MAX_PUBLISH_BATCH_SIZE = 100;
+    // Counters
+    private final Counter batchCounter = Metrics.counter(PublisherFn.class, "batches");
+    private final Counter elementCounter = SinkMetrics.elementsWritten();
+    private final Counter byteCounter = SinkMetrics.bytesWritten();
 
-  // Counters
-  private final Counter batchCounter = Metrics.counter(
-    PublisherFn.class,
-    "batches"
-  );
-  private final Counter elementCounter = SinkMetrics.elementsWritten();
-  private final Counter byteCounter = SinkMetrics.bytesWritten();
+    private transient PubsubClient pubsubClient;
+    private int maxPublishBatchByteSize;
+    private int maxPublishBatchSize;
+    private String projectId;
 
-  private transient PubsubClient pubsubClient;
-  private int maxPublishBatchByteSize;
-  private int maxPublishBatchSize;
-  private String projectId;
-
-  public PublisherFn(int maxPublishBatchSize, int maxPublishBatchByteSize) {
-    this.maxPublishBatchSize = maxPublishBatchSize;
-    this.maxPublishBatchByteSize = maxPublishBatchByteSize;
-  }
-
-  public PublisherFn() {
-    this(MAX_PUBLISH_BATCH_SIZE, MAX_PUBLISH_BATCH_BYTE_SIZE_DEFAULT);
-  }
-
-  @StartBundle
-  public void startBundle(StartBundleContext c) throws IOException {
-    checkState(
-      pubsubClient == null,
-      "startBundle invoked without prior finishBundle"
-    );
-    this.pubsubClient =
-      PubsubJsonClient.FACTORY.newClient(
-        null,
-        null,
-        c.getPipelineOptions().as(PubsubOptions.class)
-      );
-    this.projectId = c.getPipelineOptions().as(GcpOptions.class).getProject();
-  }
-
-  /** BLOCKING Send {@code messages} as a batch to Pubsub. */
-  private void publishBatch(
-    String topic,
-    List<OutgoingMessage> messages,
-    int bytes
-  ) throws IOException {
-    TopicPath topicPath = PubsubClient.topicPathFromName(projectId, topic);
-    int n = pubsubClient.publish(topicPath, messages);
-    checkState(
-      n == messages.size(),
-      "Attempted to publish %s messages but %s were successful",
-      messages.size(),
-      n
-    );
-    batchCounter.inc();
-    elementCounter.inc(messages.size());
-    byteCounter.inc(bytes);
-  }
-
-  @ProcessElement
-  public void processElement(
-    ProcessContext c,
-    @Element KV<String, Iterable<PubsubMessage>> kv,
-    OutputReceiver<Integer> out
-  ) throws Exception {
-    Iterator<PubsubMessage> itr = kv.getValue().iterator();
-
-    List<OutgoingMessage> pubsubMessages = new ArrayList<>(maxPublishBatchSize);
-    int bytes = 0;
-    while (itr.hasNext()) {
-      PubsubMessage pubsubMessage = itr.next();
-      long epoch = Long.parseLong(
-        pubsubMessage.getAttribute("event_timestamp")
-      );
-      OutgoingMessage message = OutgoingMessage.of(
-        pubsubMessage,
-        epoch,
-        pubsubMessage.getAttribute("event_uuid")
-      );
-      if (
-        (
-          !pubsubMessages.isEmpty() &&
-          bytes + message.message().getData().size() > maxPublishBatchByteSize
-        ) ||
-        pubsubMessages.size() >= maxPublishBatchSize
-      ) {
-        publishBatch(kv.getKey(), pubsubMessages, bytes);
-        pubsubMessages.clear();
-        bytes = 0;
-      }
-      pubsubMessages.add(message);
-      bytes += message.message().getData().size();
+    public PublisherFn(int maxPublishBatchSize, int maxPublishBatchByteSize) {
+        this.maxPublishBatchSize = maxPublishBatchSize;
+        this.maxPublishBatchByteSize = maxPublishBatchByteSize;
     }
-    if (!pubsubMessages.isEmpty()) {
-      // BLOCKS until published.
-      publishBatch(kv.getKey(), pubsubMessages, bytes);
-    }
-  }
 
-  @FinishBundle
-  public void finishBundle() throws Exception {
-    pubsubClient.close();
-    pubsubClient = null;
-  }
+    public PublisherFn() {
+        this(MAX_PUBLISH_BATCH_SIZE, MAX_PUBLISH_BATCH_BYTE_SIZE_DEFAULT);
+    }
+
+    @StartBundle
+    public void startBundle(StartBundleContext c) throws IOException {
+        checkState(pubsubClient == null, "startBundle invoked without prior finishBundle");
+        this.pubsubClient =
+                PubsubJsonClient.FACTORY.newClient(
+                        null, null, c.getPipelineOptions().as(PubsubOptions.class));
+        this.projectId = c.getPipelineOptions().as(GcpOptions.class).getProject();
+    }
+
+    /** BLOCKING Send {@code messages} as a batch to Pubsub. */
+    private void publishBatch(String topic, List<OutgoingMessage> messages, int bytes)
+            throws IOException {
+        TopicPath topicPath = PubsubClient.topicPathFromName(projectId, topic);
+        int n = pubsubClient.publish(topicPath, messages);
+        checkState(
+                n == messages.size(),
+                "Attempted to publish %s messages but %s were successful",
+                messages.size(),
+                n);
+        batchCounter.inc();
+        elementCounter.inc(messages.size());
+        byteCounter.inc(bytes);
+    }
+
+    @ProcessElement
+    public void processElement(
+            ProcessContext c,
+            @Element KV<String, Iterable<PubsubMessage>> kv,
+            OutputReceiver<Integer> out)
+            throws Exception {
+        Iterator<PubsubMessage> itr = kv.getValue().iterator();
+
+        List<OutgoingMessage> pubsubMessages = new ArrayList<>(maxPublishBatchSize);
+        int bytes = 0;
+        while (itr.hasNext()) {
+            PubsubMessage pubsubMessage = itr.next();
+            long epoch = Long.parseLong(pubsubMessage.getAttribute("event_timestamp"));
+            OutgoingMessage message =
+                    OutgoingMessage.of(
+                            pubsubMessage, epoch, pubsubMessage.getAttribute("event_uuid"));
+            if ((!pubsubMessages.isEmpty()
+                            && bytes + message.message().getData().size() > maxPublishBatchByteSize)
+                    || pubsubMessages.size() >= maxPublishBatchSize) {
+                publishBatch(kv.getKey(), pubsubMessages, bytes);
+                pubsubMessages.clear();
+                bytes = 0;
+            }
+            pubsubMessages.add(message);
+            bytes += message.message().getData().size();
+        }
+        if (!pubsubMessages.isEmpty()) {
+            // BLOCKS until published.
+            publishBatch(kv.getKey(), pubsubMessages, bytes);
+        }
+    }
+
+    @FinishBundle
+    public void finishBundle() throws Exception {
+        pubsubClient.close();
+        pubsubClient = null;
+    }
 }
