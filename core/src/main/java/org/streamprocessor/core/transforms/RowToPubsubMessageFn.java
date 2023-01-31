@@ -1,19 +1,4 @@
-/*
- * Copyright (C) 2021 Robert Sahlin
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
-
+/* (C)2021 */
 package org.streamprocessor.core.transforms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,74 +19,58 @@ import org.slf4j.LoggerFactory;
 
 public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
-    RowToPubsubMessageFn.class
-  );
+    private static final Logger LOG = LoggerFactory.getLogger(RowToPubsubMessageFn.class);
 
-  static final long serialVersionUID = 234L;
+    static final long serialVersionUID = 234L;
 
-  public RowToPubsubMessageFn() {}
+    public RowToPubsubMessageFn() {}
 
-  @Setup
-  public void setup() throws Exception {}
+    @Setup
+    public void setup() throws Exception {}
 
-  @ProcessElement
-  public void processElement(
-    @Element Row row,
-    OutputReceiver<KV<String, PubsubMessage>> out
-  ) throws Exception {
-    try {
-      RowJson.RowJsonSerializer jsonSerializer = RowJson.RowJsonSerializer
-        .forSchema(row.getSchema())
-        .withDropNullsOnWrite(true);
-      ObjectMapper objectMapper = RowJsonUtils.newObjectMapperWith(
-        jsonSerializer
-      );
-      String str = RowJsonUtils.rowToJson(objectMapper, row);
-      //LOG.info(str);
+    @ProcessElement
+    public void processElement(@Element Row row, OutputReceiver<KV<String, PubsubMessage>> out)
+            throws Exception {
+        try {
+            RowJson.RowJsonSerializer jsonSerializer =
+                    RowJson.RowJsonSerializer.forSchema(row.getSchema()).withDropNullsOnWrite(true);
+            ObjectMapper objectMapper = RowJsonUtils.newObjectMapperWith(jsonSerializer);
+            String str = RowJsonUtils.rowToJson(objectMapper, row);
+            // LOG.info(str);
 
-      // Message Attributes
-      String entity = row
-        .getSchema()
-        .getOptions()
-        .getValue("entity", String.class);
+            // Message Attributes
+            String entity = row.getSchema().getOptions().getValue("entity", String.class);
 
-      ReadableDateTime eventTimestamp;
-      if (
-        row.getSchema().hasField("event_timestamp") &&
-        row.getDateTime("event_timestamp") != null
-      ) {
-        eventTimestamp = row.getDateTime("event_timestamp");
-      } else {
-        eventTimestamp = DateTime.now().withZone(DateTimeZone.UTC);
-      }
+            ReadableDateTime eventTimestamp;
+            if (row.getSchema().hasField("event_timestamp")
+                    && row.getDateTime("event_timestamp") != null) {
+                eventTimestamp = row.getDateTime("event_timestamp");
+            } else {
+                eventTimestamp = DateTime.now().withZone(DateTimeZone.UTC);
+            }
 
-      String eventUuid;
-      if (
-        row.getSchema().hasField("event_uuid") &&
-        row.getString("event_uuid") != null
-      ) {
-        eventUuid = row.getString("event_uuid");
-      } else {
-        eventUuid = UUID.randomUUID().toString();
-      }
+            String eventUuid;
+            if (row.getSchema().hasField("event_uuid") && row.getString("event_uuid") != null) {
+                eventUuid = row.getString("event_uuid");
+            } else {
+                eventUuid = UUID.randomUUID().toString();
+            }
 
-      Map<String, String> attributes = new HashMap<String, String>() {
-        static final long serialVersionUID = 2342534L;
+            Map<String, String> attributes =
+                    new HashMap<String, String>() {
+                        static final long serialVersionUID = 2342534L;
 
-        {
-          put("timestamp", java.time.Instant.now().toString());
-          put("event_timestamp", String.valueOf(eventTimestamp.getMillis()));
-          put("event_uuid", eventUuid);
-          put("entity", entity);
+                        {
+                            put("timestamp", java.time.Instant.now().toString());
+                            put("event_timestamp", String.valueOf(eventTimestamp.getMillis()));
+                            put("event_uuid", eventUuid);
+                            put("entity", entity);
+                        }
+                    };
+
+            out.output(KV.of(entity, new PubsubMessage(str.getBytes("UTF-8"), attributes)));
+        } catch (Exception e) {
+            LOG.error("RowToPubsubMessage: " + e.getMessage());
         }
-      };
-
-      out.output(
-        KV.of(entity, new PubsubMessage(str.getBytes("UTF-8"), attributes))
-      );
-    } catch (Exception e) {
-      LOG.error("RowToPubsubMessage: " + e.getMessage());
     }
-  }
 }
