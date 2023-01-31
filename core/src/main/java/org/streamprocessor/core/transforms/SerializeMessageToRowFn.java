@@ -43,214 +43,182 @@ import org.streamprocessor.core.utils.CacheLoaderUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
-    SerializeMessageToRowFn.class
-  );
-  private static final Counter schemaCacheMissesCounter = Metrics.counter(
-    "SerializeMessageToRowFn",
-    "schemaCacheMisses"
-  );
-  private static final Counter schemaCacheCallsCounter = Metrics.counter(
-    "SerializeMessageToRowFn",
-    "schemaCacheCalls"
-  );
-  static final long serialVersionUID = 234L;
-  private static final com.github.benmanes.caffeine.cache.LoadingCache<String, Schema> schemaCache = Caffeine
-    .newBuilder()
-    .maximumSize(1000)
-    .refreshAfterWrite(5, TimeUnit.MINUTES)
-    .build(k -> getCachedSchema(k));
+    private static final Logger LOG = LoggerFactory.getLogger(SerializeMessageToRowFn.class);
+    private static final Counter schemaCacheMissesCounter =
+            Metrics.counter("SerializeMessageToRowFn", "schemaCacheMisses");
+    private static final Counter schemaCacheCallsCounter =
+            Metrics.counter("SerializeMessageToRowFn", "schemaCacheCalls");
+    static final long serialVersionUID = 234L;
+    private static final com.github.benmanes.caffeine.cache.LoadingCache<String, Schema>
+            schemaCache =
+                    Caffeine.newBuilder()
+                            .maximumSize(1000)
+                            .refreshAfterWrite(5, TimeUnit.MINUTES)
+                            .build(k -> getCachedSchema(k));
 
-  TupleTag<Row> successTag;
-  TupleTag<PubsubMessage> deadLetterTag;
-  String unknownFieldLogger;
-  String format;
-  String projectId;
-  String datasetId;
-  float ratio;
+    TupleTag<Row> successTag;
+    TupleTag<PubsubMessage> deadLetterTag;
+    String unknownFieldLogger;
+    String format;
+    String projectId;
+    String datasetId;
+    float ratio;
 
-  public static <T> T getValueOrDefault(T value, T defaultValue) {
-    return value == null ? defaultValue : value;
-  }
+    public static <T> T getValueOrDefault(T value, T defaultValue) {
+        return value == null ? defaultValue : value;
+    }
 
-  private static Set<String> getAllKeys(Schema schema) {
-    Set<String> keySet = new HashSet<String>();
-    return getAllKeys(schema.getFields(), keySet, "");
-  }
+    private static Set<String> getAllKeys(Schema schema) {
+        Set<String> keySet = new HashSet<String>();
+        return getAllKeys(schema.getFields(), keySet, "");
+    }
 
-  private static Set<String> getAllKeys(
-    List<Schema.Field> fields,
-    Set<String> keySet,
-    String prefix
-  ) {
-    try {
-      for (Schema.Field field : fields) {
-        keySet.add(prefix + field.getName());
-        if (field.getType().getTypeName().equals(Schema.TypeName.ROW)) {
-          getAllKeys(
-            field.getType().getRowSchema().getFields(),
-            keySet,
-            prefix + field.getName() + "."
-          );
+    private static Set<String> getAllKeys(
+            List<Schema.Field> fields, Set<String> keySet, String prefix) {
+        try {
+            for (Schema.Field field : fields) {
+                keySet.add(prefix + field.getName());
+                if (field.getType().getTypeName().equals(Schema.TypeName.ROW)) {
+                    getAllKeys(
+                            field.getType().getRowSchema().getFields(),
+                            keySet,
+                            prefix + field.getName() + ".");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("getAllKeys: " + e.getMessage());
         }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-      LOG.error("getAllKeys: " + e.getMessage());
+        return keySet;
     }
-    return keySet;
-  }
 
-  private static Set<String> getAllKeys(JSONObject jsonObject) {
-    Set<String> keySet = new HashSet<String>();
-    return getAllKeys(jsonObject, keySet, "");
-  }
+    private static Set<String> getAllKeys(JSONObject jsonObject) {
+        Set<String> keySet = new HashSet<String>();
+        return getAllKeys(jsonObject, keySet, "");
+    }
 
-  private static Set<String> getAllKeys(
-    JSONObject jsonObject,
-    Set<String> keySet,
-    String prefix
-  ) {
-    try {
-      for (String key : jsonObject.keySet()) {
-        keySet.add(prefix + key);
-        if (jsonObject.get(key).getClass() == JSONObject.class) {
-          getAllKeys(jsonObject.getJSONObject(key), keySet, key + ".");
+    private static Set<String> getAllKeys(
+            JSONObject jsonObject, Set<String> keySet, String prefix) {
+        try {
+            for (String key : jsonObject.keySet()) {
+                keySet.add(prefix + key);
+                if (jsonObject.get(key).getClass() == JSONObject.class) {
+                    getAllKeys(jsonObject.getJSONObject(key), keySet, key + ".");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("getAllKeys: " + e.getMessage());
         }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-      LOG.error("getAllKeys: " + e.getMessage());
+        return keySet;
     }
-    return keySet;
-  }
 
-  private class NoSchemaException extends Exception {
+    private class NoSchemaException extends Exception {
 
-    private NoSchemaException(String errorMessage) {
-      super(errorMessage);
-    }
-  }
-
-  private static Schema getCachedSchema(String ref) {
-    schemaCacheMissesCounter.inc();
-    return CacheLoaderUtils.getSchema(ref);
-  }
-
-  public SerializeMessageToRowFn(
-    TupleTag<Row> successTag,
-    TupleTag<PubsubMessage> deadLetterTag,
-    String projectId,
-    String datasetId,
-    float ratio
-  ) {
-    this.successTag = successTag;
-    this.deadLetterTag = deadLetterTag;
-    this.projectId = projectId;
-    this.datasetId = datasetId;
-    this.ratio = ratio;
-  }
-
-  public SerializeMessageToRowFn(
-    TupleTag<Row> successTag,
-    TupleTag<PubsubMessage> deadLetterTag,
-    String projectId,
-    String datasetId
-  ) {
-    this.successTag = successTag;
-    this.deadLetterTag = deadLetterTag;
-    this.projectId = projectId;
-    this.datasetId = datasetId;
-    this.ratio = 0.001f;
-  }
-
-  @Setup
-  public void setup() throws Exception {}
-
-  @ProcessElement
-  public void processElement(
-    @Element PubsubMessage received,
-    MultiOutputReceiver out
-  ) throws Exception {
-    String entity = received
-      .getAttribute("entity")
-      .replace("-", "_")
-      .toLowerCase();
-    String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
-    @Nullable
-    Map<String, String> attributesMap = received.getAttributeMap();
-    try {
-      String linkedResource = String.format(
-        "//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s",
-        projectId,
-        datasetId,
-        entity
-      );
-      schemaCacheCallsCounter.inc();
-      Schema schema = schemaCache.get(linkedResource);
-      SplittableRandom random = new SplittableRandom();
-      if (schema.getFieldCount() == 0) {
-        throw new NoSchemaException(
-          "Schema for " + linkedResource + " doesn't exist"
-        );
-      }
-
-      JSONObject json = new JSONObject(payload);
-      if (json.isNull("event_timestamp")) {
-        json.put(
-          "event_timestamp",
-          DateTime.now().withZone(DateTimeZone.UTC).toString()
-        );
-      }
-      JSONObject attributes = new JSONObject(received.getAttributeMap());
-      json.put("_metadata", attributes);
-
-      // Identify unmapped fields in payload.
-      // Sample ratio to check for differences
-      if (random.nextInt(100) < ratio * 100) {
-        Set<String> jsonKeySet = getAllKeys(json);
-        Set<String> schemaKeySet = getAllKeys(schema);
-        if (jsonKeySet.size() > schemaKeySet.size()) {
-          jsonKeySet.removeAll(schemaKeySet);
-          String unmappedFields = String.join(",", jsonKeySet);
-          LOG.warn(
-            entity +
-            " unmapped fields: " +
-            unmappedFields +
-            " - payload: " +
-            json.toString()
-          );
+        private NoSchemaException(String errorMessage) {
+            super(errorMessage);
         }
-      }
-
-      Row row = RowJsonUtils.jsonToRow(
-        RowJsonUtils.newObjectMapperWith(
-          RowJsonDeserializer
-            .forSchema(schema)
-            .withNullBehavior(
-              RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL
-            )
-        ),
-        json.toString()
-      );
-      out.get(successTag).output(row);
-    } catch (NoSchemaException e) {
-      // TODO:
-      // instead, pass the following to deadletter: original_payload, status, error_message
-      // can't put in unmodifiable map
-      // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
-      out
-        .get(deadLetterTag)
-        .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
-    } catch (Exception e) {
-      LOG.error(entity + ": " + e.toString());
-      // TODO:
-      // instead, pass the following to deadletter: original_payload, status, error_message
-      // can't put in unmodifiable map
-      // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
-      out
-        .get(deadLetterTag)
-        .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
     }
-  }
+
+    private static Schema getCachedSchema(String ref) {
+        schemaCacheMissesCounter.inc();
+        return CacheLoaderUtils.getSchema(ref);
+    }
+
+    public SerializeMessageToRowFn(
+            TupleTag<Row> successTag,
+            TupleTag<PubsubMessage> deadLetterTag,
+            String projectId,
+            String datasetId,
+            float ratio) {
+        this.successTag = successTag;
+        this.deadLetterTag = deadLetterTag;
+        this.projectId = projectId;
+        this.datasetId = datasetId;
+        this.ratio = ratio;
+    }
+
+    public SerializeMessageToRowFn(
+            TupleTag<Row> successTag,
+            TupleTag<PubsubMessage> deadLetterTag,
+            String projectId,
+            String datasetId) {
+        this.successTag = successTag;
+        this.deadLetterTag = deadLetterTag;
+        this.projectId = projectId;
+        this.datasetId = datasetId;
+        this.ratio = 0.001f;
+    }
+
+    @Setup
+    public void setup() throws Exception {}
+
+    @ProcessElement
+    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
+            throws Exception {
+        String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
+        String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
+        @Nullable Map<String, String> attributesMap = received.getAttributeMap();
+        try {
+            String linkedResource =
+                    String.format(
+                            "//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s",
+                            projectId, datasetId, entity);
+            schemaCacheCallsCounter.inc();
+            Schema schema = schemaCache.get(linkedResource);
+            SplittableRandom random = new SplittableRandom();
+            if (schema.getFieldCount() == 0) {
+                throw new NoSchemaException("Schema for " + linkedResource + " doesn't exist");
+            }
+
+            JSONObject json = new JSONObject(payload);
+            if (json.isNull("event_timestamp")) {
+                json.put("event_timestamp", DateTime.now().withZone(DateTimeZone.UTC).toString());
+            }
+            JSONObject attributes = new JSONObject(received.getAttributeMap());
+            json.put("_metadata", attributes);
+
+            // Identify unmapped fields in payload.
+            // Sample ratio to check for differences
+            if (random.nextInt(100) < ratio * 100) {
+                Set<String> jsonKeySet = getAllKeys(json);
+                Set<String> schemaKeySet = getAllKeys(schema);
+                if (jsonKeySet.size() > schemaKeySet.size()) {
+                    jsonKeySet.removeAll(schemaKeySet);
+                    String unmappedFields = String.join(",", jsonKeySet);
+                    LOG.warn(
+                            entity
+                                    + " unmapped fields: "
+                                    + unmappedFields
+                                    + " - payload: "
+                                    + json.toString());
+                }
+            }
+
+            Row row =
+                    RowJsonUtils.jsonToRow(
+                            RowJsonUtils.newObjectMapperWith(
+                                    RowJsonDeserializer.forSchema(schema)
+                                            .withNullBehavior(
+                                                    RowJsonDeserializer.NullBehavior
+                                                            .ACCEPT_MISSING_OR_NULL)),
+                            json.toString());
+            out.get(successTag).output(row);
+        } catch (NoSchemaException e) {
+            // TODO:
+            // instead, pass the following to deadletter: original_payload, status, error_message
+            // can't put in unmodifiable map
+            // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
+            out.get(deadLetterTag)
+                    .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
+        } catch (Exception e) {
+            LOG.error(entity + ": " + e.toString());
+            // TODO:
+            // instead, pass the following to deadletter: original_payload, status, error_message
+            // can't put in unmodifiable map
+            // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
+            out.get(deadLetterTag)
+                    .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
+        }
+    }
 }

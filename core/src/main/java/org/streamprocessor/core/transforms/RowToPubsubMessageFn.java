@@ -34,74 +34,58 @@ import org.slf4j.LoggerFactory;
 
 public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
-    RowToPubsubMessageFn.class
-  );
+    private static final Logger LOG = LoggerFactory.getLogger(RowToPubsubMessageFn.class);
 
-  static final long serialVersionUID = 234L;
+    static final long serialVersionUID = 234L;
 
-  public RowToPubsubMessageFn() {}
+    public RowToPubsubMessageFn() {}
 
-  @Setup
-  public void setup() throws Exception {}
+    @Setup
+    public void setup() throws Exception {}
 
-  @ProcessElement
-  public void processElement(
-    @Element Row row,
-    OutputReceiver<KV<String, PubsubMessage>> out
-  ) throws Exception {
-    try {
-      RowJson.RowJsonSerializer jsonSerializer = RowJson.RowJsonSerializer
-        .forSchema(row.getSchema())
-        .withDropNullsOnWrite(true);
-      ObjectMapper objectMapper = RowJsonUtils.newObjectMapperWith(
-        jsonSerializer
-      );
-      String str = RowJsonUtils.rowToJson(objectMapper, row);
-      //LOG.info(str);
+    @ProcessElement
+    public void processElement(@Element Row row, OutputReceiver<KV<String, PubsubMessage>> out)
+            throws Exception {
+        try {
+            RowJson.RowJsonSerializer jsonSerializer =
+                    RowJson.RowJsonSerializer.forSchema(row.getSchema()).withDropNullsOnWrite(true);
+            ObjectMapper objectMapper = RowJsonUtils.newObjectMapperWith(jsonSerializer);
+            String str = RowJsonUtils.rowToJson(objectMapper, row);
+            // LOG.info(str);
 
-      // Message Attributes
-      String entity = row
-        .getSchema()
-        .getOptions()
-        .getValue("entity", String.class);
+            // Message Attributes
+            String entity = row.getSchema().getOptions().getValue("entity", String.class);
 
-      ReadableDateTime eventTimestamp;
-      if (
-        row.getSchema().hasField("event_timestamp") &&
-        row.getDateTime("event_timestamp") != null
-      ) {
-        eventTimestamp = row.getDateTime("event_timestamp");
-      } else {
-        eventTimestamp = DateTime.now().withZone(DateTimeZone.UTC);
-      }
+            ReadableDateTime eventTimestamp;
+            if (row.getSchema().hasField("event_timestamp")
+                    && row.getDateTime("event_timestamp") != null) {
+                eventTimestamp = row.getDateTime("event_timestamp");
+            } else {
+                eventTimestamp = DateTime.now().withZone(DateTimeZone.UTC);
+            }
 
-      String eventUuid;
-      if (
-        row.getSchema().hasField("event_uuid") &&
-        row.getString("event_uuid") != null
-      ) {
-        eventUuid = row.getString("event_uuid");
-      } else {
-        eventUuid = UUID.randomUUID().toString();
-      }
+            String eventUuid;
+            if (row.getSchema().hasField("event_uuid") && row.getString("event_uuid") != null) {
+                eventUuid = row.getString("event_uuid");
+            } else {
+                eventUuid = UUID.randomUUID().toString();
+            }
 
-      Map<String, String> attributes = new HashMap<String, String>() {
-        static final long serialVersionUID = 2342534L;
+            Map<String, String> attributes =
+                    new HashMap<String, String>() {
+                        static final long serialVersionUID = 2342534L;
 
-        {
-          put("timestamp", java.time.Instant.now().toString());
-          put("event_timestamp", String.valueOf(eventTimestamp.getMillis()));
-          put("event_uuid", eventUuid);
-          put("entity", entity);
+                        {
+                            put("timestamp", java.time.Instant.now().toString());
+                            put("event_timestamp", String.valueOf(eventTimestamp.getMillis()));
+                            put("event_uuid", eventUuid);
+                            put("entity", entity);
+                        }
+                    };
+
+            out.output(KV.of(entity, new PubsubMessage(str.getBytes("UTF-8"), attributes)));
+        } catch (Exception e) {
+            LOG.error("RowToPubsubMessage: " + e.getMessage());
         }
-      };
-
-      out.output(
-        KV.of(entity, new PubsubMessage(str.getBytes("UTF-8"), attributes))
-      );
-    } catch (Exception e) {
-      LOG.error("RowToPubsubMessage: " + e.getMessage());
     }
-  }
 }

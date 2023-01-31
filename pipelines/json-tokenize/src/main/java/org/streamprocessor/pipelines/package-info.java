@@ -1,2 +1,2 @@
-/** Package info. **/
+/** Package info. * */
 package org.streamprocessor.pipelines;
