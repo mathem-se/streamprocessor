@@ -1,0 +1,7 @@
+{
+  "mainClass": "org.streamprocessor.pipelines.Dynamodb",
+  "classPath": "/pipelines/dynamodb/*:/pipelines/dynamodb/libs/*://pipelines/dynamodb/classes",
+  "defaultParameterValues": {
+    "labels": "{\"stream-processor-template-type\":\"flex\",\"stream-processor-provided-template-name\":\"dynamodb\"}"
+  }
+}
