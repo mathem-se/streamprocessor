@@ -100,7 +100,17 @@ class SchemaUtils {
         }
 
         if ("STRUCT".equals(dcFieldType)) {
-            Schema structSchema = fromColumnsList(column.getSubcolumnsList());
+            List<ColumnSchema> subColumns = column.getSubcolumnsList();
+            if (subColumns.size() == 2 ) {
+                ColumnSchema key = subColumns.get(0);
+                ColumnSchema value = subColumns.get(1);
+                if ("key".equals(key.getColumn())
+                        && "value".equals(value.getColumn())) {
+                    return FieldType.map(FieldType.STRING, getBeamFieldType(value));
+
+                }
+            }
+            Schema structSchema = fromColumnsList(subColumns);
             return FieldType.row(structSchema);
         }
 
@@ -124,6 +134,7 @@ class SchemaUtils {
 
     private static ColumnSchema fromBeamField(Schema.Field field) {
         Schema.FieldType fieldType = field.getType();
+
         if (fieldType.getTypeName().equals(Schema.TypeName.ARRAY)) {
             if (fieldType.getNullable()) {
                 throw new UnsupportedOperationException(
