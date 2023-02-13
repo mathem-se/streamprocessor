@@ -48,4 +48,172 @@
         </plugins>
     </build>
 
+      <profiles>
+    <profile>
+      <id>direct-runner</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <!-- Makes the DirectRunner available when running a pipeline. -->
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-direct-java</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+   <profile>
+      <id>portable-runner</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <!-- Makes the PortableRunner available when running a pipeline. -->
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-portability-java</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>dataflow-runner</id>
+      <!-- Makes the DataflowRunner available when running a pipeline. -->
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-google-cloud-dataflow-java</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>flink-runner</id>
+      <!-- Makes the FlinkRunner available when running a pipeline. -->
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <!-- Please see the Flink Runner page for an up-to-date list
+               of supported Flink versions and their artifact names:
+               https://beam.apache.org/documentation/runners/flink/ -->
+          <artifactId>${flink.artifact.name}</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>spark-runner</id>
+      <!-- Makes the SparkRunner available when running a pipeline. -->
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-spark-3</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>jul-to-slf4j</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-sdks-java-io-hadoop-file-system</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.spark</groupId>
+          <artifactId>spark-streaming_2.12</artifactId>
+          <version>${spark.version}</version>
+          <scope>runtime</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>jul-to-slf4j</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-scala_2.12</artifactId>
+          <version>${jackson.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>samza-runner</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-samza</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>twister2-runner</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-twister2</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>nemo-runner</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.nemo</groupId>
+          <artifactId>nemo-compiler-frontend-beam</artifactId>
+          <version>${nemo.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-common</artifactId>
+          <version>${hadoop.version}</version>
+          <exclusions>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-api</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-log4j12</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>jet-runner</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.beam</groupId>
+          <artifactId>beam-runners-jet</artifactId>
+          <version>${beam.version}</version>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+  </profiles>
+
+    
+
 </project>
