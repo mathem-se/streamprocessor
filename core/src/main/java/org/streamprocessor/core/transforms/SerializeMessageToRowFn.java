@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
 import com.google.api.services.bigquery.model.TableRow;
+import org.apache.beam.sdk.schemas.Schema.Field;
 
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
@@ -200,11 +201,12 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                 }
             }
             
-            TableRow tb = JsonToTableRow.convertJsonToTableRow(payload);    
+            TableRow tb = JsonToTableRow.convertJsonToTableRow(json.toString());    
 
-            // LOG.info("TABLE ROW" + tb.toString());
-            // LOG.info("Schema ROW" + schema.toString());
-
+            LOG.info("TABLE ROW" + tb.toString());
+            LOG.info("Schema ROW" + schema.toString());
+            List<Field> test = schema.getFields();
+            LOG.info("test" + test.toString());
             Row row = BigQueryUtils.toBeamRow(schema, tb);
 
             LOG.info("BEAM ROW" + row);
