@@ -79,7 +79,9 @@ class SchemaUtils {
         } else if ("REQUIRED".equals(column.getMode())) {
             field = field.withNullable(false);
         } else if ("REPEATED".equals(column.getMode())) {
-            field = Field.of(name, FieldType.array(fieldType));
+            if (!isKeyValueMap(column)) {
+                field = Field.of(name, FieldType.array(fieldType));
+            }
         } else {
             throw new UnsupportedOperationException(
                     "Field mode '"
@@ -92,6 +94,18 @@ class SchemaUtils {
         return field;
     }
 
+    private static boolean isKeyValueMap(ColumnSchema column) {
+        List<ColumnSchema> subColumns = column.getSubcolumnsList();
+        if (subColumns.size() == 2 ) {
+            ColumnSchema key = subColumns.get(0);
+            ColumnSchema value = subColumns.get(1);
+            if ("key".equals(key.getColumn()) && "value".equals(value.getColumn())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static FieldType getBeamFieldType(ColumnSchema column) {
         String dcFieldType = column.getType();
 
@@ -100,7 +114,15 @@ class SchemaUtils {
         }
 
         if ("STRUCT".equals(dcFieldType)) {
-            Schema structSchema = fromColumnsList(column.getSubcolumnsList());
+            List<ColumnSchema> subColumns = column.getSubcolumnsList();
+            if (isKeyValueMap(column)) {
+                ColumnSchema value = subColumns.get(1);
+                return FieldType.map(
+                    FieldType.STRING, 
+                    getBeamFieldType(value)); // change this to .row()? bec not it comes back as STRUCT (-> MAP)
+            }
+            
+            Schema structSchema = fromColumnsList(subColumns);
             return FieldType.row(structSchema);
         }
 
