@@ -15,6 +15,7 @@
  */
 
 package org.streamprocessor.core.transforms;
+import org.streamprocessor.core.utils.JsonToTableRow;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,7 @@ import org.apache.beam.sdk.util.RowJson.RowJsonDeserializer;
 import org.apache.beam.sdk.util.RowJsonUtils;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -40,6 +42,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
+import com.google.api.services.bigquery.model.TableRow;
+
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
@@ -158,6 +162,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             throws Exception {
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
+
         @Nullable Map<String, String> attributesMap = received.getAttributeMap();
         try {
             String linkedResource =
@@ -194,15 +199,25 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                                     + json.toString());
                 }
             }
+            
+            TableRow tb = JsonToTableRow.convertJsonToTableRow(payload);    
 
-            Row row =
-                    RowJsonUtils.jsonToRow(
-                            RowJsonUtils.newObjectMapperWith(
-                                    RowJsonDeserializer.forSchema(schema)
-                                            .withNullBehavior(
-                                                    RowJsonDeserializer.NullBehavior
-                                                            .ACCEPT_MISSING_OR_NULL)),
-                            json.toString());
+            // LOG.info("TABLE ROW" + tb.toString());
+            // LOG.info("Schema ROW" + schema.toString());
+
+            Row row = BigQueryUtils.toBeamRow(schema, tb);
+
+            LOG.info("BEAM ROW" + row);
+
+            // Row row =
+            //         RowJsonUtils.jsonToRow(
+            //                 RowJsonUtils.newObjectMapperWith(
+            //                         RowJsonDeserializer.forSchema(schema)
+            //                                 .withNullBehavior(
+            //                                         RowJsonDeserializer.NullBehavior
+            //                                                 .ACCEPT_MISSING_OR_NULL)),
+            //                 json.toString());
+
             out.get(successTag).output(row);
         } catch (NoSchemaException e) {
             // TODO:

@@ -15,6 +15,7 @@
  */
 
 package org.streamprocessor.core.transforms;
+import org.streamprocessor.core.utils.JsonToTableRow;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -27,6 +28,10 @@ import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.api.services.bigquery.model.TableRow;
+
+
+
 
 public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
 
@@ -47,6 +52,7 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
             throws Exception {
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
+            
             JSONObject dynamodbStreamObject = new JSONObject(receivedPayload);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
