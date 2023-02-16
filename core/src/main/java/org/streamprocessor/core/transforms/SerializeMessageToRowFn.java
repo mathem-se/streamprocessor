@@ -205,15 +205,15 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             .addField(
                 Schema.Field.of("firstname", Schema.FieldType.STRING)
                     .withDescription("test description"))
-            .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING)))
+            .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
             .build();
         LOG.info(schema2.toString());
-            BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build();
+        BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build();
 
         JSONObject json2 =
           new JSONObject()
               .put("firstname", "Joe")
-              .put("products", new JSONObject().put("foo", new JSONObject().put("foo", "bar")));
+              .put("products", new JSONObject().put("foo", "bar"));
         LOG.info("json2" + json2.toString());
 
         // Row row = RowJsonUtils.jsonToRow(
