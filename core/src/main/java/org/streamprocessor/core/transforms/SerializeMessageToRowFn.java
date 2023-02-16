@@ -200,14 +200,54 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                                     + json.toString());
                 }
             }
-            
-            TableRow tb = JsonToTableRow.convertJsonToTableRow(json.toString());    
+            Schema schema2 =
+        new Schema.Builder()
+            .addField(
+                Schema.Field.of("firstname", Schema.FieldType.STRING)
+                    .withDescription("test description"))
+            .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING)))
+            .build();
+        LOG.info(schema2.toString());
+            BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build();
 
-            LOG.info("TABLE ROW" + tb.toString());
-            LOG.info("Schema ROW" + schema.toString());
-            List<Field> test = schema.getFields();
-            LOG.info("test" + test.toString());
-            Row row = BigQueryUtils.toBeamRow(schema, tb);
+        JSONObject json2 =
+          new JSONObject()
+              .put("firstname", "Joe")
+              .put("products", new JSONObject().put("foo", new JSONObject().put("foo", "bar")));
+        LOG.info("json2" + json2.toString());
+
+        // Row row = RowJsonUtils.jsonToRow(
+        // RowJsonUtils.newObjectMapperWith(
+        //   RowJsonDeserializer
+        //     .forSchema(schema)
+        //     .withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL)), 
+        //   json.toString());
+      
+        //   LOG.info(row.toString());
+        BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true);
+
+        TableRow tr = JsonToTableRow.convertJsonToTableRow(json2.toString());
+        LOG.info("table row" + tr.toString());
+
+        Row row = BigQueryUtils.toBeamRow(schema2, tr);
+        LOG.info(row.toString());
+
+          //TableSchema ts = BigQueryUtils.toTableSchema(schema);
+//          LOG.info(ts.toString());
+
+//          Schema brs = BigQueryUtils.fromTableSchema(ts, SchemaConversionOptions.builder().setInferMaps(true).build());
+  //        LOG.info(brs.toString());
+            
+            
+            
+            //TableRow tb = JsonToTableRow.convertJsonToTableRow(json.toString());    
+
+
+            //LOG.info("TABLE ROW" + tb.toString());
+            // LOG.info("Schema ROW" + schema.toString());
+            // List<Field> test = schema.getFields();
+            // LOG.info("test" + test.toString());
+            //Row row = BigQueryUtils.toBeamRow(schema, tb);
 
             LOG.info("BEAM ROW" + row);
 
