@@ -1,0 +1,9 @@
+mvn compile exec:java \
+    -Dexec.mainClass=org.streamprocessor.pipelines.Dynamodb \
+    -Dexec.args="--backupTopic=projects/mathem-ml-datahem-test/topics/backup_v3 \
+        --bigQueryDataset=dynamodb \
+        --deadLetterTopic=projects/mathem-ml-datahem-test/topics/deadletter \
+        --firestoreProjectId=mathem-pii-test \
+        --project=mathem-ml-datahem-test \
+        --inputSubscription=projects/mathem-ml-datahem-test/subscriptions/ecom-sub \
+        --schemaCheckRatio=0.01"

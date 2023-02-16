@@ -1,0 +1,85 @@
+Field{
+    name=Products,
+	description=,
+	type=ARRAY<
+        MAP<
+            STRING NOT NULL,
+            ROW<
+                Id STRING,
+                Quantity DOUBLE,
+                Name STRING,
+                Added DATETIME,
+                Category ROW<
+                    Id STRING,
+                    Name STRING>,
+                Price DOUBLE,
+                VatRate DOUBLE,
+                Url STRING,
+                ImageUrl STRING,
+                EanCode STRING,
+                ExternalSupplierCode STRING,
+                ExternalProductCode STRING,
+                Department ROW<
+                    Id STRING,
+                    Name STRING>,
+                Brand ROW<
+                    Id STRING,
+                    Name STRING>,
+                RecycleFee DOUBLE,
+                Attributes ARRAY<
+                    STRING NOT NULL> NOT NULL,
+                Discount ROW<
+                    Id STRING,
+                    DiscountPrice ROW<
+                        Value DOUBLE,
+                        DiscountPriceType INT64>,
+                    Limits ARRAY<
+                        ROW<
+                            Group STRING,
+                            Property STRING,
+                            Operator STRING,
+                            Value STRING> NOT NULL> NOT NULL,
+                    Conditions ARRAY<
+                        ROW<
+                            Group STRING,
+                            Property STRING,
+                            Operator STRING,
+                            Value STRING> NOT NULL> NOT NULL,
+                    ValidFrom DATETIME,
+                    ValidUntil DATETIME,
+                    CanUseProductOfferDiscount BOOLEAN>,
+                Delivery ROW<
+                    IsPickingCostIncluded BOOLEAN,
+                    IsDeliveryCostIncluded BOOLEAN,
+                    IsSubscriptionProduct BOOLEAN,
+                    CancelDaysBefore INT64,
+                    MinimumRequiredDeliveryDays INT64,
+                    AdvanceDeliveryMinimumOrder INT64,
+                    IsAdultProduct BOOLEAN,
+                    IsWine BOOLEAN,
+                    DeliverableWeekdays ARRAY<
+                        STRING NOT NULL> NOT NULL,
+                    DeliveryRestrictions ARRAY<
+                        STRING NOT NULL> NOT NULL>,
+                    Availability STRING,
+                    CategoryAncestry ARRAY<
+                        ROW<
+                            Id STRING,
+                            Name STRING> NOT NULL> NOT NULL,
+                    Subtitle STRING,
+                    ExternalUrl STRING,
+                    SoldBy STRING,
+                    ShowSoldBy BOOLEAN,
+                    PharmacyInformation ROW<
+                        ArticleNumber STRING,
+                        ActiveSubstance STRING,
+                        ItemType STRING,
+                        SalesLimit INT64,
+                        SalesRestrictionType STRING,
+                        VendingType STRING>,
+                    HasPharmacyDiff BOOLEAN,
+                    Disclaimer STRING,
+                    Supplier ROW<
+                        Id STRING,
+                        Name STRING>> NOT NULL> NOT NULL> NOT NULL,
+    options={{}}}
