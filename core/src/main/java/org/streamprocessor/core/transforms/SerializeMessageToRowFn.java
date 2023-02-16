@@ -154,7 +154,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     public void setup() throws Exception {}
 
     @ProcessElement
-    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
+    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) 
             throws Exception {
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
@@ -194,15 +194,15 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                                     + json.toString());
                 }
             }
-
-            Row row =
-                    RowJsonUtils.jsonToRow(
-                            RowJsonUtils.newObjectMapperWith(
-                                    RowJsonDeserializer.forSchema(schema)
-                                            .withNullBehavior(
-                                                    RowJsonDeserializer.NullBehavior
-                                                            .ACCEPT_MISSING_OR_NULL)),
-                            json.toString());
+            LOG.info("[processElement] Before row dese");
+            LOG.info("[processElement] payload: "+json.toString());
+            LOG.info("[processElement] schema: "+schema.toString());
+            RowJsonDeserializer deserializer = RowJsonDeserializer.forSchema(schema).withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL);
+            Row row = RowJsonUtils.jsonToRow(
+                RowJsonUtils.newObjectMapperWith(deserializer), 
+                json.toString());
+            
+            // LOG.info("[processElement] Deserialized a row: "+row.toString());
             out.get(successTag).output(row);
         } catch (NoSchemaException e) {
             // TODO:
