@@ -82,6 +82,7 @@ class SchemaUtils {
             if (!isKeyValueMap(column)) {
                 field = Field.of(name, FieldType.array(fieldType));
             }
+            field = field.withNullable(true);
         } else {
             throw new UnsupportedOperationException(
                     "Field mode '"
@@ -115,12 +116,12 @@ class SchemaUtils {
 
         if ("STRUCT".equals(dcFieldType)) {
             List<ColumnSchema> subColumns = column.getSubcolumnsList();
-            if (isKeyValueMap(column)) {
-                ColumnSchema value = subColumns.get(1);
-                return FieldType.map(
-                    FieldType.STRING, 
-                    getBeamFieldType(value)); // change this to .row()? bec not it comes back as STRUCT (-> MAP)
-            }
+            // if (isKeyValueMap(column)) {
+            //     ColumnSchema value = subColumns.get(1);
+            //     return FieldType.map(
+            //         FieldType.STRING, 
+            //         getBeamFieldType(value)); // change this to .row()? bec not it comes back as STRUCT (-> MAP)
+            // }
             
             Schema structSchema = fromColumnsList(subColumns);
             return FieldType.row(structSchema);
