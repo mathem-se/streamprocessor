@@ -569,22 +569,6 @@ public class BigQueryUtils {
     return output;
   }
 
-   //(Map<String, Object>) jsonBQValue;
-        // LOG.info(jsonBQValue.toString());
-        // TableRow tr = new TableRow();
-        // HashMap<String, Object> h = (HashMap<String, Object>) jsonBQValue;
-        // List<Object> l = new ArrayList<Object>();
-        // for (Map.Entry<String, Object> e: h.entrySet()){
-        //   HashMap<String, Object> h1 = new HashMap<String, Object>();
-        //   h1.put(BIGQUERY_MAP_KEY_FIELD_NAME, e.getKey());
-        //   h1.put(BIGQUERY_MAP_VALUE_FIELD_NAME, e.getValue());
-        //   l.add(h1);
-        // }
-        // return l;
-        //tr.putAll((Map<String, Object>) jsonBQValue);
-        //return toBeamRow(fieldType.getRowSchema(), tr);
-        //return toBeamRow(fieldType.getRowSchema(), tr);
-
   private static @Nullable Object fromBeamField(FieldType fieldType, Object fieldValue) {
     if (fieldValue == null) {
       if (!fieldType.getNullable()) {
