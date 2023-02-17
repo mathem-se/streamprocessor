@@ -44,54 +44,71 @@ public class MapTests {
       
     public static void main(String[] args) {
 
-        Schema schema =
+        // Schema schema =
+        // new Schema.Builder()
+        //     .addField(Schema.Field.of("firstname", Schema.FieldType.STRING))
+        //     //.addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
+        //     .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.STRING)
+        //     //.addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("key").addStringField("value").build()))
+        //     .addRowField("struc", new Schema.Builder()
+        //       .addField(Schema.Field.of("lastname", Schema.FieldType.STRING)).build())
+        //     .build();
+        // LOG.info(schema.toString());
+
+        // TableSchema ts = BigQueryUtils.toTableSchema(schema);
+        // LOG.info(ts.toString());
+
+        // Schema brs = BigQueryUtils.fromTableSchema(ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
+        //   LOG.info(brs.toString());
+
+        // JSONObject json =
+        //   new JSONObject()
+        //       .put("firstname", "Joe")
+        //       .put("products", new JSONObject().put("foo", "bar").put("hello", "world"))
+        //       .put("struc", new JSONObject().put("lastname", "doe"));
+        // LOG.info(json.toString());
+
+        // TableRow tr = convertJsonToTableRow(json.toString());
+        // LOG.info(tr.toString());
+
+        // Row bra = BigQueryUtils.toBeamRow(schema, tr);
+        // LOG.info(bra.toString());
+
+        // TableRow row = BigQueryUtils.toTableRow().apply(bra);
+        // LOG.info(row.toString());
+
+        
+
+        Schema complex_schema =
         new Schema.Builder()
-            .addField(Schema.Field.of("firstname", Schema.FieldType.STRING))
-            //.addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
-            .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.STRING)
-            //.addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("key").addStringField("value").build()))
-            .addRowField("struc", new Schema.Builder()
-              .addField(Schema.Field.of("lastname", Schema.FieldType.STRING)).build())
+            //.addField(Schema.Field.of("order_id", Schema.FieldType.INT64))
+            .addNullableField("order_id", Schema.FieldType.of(Schema.FieldType.INT64.getTypeName()))
+            .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.row(new Schema.Builder().addStringField("brand").addDoubleField("price").build())))
+            //.addMapField("products", Schema.FieldType.STRING, Schema.FieldType.row(new Schema.Builder().addStringField("brand").addDoubleField("price").build()))
             .build();
-        LOG.info(schema.toString());
+        LOG.info(complex_schema.toString());
 
-        TableSchema ts = BigQueryUtils.toTableSchema(schema);
-        LOG.info(ts.toString());
+        TableSchema complex_ts = BigQueryUtils.toTableSchema(complex_schema);
+        LOG.info(complex_ts.toString());
 
-        Schema brs = BigQueryUtils.fromTableSchema(ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
-          LOG.info(brs.toString());
+        Schema complex_brs = BigQueryUtils.fromTableSchema(complex_ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
+          LOG.info(complex_brs.toString());
 
-        JSONObject json =
+          JSONObject complex_json =
           new JSONObject()
-              .put("firstname", "Joe")
-              .put("products", new JSONObject().put("foo", "bar"))
-              .put("struc", new JSONObject().put("lastname", "doe"));
-        LOG.info(json.toString());
+              .put("order_id", 10)
+              .put(
+                "products", new JSONObject().put("milk", new JSONObject().put("brand","Arla").put("price", 15.00)));
+        LOG.info(complex_json.toString());
+     
+        TableRow complex_tr = convertJsonToTableRow(complex_json.toString());
+        LOG.info(complex_tr.toString());
 
-        //  Schema MAP_MAP_TYPE = Schema.builder().addMapField("map", Schema.FieldType.STRING, Schema.FieldType.DOUBLE).build();
-        //  Row MAP_ROW = Row.withSchema(MAP_MAP_TYPE).addValues(ImmutableMap.of("test", 123.456, "test2", 12.345)).build();
-        //  TableRow row = BigQueryUtils.toTableRow().apply(MAP_ROW);
-        //  LOG.info(row.toString());
+        Row complex_bra = BigQueryUtils.toBeamRow(complex_schema, complex_tr);
+        LOG.info(complex_bra.toString());
 
-        // Row br = BigQueryUtils.toBeamRow(MAP_MAP_TYPE, row);
-        // LOG.info(br.toString());
+        TableRow complex_row = BigQueryUtils.toTableRow().apply(complex_bra);
+        LOG.info(complex_row.toString());
 
-        TableRow tr = convertJsonToTableRow(json.toString());
-        LOG.info(tr.toString());
-
-        Row br = BigQueryUtils.toBeamRow(schema, tr);
-        LOG.info(br.toString());
-
-        // Row row = RowJsonUtils.jsonToRow(
-        // RowJsonUtils.newObjectMapperWith(
-        //   RowJsonDeserializer
-        //     .forSchema(schema)
-        //     .withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL)), 
-        //   json.toString());
-      
-        //   LOG.info(row.toString());
-
-          
-          
     }
 }

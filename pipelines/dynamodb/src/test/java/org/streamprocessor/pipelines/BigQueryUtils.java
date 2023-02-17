@@ -42,6 +42,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -770,7 +771,21 @@ public class BigQueryUtils {
     }
 
     if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
-        return jsonBQValue;
+        if (fieldType.getMapValueType().getRowSchema() == null)
+          return jsonBQValue;
+        else{
+          HashMap<String, Object> h = new HashMap<String, Object>();
+          TableRow tr = new TableRow();
+          //(Map<String, Object>) jsonBQValue).stream().
+          tr.putAll((Map<String, Object>) jsonBQValue);
+          
+          for(Map.Entry<String, Object> e: tr.entrySet()){
+            TableRow tr2 = new TableRow();
+            tr2.putAll((Map<String, Object>) e.getValue());
+            h.put(e.getKey(), toBeamRow(fieldType.getMapValueType().getRowSchema(), tr2));
+          }
+         return h;
+        }
       }
 
     throw new UnsupportedOperationException(
