@@ -44,47 +44,43 @@ public class MapTests {
       
     public static void main(String[] args) {
 
-        // Schema schema =
-        // new Schema.Builder()
-        //     .addField(Schema.Field.of("firstname", Schema.FieldType.STRING))
-        //     //.addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
-        //     .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.STRING)
-        //     //.addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("key").addStringField("value").build()))
-        //     .addRowField("struc", new Schema.Builder()
-        //       .addField(Schema.Field.of("lastname", Schema.FieldType.STRING)).build())
-        //     .build();
-        // LOG.info(schema.toString());
+        Schema schema =
+        new Schema.Builder()
+            .addField(Schema.Field.of("firstname", Schema.FieldType.STRING))
+            .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.STRING)
+            .addRowField("struc", new Schema.Builder()
+              .addField(Schema.Field.of("lastname", Schema.FieldType.STRING)).build())
+            .build();
+        LOG.info(schema.toString());
 
-        // TableSchema ts = BigQueryUtils.toTableSchema(schema);
-        // LOG.info(ts.toString());
+        TableSchema ts = BigQueryUtils.toTableSchema(schema);
+        LOG.info(ts.toString());
 
-        // Schema brs = BigQueryUtils.fromTableSchema(ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
-        //   LOG.info(brs.toString());
+        Schema brs = BigQueryUtils.fromTableSchema(ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
+          LOG.info(brs.toString());
 
-        // JSONObject json =
-        //   new JSONObject()
-        //       .put("firstname", "Joe")
-        //       .put("products", new JSONObject().put("foo", "bar").put("hello", "world"))
-        //       .put("struc", new JSONObject().put("lastname", "doe"));
-        // LOG.info(json.toString());
+        JSONObject json =
+          new JSONObject()
+              .put("firstname", "Joe")
+              .put("products", new JSONObject().put("foo", "bar").put("hello", "world"))
+              .put("struc", new JSONObject().put("lastname", "doe"));
+        LOG.info(json.toString());
 
-        // TableRow tr = convertJsonToTableRow(json.toString());
-        // LOG.info(tr.toString());
+        TableRow tr = convertJsonToTableRow(json.toString());
+        LOG.info(tr.toString());
 
-        // Row bra = BigQueryUtils.toBeamRow(schema, tr);
-        // LOG.info(bra.toString());
+        Row bra = BigQueryUtils.toBeamRow(schema, tr);
+        LOG.info(bra.toString());
 
-        // TableRow row = BigQueryUtils.toTableRow().apply(bra);
-        // LOG.info(row.toString());
+        TableRow row = BigQueryUtils.toTableRow().apply(bra);
+        LOG.info(row.toString());
 
         
 
         Schema complex_schema =
         new Schema.Builder()
-            //.addField(Schema.Field.of("order_id", Schema.FieldType.INT64))
             .addNullableField("order_id", Schema.FieldType.of(Schema.FieldType.INT64.getTypeName()))
             .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.row(new Schema.Builder().addStringField("brand").addDoubleField("price").build())))
-            //.addMapField("products", Schema.FieldType.STRING, Schema.FieldType.row(new Schema.Builder().addStringField("brand").addDoubleField("price").build()))
             .build();
         LOG.info(complex_schema.toString());
 
@@ -98,7 +94,9 @@ public class MapTests {
           new JSONObject()
               .put("order_id", 10)
               .put(
-                "products", new JSONObject().put("milk", new JSONObject().put("brand","Arla").put("price", 15.00)));
+                "products", new JSONObject()
+                    .put("milk", new JSONObject().put("brand","Arla").put("price", 15.00))
+                    .put("oatmeal", new JSONObject().put("brand","Axa").put("price", 17.00)));
         LOG.info(complex_json.toString());
      
         TableRow complex_tr = convertJsonToTableRow(complex_json.toString());

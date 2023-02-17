@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.avro.Conversions;
 import org.apache.avro.LogicalTypes;
@@ -774,17 +775,18 @@ public class BigQueryUtils {
         if (fieldType.getMapValueType().getRowSchema() == null)
           return jsonBQValue;
         else{
-          HashMap<String, Object> h = new HashMap<String, Object>();
-          TableRow tr = new TableRow();
-          //(Map<String, Object>) jsonBQValue).stream().
-          tr.putAll((Map<String, Object>) jsonBQValue);
-          
-          for(Map.Entry<String, Object> e: tr.entrySet()){
-            TableRow tr2 = new TableRow();
-            tr2.putAll((Map<String, Object>) e.getValue());
-            h.put(e.getKey(), toBeamRow(fieldType.getMapValueType().getRowSchema(), tr2));
-          }
-         return h;
+          Map<String, Object> k = ((Map<String, Object>) jsonBQValue)
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(
+              Map.Entry::getKey,
+              e -> {
+                TableRow tr = new TableRow();
+                tr.putAll((Map<String, Object>) e.getValue());
+                  return toBeamRow(fieldType.getMapValueType().getRowSchema(), tr);
+                })
+            );
+          return k;
         }
       }
 
