@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.streamprocessor.pipelines;
+package org.streamprocessor.core.utils;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
@@ -61,7 +61,6 @@ import org.apache.beam.runners.core.metrics.ServiceCallMetric;
 import org.apache.beam.sdk.annotations.Experimental;
 import org.apache.beam.sdk.annotations.Experimental.Kind;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
-import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.Schema.Field;
 import org.apache.beam.sdk.schemas.Schema.FieldType;
@@ -165,10 +164,6 @@ public class BigQueryUtils {
 
     public abstract TruncateTimestamps getTruncateTimestamps();
 
-    public static Builder builder() {
-      return new AutoValue_BigQueryUtils_ConversionOptions.Builder()
-          .setTruncateTimestamps(TruncateTimestamps.REJECT);
-    }
 
     /** Builder for {@link ConversionOptions}. */
     @AutoValue.Builder

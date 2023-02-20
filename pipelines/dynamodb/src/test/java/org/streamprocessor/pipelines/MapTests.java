@@ -47,11 +47,12 @@ public class MapTests {
         Schema schema =
         new Schema.Builder()
             .addField(Schema.Field.of("firstname", Schema.FieldType.STRING))
+            .addField(Schema.Field.of("timestamp", Schema.FieldType.DATETIME))
             //.addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
             .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.STRING)
             //.addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("key").addStringField("value").build()))
             .addRowField("struc", new Schema.Builder()
-              .addField(Schema.Field.of("lastname", Schema.FieldType.STRING)).build())
+              .addField(Schema.Field.of("timestamp", Schema.FieldType.DATETIME)).build())
             .build();
         LOG.info(schema.toString());
 
@@ -64,8 +65,9 @@ public class MapTests {
         JSONObject json =
           new JSONObject()
               .put("firstname", "Joe")
+              .put("timestamp", java.time.Instant.now().toString())
               .put("products", new JSONObject().put("foo", "bar"))
-              .put("struc", new JSONObject().put("lastname", "doe"));
+              .put("struc", new JSONObject().put("timestamp", "2023-02-20T13:27:14.9484233Z"));
         LOG.info(json.toString());
 
         //  Schema MAP_MAP_TYPE = Schema.builder().addMapField("map", Schema.FieldType.STRING, Schema.FieldType.DOUBLE).build();

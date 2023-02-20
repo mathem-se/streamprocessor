@@ -40,7 +40,6 @@ import org.apache.beam.sdk.util.RowJson.RowJsonDeserializer;
 import org.apache.beam.sdk.util.RowJsonUtils;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -50,7 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.schemas.Schema.Field;
-
+import org.streamprocessor.core.utils.BqUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
@@ -164,20 +163,20 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     public static TableRow convertJsonToTableRow(String json) {
         TableRow row;
         // Parse the JSON into a {@link TableRow} object.
+        LOG.info("converting to json");
         try (InputStream inputStream =
             new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
             row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
   
   
         } catch (IOException e) {
+          LOG.info("could not parse json: " + json);
           throw new RuntimeException("Failed to serialize json to table row: " + json, e);
         }
   
         return row;
       }
 
-    @Setup
-    public void setup() throws Exception {}
 
     @ProcessElement
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) 
@@ -207,29 +206,31 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             // Identify unmapped fields in payload.
             // Sample ratio to check for differences
-            if (random.nextInt(100) < ratio * 100) {
-                Set<String> jsonKeySet = getAllKeys(json);
-                Set<String> schemaKeySet = getAllKeys(schema);
-                if (jsonKeySet.size() > schemaKeySet.size()) {
-                    jsonKeySet.removeAll(schemaKeySet);
-                    String unmappedFields = String.join(",", jsonKeySet);
-                    LOG.warn(
-                            entity
-                                    + " unmapped fields: "
-                                    + unmappedFields
-                                    + " - payload: "
-                                    + json.toString());
-                }
-            }
+            // if (random.nextInt(100) < ratio * 100) {
+            //     Set<String> jsonKeySet = getAllKeys(json);
+            //     Set<String> schemaKeySet = getAllKeys(schema);
+            //     if (jsonKeySet.size() > schemaKeySet.size()) {
+            //         jsonKeySet.removeAll(schemaKeySet);
+            //         String unmappedFields = String.join(",", jsonKeySet);
+            //         LOG.warn(
+            //                 entity
+            //                         + " unmapped fields: "
+            //                         + unmappedFields
+            //                         + " - payload: "
+            //                         + json.toString());
+            //     }
+            // }
 
-            LOG.info("[processElement] Before row dese");
-            LOG.info("[processElement] payload: "+json.toString());
-            LOG.info("[processElement] schema: "+schema.toString());
+            LOG.info("[processElement22] Before row dese");
+            LOG.info("[processElement22] payload: "+json.toString());
+            LOG.info("[processElement22] schema: "+schema.toString());
             
+
+            LOG.info("convert json to table row");
             TableRow tr = convertJsonToTableRow(json.toString());
             LOG.info("TABLE ROW:" + tr.toString());
 
-            Row row = BigQueryUtils.toBeamRow(schema, tr);
+            Row row = BqUtils.toBeamRow(schema, tr);
             LOG.info("BEAM ROW" + row.toString());
 
 
@@ -310,14 +311,5 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
             out.get(deadLetterTag)
                     .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
-        } catch (Exception e) {
-            LOG.error(entity + ": " + e.toString());
-            // TODO:
-            // instead, pass the following to deadletter: original_payload, status, error_message
-            // can't put in unmodifiable map
-            // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
-            out.get(deadLetterTag)
-                    .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
-        }
-    }
+        }     }
 }
