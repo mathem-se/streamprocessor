@@ -17,6 +17,12 @@
 package org.streamprocessor.core.transforms;
 import org.streamprocessor.core.utils.JsonToTableRow;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import org.apache.beam.sdk.coders.Coder.Context;
+
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -155,6 +161,21 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         this.ratio = 0.001f;
     }
 
+    public static TableRow convertJsonToTableRow(String json) {
+        TableRow row;
+        // Parse the JSON into a {@link TableRow} object.
+        try (InputStream inputStream =
+            new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
+            row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
+  
+  
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to serialize json to table row: " + json, e);
+        }
+  
+        return row;
+      }
+
     @Setup
     public void setup() throws Exception {}
 
@@ -200,30 +221,25 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                                     + json.toString());
                 }
             }
-<<<<<<< HEAD
-            Schema schema2 =
-        new Schema.Builder()
-            .addField(
-                Schema.Field.of("firstname", Schema.FieldType.STRING)
-                    .withDescription("test description"))
-            .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
-            .build();
-        LOG.info(schema2.toString());
-        BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build();
 
-        JSONObject json2 =
-          new JSONObject()
-              .put("firstname", "Joe")
-              .put("products", new JSONObject().put("foo", "bar"));
-        LOG.info("json2" + json2.toString());
-=======
             LOG.info("[processElement] Before row dese");
             LOG.info("[processElement] payload: "+json.toString());
             LOG.info("[processElement] schema: "+schema.toString());
-            RowJsonDeserializer deserializer = RowJsonDeserializer.forSchema(schema).withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL);
-            Row row = RowJsonUtils.jsonToRow(
-                RowJsonUtils.newObjectMapperWith(deserializer), 
-                json.toString());
+            
+            TableRow tr = convertJsonToTableRow(json.toString());
+            LOG.info("TABLE ROW:" + tr.toString());
+
+            Row row = BigQueryUtils.toBeamRow(schema, tr);
+            LOG.info("BEAM ROW" + row.toString());
+
+
+
+
+            //RowJsonDeserializer deserializer = RowJsonDeserializer.forSchema(schema).withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL);
+            
+            // Row row = RowJsonUtils.jsonToRow(
+            //     RowJsonUtils.newObjectMapperWith(deserializer), 
+            //     json.toString());
             
 //             // LOG.info("[processElement] Deserialized a row: "+row.toString());
 //             Schema schema2 =
@@ -241,7 +257,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 //               .put("firstname", "Joe")
 //               .put("products", new JSONObject().put("foo", new JSONObject().put("foo", "bar")));
 //         LOG.info("json2" + json2.toString());
->>>>>>> fc401ebc896bb13c2736d9b61e8ad50b3d5b03b9
 
 //         // Row row = RowJsonUtils.jsonToRow(
 //         // RowJsonUtils.newObjectMapperWith(
