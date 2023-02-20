@@ -1,0 +1,593 @@
+{
+    "OldImage": {
+        "Id": "d290b6c5-e4be-4e9a-9e0b-7929d357f55f",
+        "Revision": 13,
+        "StoreId": "23",
+        "MemberId": "1530265",
+        "MemberType": "C",
+        "Created": "2023-02-06T11:31:11.1086102Z",
+        "Modified": "2023-02-13T14:29:41.8017032Z",
+        "Expires": "2023-03-15T14:29:42Z",
+        "Products": {
+            "101192": {
+                "Id": "101192",
+                "Quantity": 3,
+                "Name": "iKaffe 3% 1L Oatly",
+                "Added": "2023-02-13T14:29:25.4118711Z",
+                "Category": {
+                    "Id": "havredryck-naturell",
+                    "Name": "Havredryck Naturell"
+                },
+                "Price": 24.95,
+                "VatRate": 12.0,
+                "Url": "/varor/havredryck-naturell/ikaffe-3--1l-oatly",
+                "ImageUrl": "07394376616037_c1r1.jpg",
+                "EanCode": "7394376616037",
+                "ExternalSupplierCode": null,
+                "ExternalProductCode": "376616037",
+                "Department": {
+                    "Id": "mejeri-o-ost",
+                    "Name": "Mejeri, ost & juice"
+                },
+                "CategoryAncestry": [
+                    {
+                        "Id": "havredryck-naturell",
+                        "Name": "Havredryck Naturell"
+                    },
+                    {
+                        "Id": "vaxtbaserad-dryck",
+                        "Name": "Växtbaserad dryck"
+                    },
+                    {
+                        "Id": "vaxtbaserat",
+                        "Name": "Växtbaserat"
+                    },
+                    {
+                        "Id": "mejeri-o-ost",
+                        "Name": "Mejeri, ost & juice"
+                    }
+                ],
+                "Brand": {
+                    "Id": "oatly",
+                    "Name": "Oatly"
+                },
+                "RecycleFee": 0.0,
+                "Attributes": null,
+                "Discount": {
+                    "Id": "2134400",
+                    "DiscountPrice": {
+                        "Value": 22.0,
+                        "DiscountPriceType": 0
+                    },
+                    "Limits": [
+                        {
+                            "Group": "Product",
+                            "Property": "Quantity",
+                            "Operator": "=",
+                            "Value": "10"
+                        }
+                    ],
+                    "Conditions": [
+                        {
+                            "Group": "Order",
+                            "Property": "StoreId",
+                            "Operator": "=",
+                            "Value": "23"
+                        },
+                        {
+                            "Group": "Product",
+                            "Property": "ProductCount",
+                            "Operator": "=",
+                            "Value": "1"
+                        }
+                    ],
+                    "ValidFrom": "2023-02-12T00:00:00+00:00",
+                    "ValidUntil": "2023-02-18T00:00:00+00:00",
+                    "CanUseProductOfferDiscount": true,
+                    "MinPrice": null,
+                    "MinComparisonPrice": null
+                },
+                "Delivery": {
+                    "IsPickingCostIncluded": false,
+                    "IsDeliveryCostIncluded": false,
+                    "IsSubscriptionProduct": false,
+                    "CancelDaysBefore": 0,
+                    "MinimumRequiredDeliveryDays": 0,
+                    "AdvanceDeliveryMinimumOrder": 17,
+                    "IsAdultProduct": false,
+                    "IsWine": false,
+                    "DeliverableWeekdays": [],
+                    "DeliveryRestrictions": []
+                },
+                "Availability": "Available",
+                "Subtitle": null,
+                "ExternalUrl": null,
+                "SoldBy": "mathem",
+                "ShowSoldBy": false,
+                "PharmacyInformation": null,
+                "HasPharmacyDiff": false,
+                "Disclaimer": null,
+                "Supplier": {
+                    "Id": "7632",
+                    "Name": "Oatly AB"
+                },
+                "StockInformation": {
+                    "Active": true,
+                    "OutOfStock": false,
+                    "AvailableQuantity": null
+                }
+            },
+            "1446": {
+                "Id": "1446",
+                "Quantity": 1,
+                "Name": "Gurka Klass1",
+                "Added": "2023-02-13T14:29:36.1577171Z",
+                "Category": {
+                    "Id": "gurka",
+                    "Name": "Gurka"
+                },
+                "Price": 25.95,
+                "VatRate": 12.0,
+                "Url": "/varor/gurka/gurka-klass1",
+                "ImageUrl": "gurka-klass1-4.jpg",
+                "EanCode": "74597",
+                "ExternalSupplierCode": null,
+                "ExternalProductCode": "7",
+                "Department": {
+                    "Id": "frukt-o-gront",
+                    "Name": "Frukt & Grönt"
+                },
+                "CategoryAncestry": [
+                    {
+                        "Id": "gurka",
+                        "Name": "Gurka"
+                    },
+                    {
+                        "Id": "gronsaker",
+                        "Name": "Grönsaker"
+                    },
+                    {
+                        "Id": "frukt-o-gront",
+                        "Name": "Frukt & Grönt"
+                    }
+                ],
+                "Brand": {
+                    "Id": "frukt-o-gront",
+                    "Name": "Frukt & Grönt"
+                },
+                "RecycleFee": 0.0,
+                "Attributes": null,
+                "Discount": {
+                    "Id": "2170446",
+                    "DiscountPrice": {
+                        "Value": 15.0,
+                        "DiscountPriceType": 0
+                    },
+                    "Limits": null,
+                    "Conditions": [
+                        {
+                            "Group": "Order",
+                            "Property": "StoreId",
+                            "Operator": "=",
+                            "Value": "23"
+                        },
+                        {
+                            "Group": "Product",
+                            "Property": "ProductCount",
+                            "Operator": "=",
+                            "Value": "2"
+                        }
+                    ],
+                    "ValidFrom": "2023-02-12T00:00:00+00:00",
+                    "ValidUntil": "2023-02-18T00:00:00+00:00",
+                    "CanUseProductOfferDiscount": true,
+                    "MinPrice": null,
+                    "MinComparisonPrice": null
+                },
+                "Delivery": {
+                    "IsPickingCostIncluded": false,
+                    "IsDeliveryCostIncluded": false,
+                    "IsSubscriptionProduct": false,
+                    "CancelDaysBefore": 0,
+                    "MinimumRequiredDeliveryDays": 0,
+                    "AdvanceDeliveryMinimumOrder": 0,
+                    "IsAdultProduct": false,
+                    "IsWine": false,
+                    "DeliverableWeekdays": [],
+                    "DeliveryRestrictions": []
+                },
+                "Availability": "Available",
+                "Subtitle": null,
+                "ExternalUrl": null,
+                "SoldBy": "mathem",
+                "ShowSoldBy": false,
+                "PharmacyInformation": null,
+                "HasPharmacyDiff": false,
+                "Disclaimer": null,
+                "Supplier": {
+                    "Id": "6516",
+                    "Name": "Allfrukt"
+                },
+                "StockInformation": {
+                    "Active": true,
+                    "OutOfStock": false,
+                    "AvailableQuantity": null
+                }
+            },
+            "Init": {
+                "Id": "0",
+                "Quantity": 0,
+                "Name": null,
+                "Added": null,
+                "Category": null,
+                "Price": 0.0,
+                "VatRate": 0.0,
+                "Url": null,
+                "ImageUrl": null,
+                "EanCode": null,
+                "ExternalSupplierCode": null,
+                "ExternalProductCode": null,
+                "Department": null,
+                "CategoryAncestry": null,
+                "Brand": null,
+                "RecycleFee": 0.0,
+                "Attributes": null,
+                "Discount": null,
+                "Delivery": null,
+                "Availability": null,
+                "Subtitle": null,
+                "ExternalUrl": null,
+                "SoldBy": null,
+                "ShowSoldBy": false,
+                "PharmacyInformation": null,
+                "HasPharmacyDiff": false,
+                "Disclaimer": null,
+                "Supplier": null,
+                "StockInformation": null
+            },
+            "196061": {
+                "Id": "196061",
+                "Quantity": 3,
+                "Name": "Mellanmjölk Lite Längre Hållbarhet 1,5% 1.5L Garant",
+                "Added": "2023-02-13T14:29:14.1395388Z",
+                "Category": {
+                    "Id": "mellanmjolk",
+                    "Name": "Mellanmjölk"
+                },
+                "Price": 21.95,
+                "VatRate": 12.0,
+                "Url": "/varor/mellanmjolk/mellanmjolk-lite-langre-hallbarhet-1-5--1-5l-garant",
+                "ImageUrl": "07340083443893_c1l1.jpg",
+                "EanCode": "7340083443893",
+                "ExternalSupplierCode": null,
+                "ExternalProductCode": "083443893",
+                "Department": {
+                    "Id": "mejeri-o-ost",
+                    "Name": "Mejeri, ost & juice"
+                },
+                "CategoryAncestry": [
+                    {
+                        "Id": "mellanmjolk",
+                        "Name": "Mellanmjölk"
+                    },
+                    {
+                        "Id": "mjolk",
+                        "Name": "Mjölk"
+                    },
+                    {
+                        "Id": "mejeri-o-ost",
+                        "Name": "Mejeri, ost & juice"
+                    }
+                ],
+                "Brand": {
+                    "Id": "garant",
+                    "Name": "Garant"
+                },
+                "RecycleFee": 0.0,
+                "Attributes": null,
+                "Discount": null,
+                "Delivery": {
+                    "IsPickingCostIncluded": false,
+                    "IsDeliveryCostIncluded": false,
+                    "IsSubscriptionProduct": false,
+                    "CancelDaysBefore": 0,
+                    "MinimumRequiredDeliveryDays": 0,
+                    "AdvanceDeliveryMinimumOrder": 0,
+                    "IsAdultProduct": false,
+                    "IsWine": false,
+                    "DeliverableWeekdays": [],
+                    "DeliveryRestrictions": []
+                },
+                "Availability": "Available",
+                "Subtitle": null,
+                "ExternalUrl": null,
+                "SoldBy": "mathem",
+                "ShowSoldBy": false,
+                "PharmacyInformation": null,
+                "HasPharmacyDiff": false,
+                "Disclaimer": null,
+                "Supplier": {
+                    "Id": "19406",
+                    "Name": "Dagab EMV"
+                },
+                "StockInformation": {
+                    "Active": true,
+                    "OutOfStock": false,
+                    "AvailableQuantity": null
+                }
+            },
+            "1553": {
+                "Id": "1553",
+                "Quantity": 2,
+                "Name": "Tomat Klass1",
+                "Added": "2023-02-13T14:29:32.0303827Z",
+                "Category": {
+                    "Id": "vanliga-tomater",
+                    "Name": "Vanliga Tomater"
+                },
+                "Price": 7.5,
+                "VatRate": 12.0,
+                "Url": "/varor/vanliga-tomater/tomater-klass1",
+                "ImageUrl": "tomater-klass1-1.jpg",
+                "EanCode": "4806",
+                "ExternalSupplierCode": null,
+                "ExternalProductCode": "4806",
+                "Department": {
+                    "Id": "frukt-o-gront",
+                    "Name": "Frukt & Grönt"
+                },
+                "CategoryAncestry": [
+                    {
+                        "Id": "vanliga-tomater",
+                        "Name": "Vanliga Tomater"
+                    },
+                    {
+                        "Id": "tomater",
+                        "Name": "Tomater"
+                    },
+                    {
+                        "Id": "gronsaker",
+                        "Name": "Grönsaker"
+                    },
+                    {
+                        "Id": "frukt-o-gront",
+                        "Name": "Frukt & Grönt"
+                    }
+                ],
+                "Brand": {
+                    "Id": "frukt-o-gront",
+                    "Name": "Frukt & Grönt"
+                },
+                "RecycleFee": 0.0,
+                "Attributes": null,
+                "Discount": {
+                    "Id": "2170430",
+                    "DiscountPrice": {
+                        "Value": 6.6,
+                        "DiscountPriceType": 0
+                    },
+                    "Limits": null,
+                    "Conditions": [
+                        {
+                            "Group": "Order",
+                            "Property": "StoreId",
+                            "Operator": "=",
+                            "Value": "23"
+                        },
+                        {
+                            "Group": "Product",
+                            "Property": "ProductCount",
+                            "Operator": "=",
+                            "Value": "5"
+                        }
+                    ],
+                    "ValidFrom": "2023-02-01T00:00:00+00:00",
+                    "ValidUntil": "2023-12-31T00:00:00+00:00",
+                    "CanUseProductOfferDiscount": true,
+                    "MinPrice": null,
+                    "MinComparisonPrice": null
+                },
+                "Delivery": {
+                    "IsPickingCostIncluded": false,
+                    "IsDeliveryCostIncluded": false,
+                    "IsSubscriptionProduct": false,
+                    "CancelDaysBefore": 0,
+                    "MinimumRequiredDeliveryDays": 0,
+                    "AdvanceDeliveryMinimumOrder": 0,
+                    "IsAdultProduct": false,
+                    "IsWine": false,
+                    "DeliverableWeekdays": [],
+                    "DeliveryRestrictions": []
+                },
+                "Availability": "Available",
+                "Subtitle": null,
+                "ExternalUrl": null,
+                "SoldBy": "mathem",
+                "ShowSoldBy": false,
+                "PharmacyInformation": null,
+                "HasPharmacyDiff": false,
+                "Disclaimer": null,
+                "Supplier": {
+                    "Id": "6516",
+                    "Name": "Allfrukt"
+                },
+                "StockInformation": {
+                    "Active": true,
+                    "OutOfStock": false,
+                    "AvailableQuantity": null
+                }
+            },
+            "118173": {
+                "Id": "118173",
+                "Quantity": 1,
+                "Name": "Port Salut skivad 26% 750g Arla Familjefavoriter",
+                "Added": "2023-02-13T14:29:41.8016857Z",
+                "Category": {
+                    "Id": "portsalut",
+                    "Name": "Portsalut"
+                },
+                "Price": 96.95,
+                "VatRate": 12.0,
+                "Url": "/varor/portsalut/port-salut-skivad-26--750g-arla",
+                "ImageUrl": "port-salut-skivad-26--750g-arla-111.jpg",
+                "EanCode": "5760466983570",
+                "ExternalSupplierCode": null,
+                "ExternalProductCode": "466983570",
+                "Department": {
+                    "Id": "mejeri-o-ost",
+                    "Name": "Mejeri, ost & juice"
+                },
+                "CategoryAncestry": [
+                    {
+                        "Id": "portsalut",
+                        "Name": "Portsalut"
+                    },
+                    {
+                        "Id": "hardost",
+                        "Name": "Hårdost"
+                    },
+                    {
+                        "Id": "ost",
+                        "Name": "Ost"
+                    },
+                    {
+                        "Id": "mejeri-o-ost",
+                        "Name": "Mejeri, ost & juice"
+                    }
+                ],
+                "Brand": {
+                    "Id": "arla-familjefavoriter",
+                    "Name": "Arla Familjefavoriter"
+                },
+                "RecycleFee": 0.0,
+                "Attributes": null,
+                "Discount": null,
+                "Delivery": {
+                    "IsPickingCostIncluded": false,
+                    "IsDeliveryCostIncluded": false,
+                    "IsSubscriptionProduct": false,
+                    "CancelDaysBefore": 0,
+                    "MinimumRequiredDeliveryDays": 0,
+                    "AdvanceDeliveryMinimumOrder": 0,
+                    "IsAdultProduct": false,
+                    "IsWine": false,
+                    "DeliverableWeekdays": [],
+                    "DeliveryRestrictions": []
+                },
+                "Availability": "Available",
+                "Subtitle": null,
+                "ExternalUrl": null,
+                "SoldBy": "mathem",
+                "ShowSoldBy": false,
+                "PharmacyInformation": null,
+                "HasPharmacyDiff": false,
+                "Disclaimer": null,
+                "Supplier": {
+                    "Id": "6561",
+                    "Name": "Arla Foods AB"
+                },
+                "StockInformation": {
+                    "Active": true,
+                    "OutOfStock": false,
+                    "AvailableQuantity": null
+                }
+            }
+        },
+        "OriginalCartId": null,
+        "ChangingOrderId": 0,
+        "LeaveOutsideDoor": null,
+        "OrderMessage": null,
+        "SocialSecurityNo": "5567816110",
+        "TotalPaidAmount": 0.0,
+        "CartStatus": "OPEN",
+        "DeliveryTimeStatus": {
+            "Status": "None",
+            "Modified": "2023-02-06T11:31:11.1086451Z",
+            "ExpiresAt": null
+        },
+        "NumberOfConfirmedOrderLines": 0,
+        "Payment": null,
+        "DeliveryTime": null,
+        "Address": {
+            "Id": "1a756ef4-5342-4660-9b34-b97c12fb210d",
+            "LegacyAddressId": "10572422",
+            "AddressType": "M",
+            "MemberId": "1530265",
+            "CompanyName": "Sollentuna BUMM Martina",
+            "FirstName": "Katarina",
+            "LastName": "Stenberg",
+            "PhoneMobile": "0707803438",
+            "PhoneHome": null,
+            "AlternativePhoneHome": null,
+            "AlternativePhoneMobile": null,
+            "AddressRow1": "Sollentunavägen 130",
+            "AddressRow2": null,
+            "DoorCode": null,
+            "AddressInfo": null,
+            "PostalCode": "19144",
+            "City": "Sollentuna",
+            "Latitude": 59.4238,
+            "Longitude": 17.9551,
+            "TruckRouteId": 0,
+            "InHomeAvailable": false,
+            "CreationDate": "2022-05-30T11:07:53",
+            "LastModifiedDate": "2023-01-30T14:15:37",
+            "RemovedDate": null
+        },
+        "RecurringOrder": null,
+        "Recipes": {
+            "Init": {
+                "Id": "0",
+                "RecipeId": null,
+                "ExternalRecipeId": null,
+                "Name": null,
+                "Added": null,
+                "Url": null,
+                "ImageUrl": null,
+                "Portions": 0,
+                "RecipeProducts": []
+            }
+        },
+        "Discounts": {
+            "Init": {
+                "Id": "0",
+                "Code": null,
+                "Text": null,
+                "PercentageDeliveryFee": 0.0,
+                "Percentage": 0.0,
+                "Value": 0.0,
+                "AmountLimit": 0.0,
+                "ProductId": null
+            }
+        },
+        "Fees": {
+            "Init": {
+                "Id": "0",
+                "Amount": 0.0,
+                "VatRate": 0.0
+            }
+        },
+        "Bonuses": {
+            "Init": {
+                "Id": "0",
+                "Code": null,
+                "Amount": 0.0
+            }
+        },
+        "GiftVouchers": {
+            "Init": {
+                "Id": "0",
+                "Code": null,
+                "Text": null,
+                "Comments": null,
+                "Value": 0.0,
+                "ValidFrom": "0001-01-01T00:00:00Z",
+                "ValidUntil": "0001-01-01T00:00:00Z",
+                "AlreadyUsed": false
+            }
+        },
+        "Credit": {
+            "CONFIRMED_ORDER_CREDIT": 0.0
+        }
+    }
+}
