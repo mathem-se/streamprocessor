@@ -80,6 +80,7 @@ class SchemaUtils {
             field = field.withNullable(false);
         } else if ("REPEATED".equals(column.getMode())) {
             field = Field.of(name, FieldType.array(fieldType));
+            field = field.withNullable(true);
         } else {
             throw new UnsupportedOperationException(
                     "Field mode '"
