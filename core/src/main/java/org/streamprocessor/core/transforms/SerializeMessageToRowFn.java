@@ -47,9 +47,10 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
+import org.streamprocessor.core.utils.BigQueryUtils;
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.schemas.Schema.Field;
-import org.streamprocessor.core.utils.BqUtils;
+//import org.streamprocessor.core.utils.BigQueryUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
@@ -198,6 +199,12 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             }
 
             JSONObject json = new JSONObject(payload);
+            JSONObject json2 = new JSONObject();
+            json2.put("Id", json.get("Id"));
+            json2.put("Expires", json.get("Expires"));
+            json2.put("Products", json.get("Products"));
+            json2.put("MemberGroupFees", json.get("MemberGroupFees"));
+            //json2.put("OriginalProducts", json.get("OriginalProducts"));
             if (json.isNull("event_timestamp")) {
                 json.put("event_timestamp", DateTime.now().withZone(DateTimeZone.UTC).toString());
             }
@@ -206,20 +213,20 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             // Identify unmapped fields in payload.
             // Sample ratio to check for differences
-            // if (random.nextInt(100) < ratio * 100) {
-            //     Set<String> jsonKeySet = getAllKeys(json);
-            //     Set<String> schemaKeySet = getAllKeys(schema);
-            //     if (jsonKeySet.size() > schemaKeySet.size()) {
-            //         jsonKeySet.removeAll(schemaKeySet);
-            //         String unmappedFields = String.join(",", jsonKeySet);
-            //         LOG.warn(
-            //                 entity
-            //                         + " unmapped fields: "
-            //                         + unmappedFields
-            //                         + " - payload: "
-            //                         + json.toString());
-            //     }
-            // }
+            if (true) {
+                Set<String> jsonKeySet = getAllKeys(json);
+                Set<String> schemaKeySet = getAllKeys(schema);
+                if (jsonKeySet.size() > schemaKeySet.size()) {
+                    jsonKeySet.removeAll(schemaKeySet);
+                    String unmappedFields = String.join(",", jsonKeySet);
+                    LOG.warn(
+                            entity
+                                    + " unmapped fields: "
+                                    + unmappedFields
+                                    + " - payload: "
+                                    + json.toString());
+                }
+            }
 
             LOG.info("[processElement22] Before row dese");
             LOG.info("[processElement22] payload: "+json.toString());
@@ -230,78 +237,10 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             TableRow tr = convertJsonToTableRow(json.toString());
             LOG.info("TABLE ROW:" + tr.toString());
 
-            Row row = BqUtils.toBeamRow(schema, tr);
+            Row row = BigQueryUtils.toBeamRow(schema, tr);
             LOG.info("BEAM ROW" + row.toString());
 
-
-
-
-            //RowJsonDeserializer deserializer = RowJsonDeserializer.forSchema(schema).withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL);
-            
-            // Row row = RowJsonUtils.jsonToRow(
-            //     RowJsonUtils.newObjectMapperWith(deserializer), 
-            //     json.toString());
-            
-//             // LOG.info("[processElement] Deserialized a row: "+row.toString());
-//             Schema schema2 =
-//         new Schema.Builder()
-//             .addField(
-//                 Schema.Field.of("firstname", Schema.FieldType.STRING)
-//                     .withDescription("test description"))
-//             .addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING)))
-//             .build();
-//         LOG.info(schema2.toString());
-//             BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build();
-
-//         JSONObject json2 =
-//           new JSONObject()
-//               .put("firstname", "Joe")
-//               .put("products", new JSONObject().put("foo", new JSONObject().put("foo", "bar")));
-//         LOG.info("json2" + json2.toString());
-
-//         // Row row = RowJsonUtils.jsonToRow(
-//         // RowJsonUtils.newObjectMapperWith(
-//         //   RowJsonDeserializer
-//         //     .forSchema(schema)
-//         //     .withNullBehavior(RowJsonDeserializer.NullBehavior.ACCEPT_MISSING_OR_NULL)), 
-//         //   json.toString());
-      
-//         //   LOG.info(row.toString());
-//         BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true);
-
-//         TableRow tr = JsonToTableRow.convertJsonToTableRow(json2.toString());
-//         LOG.info("table row" + tr.toString());
-
-//         Row row = BigQueryUtils.toBeamRow(schema2, tr);
-//         LOG.info(row.toString());
-
-//           //TableSchema ts = BigQueryUtils.toTableSchema(schema);
-// //          LOG.info(ts.toString());
-
-// //          Schema brs = BigQueryUtils.fromTableSchema(ts, SchemaConversionOptions.builder().setInferMaps(true).build());
-//   //        LOG.info(brs.toString());
-            
-            
-            
-//             //TableRow tb = JsonToTableRow.convertJsonToTableRow(json.toString());    
-
-
-//             //LOG.info("TABLE ROW" + tb.toString());
-//             // LOG.info("Schema ROW" + schema.toString());
-//             // List<Field> test = schema.getFields();
-//             // LOG.info("test" + test.toString());
-//             //Row row = BigQueryUtils.toBeamRow(schema, tb);
-
-//             LOG.info("BEAM ROW" + row);
-
-//             // Row row =
-//             //         RowJsonUtils.jsonToRow(
-//             //                 RowJsonUtils.newObjectMapperWith(
-//             //                         RowJsonDeserializer.forSchema(schema)
-//             //                                 .withNullBehavior(
-//             //                                         RowJsonDeserializer.NullBehavior
-//             //                                                 .ACCEPT_MISSING_OR_NULL)),
-//             //                 json.toString());
+            // LOG.info("TABLE ROW2" + BigQueryUtils.toTableRow(row).toString());
 
             out.get(successTag).output(row);
         } catch (NoSchemaException e) {
@@ -311,5 +250,10 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
             out.get(deadLetterTag)
                     .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
-        }     }
+        } catch (Exception e) {
+            LOG.info("ERRORRRR");
+        
+        }
+        
+     }
 }

@@ -31,6 +31,8 @@ import org.apache.beam.sdk.schemas.Schema.Field;
 import org.apache.beam.sdk.schemas.Schema.FieldType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Experimental(Kind.SCHEMAS)
 @SuppressWarnings({
@@ -38,6 +40,8 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Strings;
     "nullness", // TODO(https://issues.apache.org/jira/browse/BEAM-10402)
 })
 class SchemaUtils {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SchemaUtils.class);
 
     private static final Map<String, FieldType> FIELD_TYPES =
             ImmutableMap.<String, FieldType>builder()
@@ -79,8 +83,10 @@ class SchemaUtils {
         } else if ("REQUIRED".equals(column.getMode())) {
             field = field.withNullable(false);
         } else if ("REPEATED".equals(column.getMode())) {
-            if (!isKeyValueMap(column)) {
-                field = Field.of(name, FieldType.array(fieldType));
+            if (isKeyValueMap(column)) {
+                ColumnSchema key = column.getSubcolumnsList().get(0);
+                ColumnSchema value = column.getSubcolumnsList().get(1);
+                field = Field.of(name, FieldType.map(getBeamFieldType(key), getBeamFieldType(value)));
             }
             field = field.withNullable(true);
         } else {

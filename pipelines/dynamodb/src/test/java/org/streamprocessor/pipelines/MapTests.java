@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.beam.sdk.coders.Coder.Context;
 //import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
-import org.streamprocessor.pipelines.BigQueryUtils;
+import org.streamprocessor.core.utils.BigQueryUtils;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 //import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils.SchemaConversionOptions;
 import org.apache.beam.sdk.schemas.Schema;
@@ -49,7 +49,7 @@ public class MapTests {
             .addField(Schema.Field.of("firstname", Schema.FieldType.STRING))
             .addField(Schema.Field.of("timestamp", Schema.FieldType.DATETIME))
             //.addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
-            .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.STRING)
+            .addMapField("products", Schema.FieldType.STRING, Schema.FieldType.row(new Schema.Builder().addStringField("foo").addStringField("bar").build()))
             //.addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("key").addStringField("value").build()))
             .addRowField("struc", new Schema.Builder()
               .addField(Schema.Field.of("timestamp", Schema.FieldType.DATETIME)).build())
@@ -66,7 +66,7 @@ public class MapTests {
           new JSONObject()
               .put("firstname", "Joe")
               .put("timestamp", java.time.Instant.now().toString())
-              .put("products", new JSONObject().put("foo", "bar"))
+              .put("products", new JSONObject().put("foo", new JSONObject().put("foo", "bar").put("bar", "foo")))
               .put("struc", new JSONObject().put("timestamp", "2023-02-20T13:27:14.9484233Z"));
         LOG.info(json.toString());
 

@@ -87,6 +87,9 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /** Utility methods for BigQuery related operations. */
 @SuppressWarnings({
@@ -721,13 +724,16 @@ public class BigQueryUtils {
     // 1. TableSchema contains redundant information already available in the Schema object.
     // 2. TableSchema objects are not serializable and are therefore harder to propagate through a
     // pipeline.
-    
+    // LOG.info("test map" + rowSchema.getFields().stream()
+      // .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName()))).collect().toString());
+
     return rowSchema.getFields().stream()
         .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName())))
         .collect(toRow(rowSchema));
   }
 
   private static Object toBeamRowFieldValue(Field field, Object bqValue) {
+    try {
     if (bqValue == null) {
       if (field.getType().getNullable()) {
         return null;
@@ -736,6 +742,9 @@ public class BigQueryUtils {
             "Received null value for non-nullable field \"" + field.getName() + "\"");
       }
     }
+  } catch (Exception e) {
+    LOG.info("catch field: " + field.getName() + " bqValue: " + bqValue);
+  }
 
     return toBeamValue(field.getType(), bqValue);
   }
@@ -797,7 +806,22 @@ public class BigQueryUtils {
     }
 
     if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
-        return jsonBQValue;
+        if (fieldType.getMapValueType().getRowSchema() == null)
+          return jsonBQValue;
+        else{
+          Map<String, Object> k = ((Map<String, Object>) jsonBQValue)
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(
+              Map.Entry::getKey,
+              e -> {
+                TableRow tr = new TableRow();
+                tr.putAll((Map<String, Object>) e.getValue());
+                  return toBeamRow(fieldType.getMapValueType().getRowSchema(), tr);
+                })
+            );
+          return k;
+        }
       }
 
     throw new UnsupportedOperationException(

@@ -1,0 +1,43 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch Dynamodb",
+            "request": "launch",
+            "mainClass": "org.streamprocessor.pipelines.Dynamodb",
+            "projectName": "dynamodb",
+            "args": "--inputSubscription=projects/mathem-ml-datahem-test/subscriptions/ecom-cart-service-CartEventTopic --bigQueryDataset=dynamodb --deadLetterTopic=projects/mathem-ml-datahem-test/topics/deadletter --project=mathem-ml-datahem-test --schemaCheckRatio=0.01 --firestoreProjectId=mathem-pii-test"
+        },
+        {
+            "type": "java",
+            "name": "Launch MapTests",
+            "request": "launch",
+            "mainClass": "org.streamprocessor.pipelines.MapTests",
+            "projectName": "dynamodb"
+        },
+        {
+            "type": "java",
+            "name": "Launch JsonTokenize",
+            "request": "launch",
+            "mainClass": "org.streamprocessor.pipelines.JsonTokenize",
+            "projectName": "json-tokenize"
+        },
+        {
+            "type": "java",
+            "name": "Launch Salesforce",
+            "request": "launch",
+            "mainClass": "org.streamprocessor.pipelines.Salesforce",
+            "projectName": "salesforce"
+        }
+    ]
+}

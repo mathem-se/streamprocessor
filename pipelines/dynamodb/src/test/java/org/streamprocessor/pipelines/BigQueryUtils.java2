@@ -88,6 +88,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 /** Utility methods for BigQuery related operations. */
 @SuppressWarnings({
@@ -802,7 +803,22 @@ public class BigQueryUtils {
     }
 
     if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
-        return jsonBQValue;
+        if (fieldType.getMapValueType().getRowSchema() == null)
+          return jsonBQValue;
+        else{
+          Map<String, Object> k = ((Map<String, Object>) jsonBQValue)
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(
+              Map.Entry::getKey,
+              e -> {
+                TableRow tr = new TableRow();
+                tr.putAll((Map<String, Object>) e.getValue());
+                  return toBeamRow(fieldType.getMapValueType().getRowSchema(), tr);
+                })
+            );
+          return k;
+        }
       }
 
     throw new UnsupportedOperationException(
