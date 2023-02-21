@@ -18,9 +18,14 @@ package org.streamprocessor.core.transforms;
 
 import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.util.RowJson;
@@ -32,11 +37,8 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
-import com.google.api.services.bigquery.model.TableRow;
 import org.streamprocessor.core.utils.BigQueryUtils;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
+import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.coders.Coder.Context;
 
 public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
@@ -54,21 +56,11 @@ public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
     public void processElement(@Element Row row, OutputReceiver<KV<String, PubsubMessage>> out)
             throws Exception {
         try {
-
             TableRow tr = BigQueryUtils.toTableRow(row);
-            
+
             ByteArrayOutputStream jsonStream = new ByteArrayOutputStream();
             TableRowJsonCoder.of().encode(tr, jsonStream, Context.OUTER);
              String str = new String(jsonStream.toByteArray(), StandardCharsets.UTF_8.name());
- 
-            //TableRowJsonCoder.encode(row)
-            //LOG.info(row.toString());
-            
-            // RowJson.RowJsonSerializer jsonSerializer =
-            //        RowJson.RowJsonSerializer.forSchema(row.getSchema()).withDropNullsOnWrite(true);
-            // ObjectMapper objectMapper = RowJsonUtils.newObjectMapperWith(jsonSerializer);
-            
-            // String str = RowJsonUtils.rowToJson(objectMapper, row);
             // LOG.info(str);
 
             // Message Attributes
