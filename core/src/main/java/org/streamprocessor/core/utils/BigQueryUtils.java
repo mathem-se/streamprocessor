@@ -216,6 +216,7 @@ public class BigQueryUtils {
    */
   private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PARSER;
   private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PARSER2;
+  private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PARSER3;
 
   static {
     DateTimeFormatter dateTimePart =
@@ -257,6 +258,17 @@ public class BigQueryUtils {
               .appendFractionOfSecond(3, 7)
               .toParser())
               .appendLiteral('Z')
+              .toFormatter()
+              .withZoneUTC();
+
+    BIGQUERY_TIMESTAMP_PARSER3 = 
+      new DateTimeFormatterBuilder()
+        .append(dateTimePart2)
+        .appendOptional(
+            new DateTimeFormatterBuilder()
+              .appendLiteral('.')
+              .appendFractionOfSecond(3, 7)
+              .toParser())
               .toFormatter()
               .withZoneUTC();
 
@@ -319,8 +331,10 @@ public class BigQueryUtils {
                   return BIGQUERY_TIMESTAMP_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
                 } else if (str.endsWith("Z")) {
                   return BIGQUERY_TIMESTAMP_PARSER2.parseDateTime(str).toDateTime(DateTimeZone.UTC);
-                } else {
-                  LOG.info("string does not end with Z");
+                } else if (str.contains("T")) {
+                  return BIGQUERY_TIMESTAMP_PARSER3.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+                }
+                  else {
                   return new DateTime(
                       (long) (Double.parseDouble(str) * 1000), ISOChronology.getInstanceUTC());
                 }

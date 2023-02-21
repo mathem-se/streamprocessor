@@ -199,6 +199,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             }
 
             JSONObject json = new JSONObject(payload);
+            json.remove("ProductRestrictions");
             JSONObject json2 = new JSONObject();
             json2.put("Id", json.get("Id"));
             json2.put("Expires", json.get("Expires"));
@@ -242,7 +243,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             
 
             // LOG.info("convert json to table row");
-            TableRow tr = convertJsonToTableRow(json2.toString());
+            TableRow tr = convertJsonToTableRow(json.toString());
             LOG.info("TABLE ROW:" + tr.toString());
 
             Row row = BigQueryUtils.toBeamRow(schema, tr);
@@ -259,7 +260,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             out.get(deadLetterTag)
                     .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
         } catch (Exception e) {
-            LOG.info("ERRORRRR");
+            LOG.info("Exception: " + e.toString());
         
         }
         
