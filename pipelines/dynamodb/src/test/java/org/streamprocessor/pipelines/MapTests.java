@@ -83,6 +83,7 @@ public class MapTests {
 
         Row br = BigQueryUtils.toBeamRow(schema, tr);
         LOG.info(br.toString());
+        
 
         // Row row = RowJsonUtils.jsonToRow(
         // RowJsonUtils.newObjectMapperWith(
