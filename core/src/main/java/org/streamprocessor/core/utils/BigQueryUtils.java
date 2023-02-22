@@ -837,8 +837,13 @@ public class BigQueryUtils {
 
     if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
         // TODO : handle double values, returning jsonBQValue doesn't take the fieldtype into consideration
-        if (fieldType.getMapValueType().getRowSchema() == null)
-          return jsonBQValue;
+        if (fieldType.getMapValueType().getRowSchema() == null) {
+          Map<String, Object> k = ((Map<String, Object>) jsonBQValue).entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+              return toBeamValue(fieldType.getMapValueType(), e.getValue());
+            }));
+          return k;
+        }
         else{
           Map<String, Object> k = ((Map<String, Object>) jsonBQValue)
             .entrySet()

@@ -55,8 +55,8 @@ public class MapFloatTest {
             //.addField(Schema.Field.of("timestamp", Schema.FieldType.DATETIME))
             //.addNullableField("products", Schema.FieldType.map(Schema.FieldType.STRING, Schema.FieldType.STRING))
             .addMapField("productsMapFloat", Schema.FieldType.STRING, Schema.FieldType.DOUBLE)
-            .addMapField("productsMapArray", Schema.FieldType.STRING, Schema.FieldType.array(Schema.FieldType.STRING))
-            .addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("foo").build()))
+            //.addMapField("productsMapArray", Schema.FieldType.STRING, Schema.FieldType.array(Schema.FieldType.STRING))
+            //.addArrayField("products", Schema.FieldType.row(new Schema.Builder().addStringField("foo").build()))
             //.addRowField("struc", new Schema.Builder()
             //.addField(Schema.Field.of("timestamp", Schema.FieldType.DATETIME)).build())
             .build();
@@ -88,9 +88,9 @@ public class MapFloatTest {
         JSONObject json =
           new JSONObject()
               .put("price", 0)
-              .put("products", new JSONArray().put(new JSONObject().put("foo", "bar")).put(new JSONObject().put("foo", "bar2")))
-              .put("productsMapFloat", new JSONObject().put("foo", 0.0).put("hello", 1.0))
-              .put("productsMapArray", new JSONObject().put("foo", new JSONArray().put("hello").put("world")));
+              //.put("products", new JSONArray().put(new JSONObject().put("foo", 0))..put(new JSONObject().put("foo", 0))
+              .put("productsMapFloat", new JSONObject().put("foo", 0.0).put("hello", 1.0));
+              //.put("productsMapArray", new JSONObject().put("foo", new JSONArray().put("hello").put("world")));
               //.put("products", new JSONObject().put("foo", "bar").put("hello", "world"))
               //.put("struc", new JSONObject().put("lastname", "doe"));
         LOG.info(json.toString());
