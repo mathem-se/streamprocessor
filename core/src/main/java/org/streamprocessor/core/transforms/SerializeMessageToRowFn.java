@@ -164,7 +164,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     public static TableRow convertJsonToTableRow(String json) {
         TableRow row;
         // Parse the JSON into a {@link TableRow} object.
-        LOG.info("converting to json");
         try (InputStream inputStream =
             new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
             row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
@@ -201,16 +200,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             JSONObject json = new JSONObject(payload);
 
-            //json2.put("MemberGroupFees", json.get("MemberGroupFees"));
-            
-            //json2.put("ProductRestrictions", json.get("ProductRestrictions"));
-
-            //json2.put("Payment", json.get("Payment"));
-            //json2.put("DeliveryTime", json.get("DeliveryTime"));
-            //json2.put("Address", json.get("Address"));
-            //json2.put("RecurringOrder", json.get("RecurringOrder"));
-
-            //json2.put("OriginalProducts", json.get("OriginalProducts"));
             if (json.isNull("event_timestamp")) {
                 json.put("event_timestamp", DateTime.now().withZone(DateTimeZone.UTC).toString());
             }
@@ -235,7 +224,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // }
 
             // LOG.info("[processElement22] Before row dese");
-            LOG.info("[processElement22] payload: " + json.toString());
+            // LOG.info("[processElement22] payload: " + json.toString());
             // LOG.info("[processElement22] schema: "+schema.toString());
             
 
@@ -244,7 +233,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // LOG.info("TABLE ROW:" + tr.toString());
 
             Row row = BigQueryUtils.toBeamRow(schema, tr);
-            // LOG.info("BEAM ROW" + row.toString());
+            LOG.info("BEAM ROW" + row.toString());
 
             //LOG.info("TABLE ROW2" + BigQueryUtils.toTableRow(row).toString());
 

@@ -335,6 +335,8 @@ public class BigQueryUtils {
                 } else if (str.contains("T")) {
                   if (str.contains("+00:00")) {
                     str = str.substring(0, str.indexOf("+00:00") -1);
+                  } else if (str.contains("+01:00")) {
+                    str = str.substring(0, str.indexOf("+01:00") -1);
                   }
                   LOG.info("str: " + str);
                   return BIGQUERY_TIMESTAMP_PARSER3.parseDateTime(str).toDateTime(DateTimeZone.UTC);
@@ -745,19 +747,9 @@ public class BigQueryUtils {
     // pipeline.
     // LOG.info("test map" + rowSchema.getFields().stream()
       // .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName()))).collect().toString());
-    try {
-        for (Field field : rowSchema.getFields()) {
-          Object fieldValue = toBeamRowFieldValue(field, jsonBqRow.get(field.getName()));
-          LOG.info(fieldValue.toString());
-        }
     return rowSchema.getFields().stream()
         .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName())))
         .collect(toRow(rowSchema));
-    }
-    catch (Exception e) {
-      LOG.info(e.toString());
-      return null;
-    }
   }
 
   private static Object toBeamRowFieldValue(Field field, Object bqValue) {
@@ -836,7 +828,6 @@ public class BigQueryUtils {
     }
 
     if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
-        // TODO : handle double values, returning jsonBQValue doesn't take the fieldtype into consideration
         if (fieldType.getMapValueType().getRowSchema() == null) {
           Map<String, Object> k = ((Map<String, Object>) jsonBQValue).entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> {
