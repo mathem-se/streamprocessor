@@ -746,12 +746,16 @@ public class BigQueryUtils {
     // LOG.info("test map" + rowSchema.getFields().stream()
       // .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName()))).collect().toString());
     try {
+        for (Field field : rowSchema.getFields()) {
+          Object fieldValue = toBeamRowFieldValue(field, jsonBqRow.get(field.getName()));
+          LOG.info(fieldValue.toString());
+        }
     return rowSchema.getFields().stream()
         .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName())))
         .collect(toRow(rowSchema));
     }
     catch (Exception e) {
-      LOG.info("catch rowSchema: " + rowSchema.toString() + " jsonBqRow: " + jsonBqRow.toString());
+      LOG.info(e.toString());
       return null;
     }
   }
@@ -832,6 +836,7 @@ public class BigQueryUtils {
     }
 
     if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
+        // TODO : handle double values, returning jsonBQValue doesn't take the fieldtype into consideration
         if (fieldType.getMapValueType().getRowSchema() == null)
           return jsonBQValue;
         else{
