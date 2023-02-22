@@ -182,6 +182,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     @ProcessElement
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) 
             throws Exception {
+        LOG.info("received message: " + received.getPayload());
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
 
@@ -199,11 +200,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             }
 
             JSONObject json = new JSONObject(payload);
-            json.remove("ProductRestrictions");
-            JSONObject json2 = new JSONObject();
-            json2.put("Id", json.get("Id"));
-            json2.put("Expires", json.get("Expires"));
-            json2.put("Products", json.get("Products"));
+
             //json2.put("MemberGroupFees", json.get("MemberGroupFees"));
             
             //json2.put("ProductRestrictions", json.get("ProductRestrictions"));
@@ -243,11 +240,11 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             
 
             // LOG.info("convert json to table row");
-            TableRow tr = convertJsonToTableRow(json2.toString());
-            LOG.info("TABLE ROW:" + tr.toString());
+            TableRow tr = convertJsonToTableRow(json.toString());
+            // LOG.info("TABLE ROW:" + tr.toString());
 
             Row row = BigQueryUtils.toBeamRow(schema, tr);
-            LOG.info("BEAM ROW" + row.toString());
+            // LOG.info("BEAM ROW" + row.toString());
 
             //LOG.info("TABLE ROW2" + BigQueryUtils.toTableRow(row).toString());
 
@@ -259,10 +256,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
             out.get(deadLetterTag)
                     .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
-        } catch (Exception e) {
-            LOG.error("Exception: " + e.toString());
-        
         }
-        
      }
 }

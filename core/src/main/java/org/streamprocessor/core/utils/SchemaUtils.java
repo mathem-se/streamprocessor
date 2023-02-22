@@ -86,7 +86,9 @@ class SchemaUtils {
             if (isKeyValueMap(column)) {
                 ColumnSchema key = column.getSubcolumnsList().get(0);
                 ColumnSchema value = column.getSubcolumnsList().get(1);
-                field = Field.of(name, FieldType.map(getBeamFieldType(key), getBeamFieldType(value)));
+                field = Field.of(name, FieldType.map(toBeamField(key).getType(), toBeamField(value).getType()));
+            } else {
+                field = Field.of(name, FieldType.array(fieldType.withNullable(true)));
             }
             field = field.withNullable(true);
         } else {

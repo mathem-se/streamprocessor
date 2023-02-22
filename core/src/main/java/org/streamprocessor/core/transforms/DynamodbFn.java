@@ -52,8 +52,9 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
             throws Exception {
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
-            
+            LOG.info("receivedPayload" + receivedPayload);
             JSONObject dynamodbStreamObject = new JSONObject(receivedPayload);
+            LOG.info("receivedPayload1" + dynamodbStreamObject);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
             attributes.putAll(received.getAttributeMap());
@@ -112,6 +113,9 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                 if (!dynamodbStreamObject.isNull("EventId")) {
                     attributes.put("dynamodbEventId", dynamodbStreamObject.getString("EventId"));
                 }
+
+
+            LOG.info("receivedPayload2" + dynamodbStreamObject);
 
                 out.output(
                         new PubsubMessage(payloadObject.toString().getBytes("UTF-8"), attributes));

@@ -267,7 +267,8 @@ public class BigQueryUtils {
         .appendOptional(
             new DateTimeFormatterBuilder()
               .appendLiteral('.')
-              .appendFractionOfSecond(3, 7)
+              .appendFractionOfSecond(2, 7)
+              .appendLiteral("+00:00")
               .toParser())
               .toFormatter()
               .withZoneUTC();
@@ -332,6 +333,10 @@ public class BigQueryUtils {
                 } else if (str.endsWith("Z")) {
                   return BIGQUERY_TIMESTAMP_PARSER2.parseDateTime(str).toDateTime(DateTimeZone.UTC);
                 } else if (str.contains("T")) {
+                  if (str.contains("+00:00")) {
+                    str = str.substring(0, str.indexOf("+00:00") -1);
+                  }
+                  LOG.info("str: " + str);
                   return BIGQUERY_TIMESTAMP_PARSER3.parseDateTime(str).toDateTime(DateTimeZone.UTC);
                 }
                   else {
@@ -740,10 +745,15 @@ public class BigQueryUtils {
     // pipeline.
     // LOG.info("test map" + rowSchema.getFields().stream()
       // .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName()))).collect().toString());
-
+    try {
     return rowSchema.getFields().stream()
         .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName())))
         .collect(toRow(rowSchema));
+    }
+    catch (Exception e) {
+      LOG.info("catch rowSchema: " + rowSchema.toString() + " jsonBqRow: " + jsonBqRow.toString());
+      return null;
+    }
   }
 
   private static Object toBeamRowFieldValue(Field field, Object bqValue) {
@@ -759,8 +769,8 @@ public class BigQueryUtils {
   } catch (Exception e) {
     LOG.info("catch field: " + field.getName() + " bqValue: " + bqValue);
   }
-
-    return toBeamValue(field.getType(), bqValue);
+    Object obj = toBeamValue(field.getType(), bqValue); 
+    return obj;
   }
 
   /**
@@ -806,9 +816,11 @@ public class BigQueryUtils {
     }
 
     if (jsonBQValue instanceof List) {
+      FieldType ft = fieldType.getCollectionElementType();
       return ((List<Object>) jsonBQValue)
           .stream()
-              .map(v -> ((Map<String, Object>) v).get("v"))
+              //.map(v -> ((Map<String, Object>) v).get("v"))
+              //.map(v -> ((String) v).get("v"))
               .map(v -> toBeamValue(fieldType.getCollectionElementType(), v))
               .collect(toList());
     }
