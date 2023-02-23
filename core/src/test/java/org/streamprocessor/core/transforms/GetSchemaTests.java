@@ -7,11 +7,10 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.beam.sdk.coders.Coder.Context;
 //import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
-import org.streamprocessor.core.utils.BigQueryUtils;
+import org.streamprocessor.core.utils.BqUtils;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 //import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils.SchemaConversionOptions;
 import org.apache.beam.sdk.schemas.Schema;
-import org.apache.beam.sdk.util.RowJson.RowJsonDeserializer;
 import org.apache.beam.sdk.util.RowJsonUtils;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
@@ -67,11 +66,11 @@ public class GetSchemaTests {
         
         Schema schema = CacheLoaderUtils.getSchema(arrayString);
         LOG.info("map row schema: " + schema.toString());
-        TableSchema ts = BigQueryUtils.toTableSchema(schema);
+        TableSchema ts = BqUtils.toTableSchema(schema);
         LOG.info("table schema: " + ts.toString());
 
-        Schema brs = BigQueryUtils.fromTableSchema(ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
-        LOG.info(brs.toString());
+        //Schema brs = BqUtils.fromTableSchema(ts, BqUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
+        //LOG.info(brs.toString());
         
         LOG.info("------------------");
 
@@ -82,11 +81,11 @@ public class GetSchemaTests {
         
         Schema schemaRow = CacheLoaderUtils.getSchema(arrayRow);
         LOG.info("row schema: " + schemaRow.toString());
-        TableSchema tsRow = BigQueryUtils.toTableSchema(schemaRow);
+        TableSchema tsRow = BqUtils.toTableSchema(schemaRow);
         LOG.info("table schema: " + tsRow.toString());
 
-        Schema brsRow = BigQueryUtils.fromTableSchema(ts, BigQueryUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
-        LOG.info(brsRow.toString());
+        //Schema brsRow = BqUtils.fromTableSchema(ts, BqUtils.SchemaConversionOptions.builder().setInferMaps(true).build());
+        //LOG.info(brsRow.toString());
         // JSONObject json =
         //   new JSONObject()
         //       .put("firstname", "Joe")

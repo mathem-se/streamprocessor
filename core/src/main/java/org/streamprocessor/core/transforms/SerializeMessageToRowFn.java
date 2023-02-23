@@ -43,7 +43,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
-import org.streamprocessor.core.utils.BigQueryUtils;
+import org.streamprocessor.core.utils.BqUtils;
 import com.google.api.services.bigquery.model.TableRow;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
@@ -219,7 +219,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             TableRow tr = convertJsonToTableRow(json.toString());
 
-            Row row = BigQueryUtils.toBeamRow(schema, tr);
+            Row row = BqUtils.toBeamRow(schema, tr);
             out.get(successTag).output(row);
         } catch (Exception e) {
             LOG.error(entity + ": " + e.toString());
