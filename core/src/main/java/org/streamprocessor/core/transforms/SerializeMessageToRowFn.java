@@ -173,7 +173,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     @ProcessElement
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
             throws Exception {
-        LOG.info("received message: " + received.getPayload());
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
 
@@ -200,20 +199,20 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             // Identify unmapped fields in payload.
             // Sample ratio to check for differences
-            if (random.nextInt(100) < ratio * 100) {
-                Set<String> jsonKeySet = getAllKeys(json);
-                Set<String> schemaKeySet = getAllKeys(schema);
-                if (jsonKeySet.size() > schemaKeySet.size()) {
-                    jsonKeySet.removeAll(schemaKeySet);
-                    String unmappedFields = String.join(",", jsonKeySet);
-                    LOG.warn(
-                            entity
-                                    + " unmapped fields: "
-                                    + unmappedFields
-                                    + " - payload: "
-                                    + json.toString());
-                }
-            }
+            // if (random.nextInt(100) < ratio * 100) {
+            //     Set<String> jsonKeySet = getAllKeys(json);
+            //     Set<String> schemaKeySet = getAllKeys(schema);
+            //     if (jsonKeySet.size() > schemaKeySet.size()) {
+            //         jsonKeySet.removeAll(schemaKeySet);
+            //         String unmappedFields = String.join(",", jsonKeySet);
+            //         LOG.warn(
+            //                 entity
+            //                         + " unmapped fields: "
+            //                         + unmappedFields
+            //                         + " - payload: "
+            //                         + json.toString());
+            //     }
+            // }
 
             TableRow tr = convertJsonToTableRow(json.toString());
 

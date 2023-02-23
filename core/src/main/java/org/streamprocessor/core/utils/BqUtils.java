@@ -22,20 +22,14 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 import static java.util.stream.Collectors.toList;
 import static org.apache.beam.sdk.values.Row.toRow;
 
-import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.api.services.bigquery.model.TableSchema;
-import com.google.auto.value.AutoValue;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.annotations.Experimental;
 import org.apache.beam.sdk.annotations.Experimental.Kind;
@@ -69,20 +63,6 @@ import org.slf4j.LoggerFactory;
 })
 public class BqUtils {
     private static final Logger LOG = LoggerFactory.getLogger(BqUtils.class);
-
-    // For parsing the format returned on the API proto:
-    // google.cloud.bigquery.storage.v1.ReadSession.getTable()
-    // "projects/{project_id}/datasets/{dataset_id}/tables/{table_id}"
-    private static final Pattern TABLE_RESOURCE_PATTERN =
-            Pattern.compile(
-                    "^projects/(?<PROJECT>[^/]+)/datasets/(?<DATASET>[^/]+)/tables/(?<TABLE>[^/]+)$");
-
-    // For parsing the format used to refer to tables parameters in BigQueryIO.
-    // "{project_id}:{dataset_id}.{table_id}" or
-    // "{project_id}.{dataset_id}.{table_id}"
-    private static final Pattern SIMPLE_TABLE_PATTERN =
-            Pattern.compile(
-                    "^(?<PROJECT>[^\\.:]+)[\\.:](?<DATASET>[^\\.:]+)[\\.](?<TABLE>[^\\.:]+)$");
 
     enum StandardSQLTypeName {
         /** A Boolean value (true or false). */
@@ -127,33 +107,6 @@ public class BqUtils {
         REPEATED
     }
 
-    /** Options for how to convert BigQuery data to Beam data. */
-    @AutoValue
-    public abstract static class ConversionOptions implements Serializable {
-
-        /**
-         * Controls whether to truncate timestamps to millisecond precision lossily, or to crash
-         * when truncation would result.
-         */
-        public enum TruncateTimestamps {
-            /** Reject timestamps with greater-than-millisecond precision. */
-            REJECT,
-
-            /** Truncate timestamps to millisecond precision. */
-            TRUNCATE;
-        }
-
-        public abstract TruncateTimestamps getTruncateTimestamps();
-
-        /** Builder for {@link ConversionOptions}. */
-        @AutoValue.Builder
-        public abstract static class Builder {
-            public abstract Builder setTruncateTimestamps(TruncateTimestamps truncateTimestamps);
-
-            public abstract ConversionOptions build();
-        }
-    }
-
     private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSS]";
     private static final java.time.format.DateTimeFormatter BIGQUERY_TIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern(BIGQUERY_TIME_PATTERN);
@@ -171,6 +124,7 @@ public class BqUtils {
 
     private static final DateTimeFormatter Z_TIMESTAMP_PARSER;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
+    private static final DateTimeFormatter MISSING_TZ_TIMESTAMP_PARSER;
 
     static {
         DateTimeFormatter dateTimePart =
@@ -224,6 +178,17 @@ public class BqUtils {
                                         .appendFractionOfSecond(2, 7)
                                         .toParser())
                         .appendTimeZoneOffset(null, true, 2, 2)
+                        .toFormatter()
+                        .withZoneUTC();
+
+        MISSING_TZ_TIMESTAMP_PARSER =
+                new DateTimeFormatterBuilder()
+                        .append(dateTimePartT)
+                        .appendOptional(
+                                new DateTimeFormatterBuilder()
+                                        .appendLiteral('.')
+                                        .appendFractionOfSecond(2, 7)
+                                        .toParser())
                         .toFormatter()
                         .withZoneUTC();
 
@@ -290,16 +255,16 @@ public class BqUtils {
                                     return Z_TIMESTAMP_PARSER
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
-                                } else if (str.contains("T")) {
-                                    // if (str.contains("+00:00")) {
-                                    //   str = str.substring(0, str.indexOf("+00:00") -1);
-                                    // } else if (str.contains("+01:00")) {
-                                    //   str = str.substring(0, str.indexOf("+01:00") -1);
-                                    // }
+                                } else if (str.contains("T") && str.contains("+")) {
                                     return OFFS_TIMESTAMP_PARSER
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
-                                } else {
+                                } else if (str.contains("T")) {
+                                    return MISSING_TZ_TIMESTAMP_PARSER
+                                            .parseDateTime(str)
+                                            .toDateTime(DateTimeZone.UTC);
+                                } 
+                                else {
                                     return new DateTime(
                                             (long) (Double.parseDouble(str) * 1000),
                                             ISOChronology.getInstanceUTC());
@@ -350,81 +315,6 @@ public class BqUtils {
         }
         return ret;
     }
-
-    private static List<TableFieldSchema> toTableFieldSchema(Schema schema) {
-        List<TableFieldSchema> fields = new ArrayList<>(schema.getFieldCount());
-        for (Field schemaField : schema.getFields()) {
-            FieldType type = schemaField.getType();
-
-            TableFieldSchema field = new TableFieldSchema().setName(schemaField.getName());
-            if (schemaField.getDescription() != null && !"".equals(schemaField.getDescription())) {
-                field.setDescription(schemaField.getDescription());
-            }
-
-            if (!schemaField.getType().getNullable()) {
-                field.setMode(Mode.REQUIRED.toString());
-            }
-            if (type.getTypeName().isCollectionType()) {
-                type = Preconditions.checkArgumentNotNull(type.getCollectionElementType());
-                if (type.getTypeName().isCollectionType() || type.getTypeName().isMapType()) {
-                    throw new IllegalArgumentException(
-                            "Array of collection is not supported in BigQuery.");
-                }
-                field.setMode(Mode.REPEATED.toString());
-            }
-            if (TypeName.ROW == type.getTypeName()) {
-                Schema subType = Preconditions.checkArgumentNotNull(type.getRowSchema());
-                field.setFields(toTableFieldSchema(subType));
-            }
-            if (TypeName.MAP == type.getTypeName()) {
-                FieldType mapKeyType = Preconditions.checkArgumentNotNull(type.getMapKeyType());
-                FieldType mapValueType = Preconditions.checkArgumentNotNull(type.getMapValueType());
-                Schema mapSchema =
-                        Schema.builder()
-                                .addField(BIGQUERY_MAP_KEY_FIELD_NAME, mapKeyType)
-                                .addField(BIGQUERY_MAP_VALUE_FIELD_NAME, mapValueType)
-                                .build();
-                type = FieldType.row(mapSchema);
-                field.setFields(toTableFieldSchema(mapSchema));
-                field.setMode(Mode.REPEATED.toString());
-            }
-            field.setType(toStandardSQLTypeName(type).toString());
-
-            fields.add(field);
-        }
-        return fields;
-    }
-
-    /** Convert a Beam {@link Schema} to a BigQuery {@link TableSchema}. */
-    @Experimental(Kind.SCHEMAS)
-    public static TableSchema toTableSchema(Schema schema) {
-        return new TableSchema().setFields(toTableFieldSchema(schema));
-    }
-
-    /**
-     * Convert a list of BigQuery {@link TableFieldSchema} to Avro {@link org.apache.avro.Schema}.
-     */
-    //   @Experimental(Kind.SCHEMAS)
-    //   public static org.apache.avro.Schema toGenericAvroSchema(
-    //       String schemaName, List<TableFieldSchema> fieldSchemas) {
-    //     return BigQueryAvroUtils.toGenericAvroSchema(schemaName, fieldSchemas);
-    //   }
-
-    //   private static final BigQueryIO.TypedRead.ToBeamRowFunction<TableRow>
-    //       TABLE_ROW_TO_BEAM_ROW_FUNCTION = beamSchema -> (TableRow tr) -> toBeamRow(beamSchema,
-    // tr);
-
-    //   public static final BigQueryIO.TypedRead.ToBeamRowFunction<TableRow> tableRowToBeamRow() {
-    //     return TABLE_ROW_TO_BEAM_ROW_FUNCTION;
-    //   }
-
-    //   private static final BigQueryIO.TypedRead.FromBeamRowFunction<TableRow>
-    //       TABLE_ROW_FROM_BEAM_ROW_FUNCTION = ignored -> BigQueryUtils::toTableRow;
-
-    //   public static final BigQueryIO.TypedRead.FromBeamRowFunction<TableRow>
-    // tableRowFromBeamRow() {
-    //     return TABLE_ROW_FROM_BEAM_ROW_FUNCTION;
-    //   }
 
     private static final SerializableFunction<Row, TableRow> ROW_TO_TABLE_ROW =
             new ToTableRow<>(SerializableFunctions.identity());
@@ -585,16 +475,12 @@ public class BqUtils {
         // 2. TableSchema objects are not serializable and are therefore harder to propagate through
         // a
         // pipeline.
-        // LOG.info("test map" + rowSchema.getFields().stream()
-        // .map(field -> toBeamRowFieldValue(field,
-        // jsonBqRow.get(field.getName()))).collect().toString());
         return rowSchema.getFields().stream()
                 .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName())))
                 .collect(toRow(rowSchema));
     }
 
     private static Object toBeamRowFieldValue(Field field, Object bqValue) {
-        try {
             if (bqValue == null) {
                 if (field.getType().getNullable()) {
                     return null;
@@ -605,9 +491,6 @@ public class BqUtils {
                                     + "\"");
                 }
             }
-        } catch (Exception e) {
-            LOG.info("catch field: " + field.getName() + " bqValue: " + bqValue);
-        }
         Object obj = toBeamValue(field.getType(), bqValue);
         return obj;
     }
