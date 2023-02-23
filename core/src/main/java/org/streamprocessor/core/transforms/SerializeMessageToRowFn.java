@@ -16,12 +16,11 @@
 
 package org.streamprocessor.core.transforms;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.api.services.bigquery.model.TableRow;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.apache.beam.sdk.coders.Coder.Context;
-import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
+import org.apache.beam.sdk.coders.Coder.Context;
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -42,9 +43,8 @@ import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.streamprocessor.core.utils.CacheLoaderUtils;
 import org.streamprocessor.core.utils.BqUtils;
-import com.google.api.services.bigquery.model.TableRow;
+import org.streamprocessor.core.utils.CacheLoaderUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
@@ -159,21 +159,19 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         TableRow row;
         // Parse the JSON into a {@link TableRow} object.
         try (InputStream inputStream =
-            new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
+                new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
             row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
-  
-  
-        } catch (IOException e) {
-          LOG.info("could not parse json: " + json);
-          throw new RuntimeException("Failed to serialize json to table row: " + json, e);
-        }
-  
-        return row;
-      }
 
+        } catch (IOException e) {
+            LOG.info("could not parse json: " + json);
+            throw new RuntimeException("Failed to serialize json to table row: " + json, e);
+        }
+
+        return row;
+    }
 
     @ProcessElement
-    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) 
+    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
             throws Exception {
         LOG.info("received message: " + received.getPayload());
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();

@@ -28,8 +28,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
 public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DynamodbFn.class);
