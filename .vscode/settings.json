@@ -1,9 +1,8 @@
 {
+    "java.configuration.updateBuildConfiguration": "automatic",
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.dependency.packagePresentation": "hierarchical",
-    "java.project.sourcePaths": [
-        "pipelines"
-    ],
-    "java.debug.settings.onBuildFailureProceed": true,
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "editor.formatOnSave": true,
+    "[java]": {
+        "editor.defaultFormatter": "mwpb.java-prettier-formatter"
+    }
 }

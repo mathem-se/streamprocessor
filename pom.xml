@@ -30,6 +30,7 @@
         <junit-dep.version>4.10</junit-dep.version>
         <opensensus.version>0.24.0</opensensus.version>
         <surefire.version>2.21.0</surefire.version>
+        <maven-checkstyle-plugin.version>3.1.1</maven-checkstyle-plugin.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
         <maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
@@ -605,6 +606,45 @@
                 <version>${maven-jar-plugin.version}</version>
             </plugin>
 
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>checkstyle/checkstyle.xml</configLocation>
+                    <suppressionsLocation>checkstyle/suppressions.xml</suppressionsLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failOnViolation>true</failOnViolation>
+                    <includeResources>false</includeResources>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
+                <executions>
+                    <!--
+                      Execute checkstyle after compilation but before
+                    tests.
+                      This ensures that any parsing or type checking
+                    errors are from
+                      javac, so they look as expected. Beyond
+                    that, we want to
+                      fail as early as possible.
+                    -->
+                    <execution>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -755,6 +795,9 @@
 
     <modules>
         <module>core</module>
+        <module>pipelines/json-tokenize</module>
+        <module>pipelines/dynamodb</module>
+        <module>pipelines/salesforce</module>
     </modules>
 
 </project>
