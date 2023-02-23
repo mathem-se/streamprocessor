@@ -15,13 +15,11 @@
  */
 
 package org.streamprocessor.core.transforms;
-import org.streamprocessor.core.utils.JsonToTableRow;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.apache.beam.sdk.coders.Coder.Context;
-
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.nio.charset.StandardCharsets;
@@ -36,8 +34,6 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.util.RowJson.RowJsonDeserializer;
-import org.apache.beam.sdk.util.RowJsonUtils;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -49,8 +45,6 @@ import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
 import org.streamprocessor.core.utils.BigQueryUtils;
 import com.google.api.services.bigquery.model.TableRow;
-import org.apache.beam.sdk.schemas.Schema.Field;
-//import org.streamprocessor.core.utils.BigQueryUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
@@ -208,37 +202,27 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             // Identify unmapped fields in payload.
             // Sample ratio to check for differences
-            // if (true) {
-            //     Set<String> jsonKeySet = getAllKeys(json);
-            //     Set<String> schemaKeySet = getAllKeys(schema);
-            //     if (jsonKeySet.size() > schemaKeySet.size()) {
-            //         jsonKeySet.removeAll(schemaKeySet);
-            //         String unmappedFields = String.join(",", jsonKeySet);
-            //         LOG.warn(
-            //                 entity
-            //                         + " unmapped fields: "
-            //                         + unmappedFields
-            //                         + " - payload: "
-            //                         + json.toString());
-            //     }
-            // }
+            if (random.nextInt(100) < ratio * 100) {
+                Set<String> jsonKeySet = getAllKeys(json);
+                Set<String> schemaKeySet = getAllKeys(schema);
+                if (jsonKeySet.size() > schemaKeySet.size()) {
+                    jsonKeySet.removeAll(schemaKeySet);
+                    String unmappedFields = String.join(",", jsonKeySet);
+                    LOG.warn(
+                            entity
+                                    + " unmapped fields: "
+                                    + unmappedFields
+                                    + " - payload: "
+                                    + json.toString());
+                }
+            }
 
-            // LOG.info("[processElement22] Before row dese");
-            // LOG.info("[processElement22] payload: " + json.toString());
-            // LOG.info("[processElement22] schema: "+schema.toString());
-            
-
-            // LOG.info("convert json to table row");
             TableRow tr = convertJsonToTableRow(json.toString());
-            // LOG.info("TABLE ROW:" + tr.toString());
 
             Row row = BigQueryUtils.toBeamRow(schema, tr);
-            LOG.info("BEAM ROW" + row.toString());
-
-            //LOG.info("TABLE ROW2" + BigQueryUtils.toTableRow(row).toString());
-
             out.get(successTag).output(row);
-        } catch (NoSchemaException e) {
+        } catch (Exception e) {
+            LOG.error(entity + ": " + e.toString());
             // TODO:
             // instead, pass the following to deadletter: original_payload, status, error_message
             // can't put in unmodifiable map
@@ -246,5 +230,5 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             out.get(deadLetterTag)
                     .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
         }
-     }
+    }
 }

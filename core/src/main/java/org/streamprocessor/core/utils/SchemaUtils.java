@@ -31,8 +31,6 @@ import org.apache.beam.sdk.schemas.Schema.Field;
 import org.apache.beam.sdk.schemas.Schema.FieldType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Strings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Experimental(Kind.SCHEMAS)
 @SuppressWarnings({
@@ -40,8 +38,6 @@ import org.slf4j.LoggerFactory;
     "nullness", // TODO(https://issues.apache.org/jira/browse/BEAM-10402)
 })
 class SchemaUtils {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SchemaUtils.class);
 
     private static final Map<String, FieldType> FIELD_TYPES =
             ImmutableMap.<String, FieldType>builder()
@@ -124,13 +120,6 @@ class SchemaUtils {
 
         if ("STRUCT".equals(dcFieldType)) {
             List<ColumnSchema> subColumns = column.getSubcolumnsList();
-            // if (isKeyValueMap(column)) {
-            //     ColumnSchema value = subColumns.get(1);
-            //     return FieldType.map(
-            //         FieldType.STRING, 
-            //         getBeamFieldType(value)); // change this to .row()? bec not it comes back as STRUCT (-> MAP)
-            // }
-            
             Schema structSchema = fromColumnsList(subColumns);
             return FieldType.row(structSchema);
         }
