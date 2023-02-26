@@ -22,6 +22,7 @@ import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.CoderRegistry;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
@@ -55,7 +56,6 @@ import org.streamprocessor.core.transforms.DeIdentifyFn;
 import org.streamprocessor.core.transforms.DynamodbFn;
 import org.streamprocessor.core.transforms.RowToPubsubMessageFn;
 import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
-import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 
 /**
  * Streamer pipeline

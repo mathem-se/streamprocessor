@@ -23,7 +23,11 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.beam.sdk.values.Row.toRow;
 
 import com.google.api.services.bigquery.model.TableRow;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -33,6 +37,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.annotations.Experimental;
 import org.apache.beam.sdk.annotations.Experimental.Kind;
+import org.apache.beam.sdk.coders.Coder.Context;
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.Schema.Field;
 import org.apache.beam.sdk.schemas.Schema.FieldType;
@@ -198,7 +204,7 @@ public class BqUtils {
                         .appendOptional(
                                 new DateTimeFormatterBuilder()
                                         .appendLiteral('.')
-                                        .appendFractionOfSecond(3, 3)
+                                        .appendFractionOfSecond(3, 6)
                                         .toParser())
                         .appendLiteral(" UTC")
                         .toFormatter()
@@ -263,8 +269,7 @@ public class BqUtils {
                                     return MISSING_TZ_TIMESTAMP_PARSER
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
-                                } 
-                                else {
+                                } else {
                                     return new DateTime(
                                             (long) (Double.parseDouble(str) * 1000),
                                             ISOChronology.getInstanceUTC());
@@ -481,16 +486,15 @@ public class BqUtils {
     }
 
     private static Object toBeamRowFieldValue(Field field, Object bqValue) {
-            if (bqValue == null) {
-                if (field.getType().getNullable()) {
-                    return null;
-                } else {
-                    throw new IllegalArgumentException(
-                            "Received null value for non-nullable field \""
-                                    + field.getName()
-                                    + "\"");
-                }
+
+        if (bqValue == null) {
+            if (field.getType().getNullable()) {
+                return null;
+            } else {
+                throw new IllegalArgumentException(
+                        "Received null value for non-nullable field \"" + field.getName() + "\"");
             }
+        }
         Object obj = toBeamValue(field.getType(), bqValue);
         return obj;
     }
@@ -569,5 +573,19 @@ public class BqUtils {
                         + "' to '"
                         + fieldType
                         + "' is not supported");
+    }
+
+    public static TableRow convertJsonToTableRow(String json) {
+        TableRow row;
+        // Parse the JSON into a {@link TableRow} object.
+        try (InputStream inputStream =
+                new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
+            row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to serialize json to table row: " + json, e);
+        }
+
+        return row;
     }
 }

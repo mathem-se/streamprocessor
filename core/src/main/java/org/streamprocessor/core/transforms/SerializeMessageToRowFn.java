@@ -18,9 +18,6 @@ package org.streamprocessor.core.transforms;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.api.services.bigquery.model.TableRow;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
@@ -28,8 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
-import org.apache.beam.sdk.coders.Coder.Context;
-import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -155,21 +150,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         this.ratio = 0.001f;
     }
 
-    public static TableRow convertJsonToTableRow(String json) {
-        TableRow row;
-        // Parse the JSON into a {@link TableRow} object.
-        try (InputStream inputStream =
-                new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
-            row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
-
-        } catch (IOException e) {
-            LOG.info("could not parse json: " + json);
-            throw new RuntimeException("Failed to serialize json to table row: " + json, e);
-        }
-
-        return row;
-    }
-
     @ProcessElement
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
             throws Exception {
@@ -214,7 +194,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             //     }
             // }
 
-            TableRow tr = convertJsonToTableRow(json.toString());
+            TableRow tr = BqUtils.convertJsonToTableRow(json.toString());
 
             Row row = BqUtils.toBeamRow(schema, tr);
             out.get(successTag).output(row);
