@@ -19,10 +19,7 @@ package org.streamprocessor.core.transforms;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -66,51 +63,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
     public static <T> T getValueOrDefault(T value, T defaultValue) {
         return value == null ? defaultValue : value;
-    }
-
-    private static Set<String> getAllKeys(Schema schema) {
-        Set<String> keySet = new HashSet<String>();
-        return getAllKeys(schema.getFields(), keySet, "");
-    }
-
-    private static Set<String> getAllKeys(
-            List<Schema.Field> fields, Set<String> keySet, String prefix) {
-        try {
-            for (Schema.Field field : fields) {
-                keySet.add(prefix + field.getName());
-                if (field.getType().getTypeName().equals(Schema.TypeName.ROW)) {
-                    getAllKeys(
-                            field.getType().getRowSchema().getFields(),
-                            keySet,
-                            prefix + field.getName() + ".");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOG.error("getAllKeys: " + e.getMessage());
-        }
-        return keySet;
-    }
-
-    private static Set<String> getAllKeys(JSONObject jsonObject) {
-        Set<String> keySet = new HashSet<String>();
-        return getAllKeys(jsonObject, keySet, "");
-    }
-
-    private static Set<String> getAllKeys(
-            JSONObject jsonObject, Set<String> keySet, String prefix) {
-        try {
-            for (String key : jsonObject.keySet()) {
-                keySet.add(prefix + key);
-                if (jsonObject.get(key).getClass() == JSONObject.class) {
-                    getAllKeys(jsonObject.getJSONObject(key), keySet, key + ".");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOG.error("getAllKeys: " + e.getMessage());
-        }
-        return keySet;
     }
 
     private class NoSchemaException extends Exception {
@@ -176,24 +128,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             }
             JSONObject attributes = new JSONObject(received.getAttributeMap());
             json.put("_metadata", attributes);
-
-            // Identify unmapped fields in payload.
-            // Sample ratio to check for differences
-            // if (random.nextInt(100) < ratio * 100) {
-            //     Set<String> jsonKeySet = getAllKeys(json);
-            //     Set<String> schemaKeySet = getAllKeys(schema);
-            //     if (jsonKeySet.size() > schemaKeySet.size()) {
-            //         jsonKeySet.removeAll(schemaKeySet);
-            //         String unmappedFields = String.join(",", jsonKeySet);
-            //         LOG.warn(
-            //                 entity
-            //                         + " unmapped fields: "
-            //                         + unmappedFields
-            //                         + " - payload: "
-            //                         + json.toString());
-            //     }
-            // }
-
             TableRow tr = BqUtils.convertJsonToTableRow(json.toString());
 
             Row row = BqUtils.toBeamRow(schema, tr);
