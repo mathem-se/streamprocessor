@@ -123,8 +123,7 @@ class SchemaUtils {
         }
 
         if ("STRUCT".equals(dcFieldType)) {
-            List<ColumnSchema> subColumns = column.getSubcolumnsList();
-            Schema structSchema = fromColumnsList(subColumns);
+            Schema structSchema = fromColumnsList(column.getSubcolumnsList());
             return FieldType.row(structSchema);
         }
 
