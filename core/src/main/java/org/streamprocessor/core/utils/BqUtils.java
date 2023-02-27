@@ -130,7 +130,7 @@ public class BqUtils {
 
     private static final DateTimeFormatter Z_TIMESTAMP_PARSER;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
-    private static final DateTimeFormatter MISSING_TZ_TIMESTAMP_PARSER;
+    private static final DateTimeFormatter DATETIME_PARSER;
 
     static {
         DateTimeFormatter dateTimePart =
@@ -187,7 +187,7 @@ public class BqUtils {
                         .toFormatter()
                         .withZoneUTC();
 
-        MISSING_TZ_TIMESTAMP_PARSER =
+        DATETIME_PARSER =
                 new DateTimeFormatterBuilder()
                         .append(dateTimePartT)
                         .appendOptional(
@@ -266,7 +266,7 @@ public class BqUtils {
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
                                 } else if (str.contains("T")) {
-                                    return MISSING_TZ_TIMESTAMP_PARSER
+                                    return DATETIME_PARSER
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
                                 } else {
@@ -519,8 +519,6 @@ public class BqUtils {
             FieldType ft = fieldType.getCollectionElementType();
             return ((List<Object>) jsonBQValue)
                     .stream()
-                            // .map(v -> ((Map<String, Object>) v).get("v"))
-                            // .map(v -> ((String) v).get("v"))
                             .map(v -> toBeamValue(fieldType.getCollectionElementType(), v))
                             .collect(toList());
         }
