@@ -513,69 +513,83 @@ public class BqUtils {
     }
 
     private static @Nullable Object toBeamValue(FieldType fieldType, Object jsonBQValue) {
-        if (jsonBQValue instanceof String
-                || jsonBQValue instanceof Number
-                || jsonBQValue instanceof Boolean) {
-            String jsonBQString = jsonBQValue.toString();
-            if (JSON_VALUE_PARSERS.containsKey(fieldType.getTypeName())) {
-                return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
-            } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
-                return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
-            } else if (fieldType.isLogicalType(SqlTypes.DATE.getIdentifier())) {
-                return LocalDate.parse(jsonBQString);
-            } else if (fieldType.isLogicalType(SqlTypes.TIME.getIdentifier())) {
-                return LocalTime.parse(jsonBQString);
+        try {
+            if (jsonBQValue instanceof String
+                    || jsonBQValue instanceof Number
+                    || jsonBQValue instanceof Boolean) {
+                String jsonBQString = jsonBQValue.toString();
+                if (JSON_VALUE_PARSERS.containsKey(fieldType.getTypeName())) {
+                    return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
+                } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
+                    return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
+                } else if (fieldType.isLogicalType(SqlTypes.DATE.getIdentifier())) {
+                    return LocalDate.parse(jsonBQString);
+                } else if (fieldType.isLogicalType(SqlTypes.TIME.getIdentifier())) {
+                    return LocalTime.parse(jsonBQString);
+                }
             }
-        }
 
-        if (jsonBQValue instanceof List) {
-            FieldType ft = fieldType.getCollectionElementType();
-            return ((List<Object>) jsonBQValue)
-                    .stream()
-                            .map(v -> toBeamValue(fieldType.getCollectionElementType(), v))
-                            .collect(toList());
-        }
-
-        if (jsonBQValue instanceof Map && !(fieldType.getTypeName().isMapType())) {
-            TableRow tr = new TableRow();
-            tr.putAll((Map<String, Object>) jsonBQValue);
-            return toBeamRow(fieldType.getRowSchema(), tr);
-        }
-
-        if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
-            if (fieldType.getMapValueType().getRowSchema() == null) {
-                Map<String, Object> k =
-                        ((Map<String, Object>) jsonBQValue)
-                                .entrySet().stream()
-                                        .collect(
-                                                Collectors.toMap(
-                                                        Map.Entry::getKey,
-                                                        e -> {
-                                                            return toBeamValue(
-                                                                    fieldType.getMapValueType(),
-                                                                    e.getValue());
-                                                        }));
-                return k;
-            } else {
-                Map<String, Object> k =
-                        ((Map<String, Object>) jsonBQValue)
-                                .entrySet().stream()
-                                        .collect(
-                                                Collectors.toMap(
-                                                        Map.Entry::getKey,
-                                                        e -> {
-                                                            TableRow tr = new TableRow();
-                                                            tr.putAll(
-                                                                    (Map<String, Object>)
-                                                                            e.getValue());
-                                                            return toBeamRow(
-                                                                    fieldType
-                                                                            .getMapValueType()
-                                                                            .getRowSchema(),
-                                                                    tr);
-                                                        }));
-                return k;
+            if (jsonBQValue instanceof List) {
+                FieldType ft = fieldType.getCollectionElementType();
+                return ((List<Object>) jsonBQValue)
+                        .stream()
+                                .map(v -> toBeamValue(fieldType.getCollectionElementType(), v))
+                                .collect(toList());
             }
+
+            if (jsonBQValue instanceof Map && !(fieldType.getTypeName().isMapType())) {
+                TableRow tr = new TableRow();
+                tr.putAll((Map<String, Object>) jsonBQValue);
+                return toBeamRow(fieldType.getRowSchema(), tr);
+            }
+
+            if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
+                if (fieldType.getMapValueType().getRowSchema() == null) {
+                    Map<String, Object> k =
+                            ((Map<String, Object>) jsonBQValue)
+                                    .entrySet().stream()
+                                            .collect(
+                                                    Collectors.toMap(
+                                                            Map.Entry::getKey,
+                                                            e -> {
+                                                                return toBeamValue(
+                                                                        fieldType.getMapValueType(),
+                                                                        e.getValue());
+                                                            }));
+                    return k;
+                } else {
+                    Map<String, Object> k =
+                            ((Map<String, Object>) jsonBQValue)
+                                    .entrySet().stream()
+                                            .collect(
+                                                    Collectors.toMap(
+                                                            Map.Entry::getKey,
+                                                            e -> {
+                                                                TableRow tr = new TableRow();
+                                                                tr.putAll(
+                                                                        (Map<String, Object>)
+                                                                                e.getValue());
+                                                                return toBeamRow(
+                                                                        fieldType
+                                                                                .getMapValueType()
+                                                                                .getRowSchema(),
+                                                                        tr);
+                                                            }));
+                    return k;
+                }
+            }
+        } catch (Exception e) {
+            LOG.error(
+                    "Failed to convert value "
+                            + "`"
+                            + jsonBQValue.toString()
+                            + "`"
+                            + " of type "
+                            + "`"
+                            + fieldType.getTypeName().toString()
+                            + "`"
+                            + " to Beam value");
+            throw e;
         }
 
         throw new UnsupportedOperationException(
