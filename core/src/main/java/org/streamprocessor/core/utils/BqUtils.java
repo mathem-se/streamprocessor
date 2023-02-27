@@ -495,8 +495,21 @@ public class BqUtils {
                         "Received null value for non-nullable field \"" + field.getName() + "\"");
             }
         }
-        Object obj = toBeamValue(field.getType(), bqValue);
-        return obj;
+        try {
+            return toBeamValue(field.getType(), bqValue);
+        } catch (Exception e) {
+            throw new UnsupportedOperationException(
+                    "Could not convert field "
+                            + "`"
+                            + field.getName()
+                            + "`"
+                            + " of type "
+                            + "`"
+                            + field.getType()
+                            + "`"
+                            + " with value "
+                            + bqValue);
+        }
     }
 
     private static @Nullable Object toBeamValue(FieldType fieldType, Object jsonBQValue) {

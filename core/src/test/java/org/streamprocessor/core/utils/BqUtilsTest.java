@@ -73,6 +73,12 @@ public class BqUtilsTest {
                     .addNullableField("double", Schema.FieldType.DOUBLE)
                     .build();
 
+    private static final Schema FLAT_WRONG_TYPE =
+            Schema.builder()
+                    .addNullableField("id", Schema.FieldType.INT64)
+                    .addNullableField("value", Schema.FieldType.DOUBLE)
+                    .build();
+
     // Make sure that chosen BYTES test value is the same after a full base64 round trip.
     private static final Row FLAT_ROW =
             Row.withSchema(FLAT_TYPE)
@@ -137,6 +143,9 @@ public class BqUtilsTest {
                     .put("boolean", true)
                     .put("long", 123L)
                     .put("double", 123.456d);
+
+    private static final JSONObject JSON_FLAT_WRONG_TYPE_ROW =
+            new JSONObject().put("id", "hej").put("value", "123.456");
 
     private static final Schema ENUM_TYPE =
             Schema.builder()
@@ -218,14 +227,13 @@ public class BqUtilsTest {
     private static final TableRow BQ_ARRAY_ROW =
             BqUtils.convertJsonToTableRow(ARRAY_JSON.toString());
 
-    private static final JSONObject MAP_JSON = new JSONObject().put("map", new JSONObject().put("test", 123.456));
+    private static final JSONObject MAP_JSON =
+            new JSONObject().put("map", new JSONObject().put("test", 123.456));
 
-    private static final TableRow BQ_MAP_ROW =
-            BqUtils.convertJsonToTableRow(MAP_JSON.toString());
+    private static final TableRow BQ_MAP_ROW = BqUtils.convertJsonToTableRow(MAP_JSON.toString());
 
     @Test
     public void testToBeamRow_flat() {
-        // TableRow trBqUtils.convertJsonToTableRow(BQ_FLAT_ROW.toString());
         Row beamRow = BqUtils.toBeamRow(FLAT_TYPE, BQ_FLAT_ROW);
         assertEquals(FLAT_ROW, beamRow);
     }
