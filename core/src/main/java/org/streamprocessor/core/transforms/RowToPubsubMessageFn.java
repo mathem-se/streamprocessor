@@ -41,10 +41,12 @@ public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
 
     static final long serialVersionUID = 234L;
 
-    public RowToPubsubMessageFn() {}
+    public RowToPubsubMessageFn() {
+    }
 
     @Setup
-    public void setup() throws Exception {}
+    public void setup() throws Exception {
+    }
 
     @ProcessElement
     public void processElement(@Element Row row, OutputReceiver<KV<String, PubsubMessage>> out)
@@ -73,21 +75,24 @@ public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
                 eventUuid = UUID.randomUUID().toString();
             }
 
-            Map<String, String> attributes =
-                    new HashMap<String, String>() {
-                        static final long serialVersionUID = 2342534L;
+            Map<String, String> attributes = new HashMap<String, String>() {
+                static final long serialVersionUID = 2342534L;
 
-                        {
-                            put("timestamp", java.time.Instant.now().toString());
-                            put("event_timestamp", String.valueOf(eventTimestamp.getMillis()));
-                            put("event_uuid", eventUuid);
-                            put("entity", entity);
-                        }
-                    };
+                {
+                    put("timestamp", java.time.Instant.now().toString());
+                    put("event_timestamp", String.valueOf(eventTimestamp.getMillis()));
+                    put("event_uuid", eventUuid);
+                    put("entity", entity);
+                }
+            };
 
             out.output(KV.of(entity, new PubsubMessage(str.getBytes("UTF-8"), attributes)));
         } catch (Exception e) {
-            LOG.error("RowToPubsubMessage: " + e.getMessage());
+            LOG.error("exception[{}] step[{}] details[{}]",
+                e.getClass().getName(),
+                "RowToPubsubMessageFn.processElement()",
+                e.toString()
+            );
         }
     }
 }
