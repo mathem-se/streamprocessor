@@ -164,7 +164,7 @@ public class Dynamodb {
         // options.setNumberOfWorkerHarnessThreads(10);
         options.setStreaming(true);
         options.setEnableStreamingEngine(true);
-        LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads());
+        LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads()); // TODO: Logging msg not informative and labelled enough
 
         // validateOptions(options);  // to-do create a validation function...
 
@@ -274,7 +274,11 @@ public class Dynamodb {
                                                                         " The error was "
                                                                                 + x.getError())
                                                                 .toString();
-                                                LOG.error(message);
+                                                LOG.error("exception[FailedInsertsException] step[{}] details[{}]",
+                                                        e.getClass().getName(),
+                                                        "Dynamodb.main()",
+                                                        message
+                                                );
                                                 return "";
                                             }));
         }
