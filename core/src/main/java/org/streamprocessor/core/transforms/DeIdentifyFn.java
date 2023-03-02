@@ -56,6 +56,13 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
     private Firestore db;
     String firestoreProjectId;
 
+    private class MissingIdentifierException extends Exception {
+
+        private MissingIdentifierException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
+
     public static Object getFieldToken(String tokenFullRef, Firestore db) {
         try {
             tokenCacheMissesCounter.inc();
@@ -154,10 +161,12 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
                 return futureTransaction.get();
             }
         } catch (Exception e) {
-            LOG.info("tokens: something went wrong... race condition?");
-            LOG.error(e.toString());
-            // return null;
-            throw new RuntimeException(e.toString());
+            LOG.error("exception[{}] step[{}] details[{}] guess[race condition?]",
+                e.getClass().getName(),
+                "DeIdentifyFn.getFieldToken()",
+                e.toString()
+            );
+            throw new RuntimeException(e.toString()); // DEBATABLE: Why through new and wrapped in a RuntimeException?
         }
     }
 
@@ -215,7 +224,7 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
                                 field.getOptions()
                                         .getValue("referenced_federated_identifier", String.class);
                     } else {
-                        throw new Exception("Federated identifier missing");
+                        throw new MissingIdentifierException("Federated identifier missing");
                     }
                     String federatedIdentity = federatedEntityIds.get(federatedEntityRef);
                     if (federatedIdentity != null) {
@@ -293,9 +302,12 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
             }
             out.output(rowBuilder.build());
         } catch (Exception e) {
-            LOG.error(e.toString());
-            LOG.error("DeIdentifyFn: " + e.getMessage());
-            throw new Exception(e);
+            LOG.error("exception[{}] step[{}] details[{}]",
+                e.getClass().getName(),
+                "DeIdentifyFn.processElement()",
+                e.toString()
+            );
+            throw e;
         }
     }
 
