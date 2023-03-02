@@ -76,11 +76,9 @@ mvn spotless:apply
 
 Make sure you are logged in to gcloud and then assume a GCP service account to be able to access the datacatalog api.
 
-
-1. Start by compiling and test the core modules.
+1. Start by compiling the root project
 	``` bash
-	cd streamprocessor/core
-	mvn clean install -U
+	mvn clean compile
 	```
 1. Then run the actual pipeline.
 	```bash
@@ -96,7 +94,7 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	--schemaCheckRatio=<SCHEMA_CHECK_RATIO>"
 	```
 where
-- `<PIPELINE>` is the pipeline you want to run e.g dynamodb
+- `<PIPELINE>` is the name of the main class for the pipeline you want to run e.g Dynamodb
 - `<BACKUP_TOPIC>` is the name of the backup topic
 - `<BIGQUERY_DATASET>` is the bigquery dataset to write the data to
 - `<GCP_PROJECT>` is the name of the GCP project
@@ -104,6 +102,8 @@ where
 - `<FIRESTORE_GCP_PROJECT>` is the name of the firestore gcp project
 - `<SUBSCRIPTION_NAME>` is the name of the pub/sub subscription to pull data from
 - `<SCHEMA_CHECK_RATIO>` is the ratio of how often to check for schema updates e.g 0.01 would check once every 100 calls
+
+If you update the something in the core modules you need to recompile the root project and restart the pipeline to see the changes.
 
 
 ### Build and push to GCP
