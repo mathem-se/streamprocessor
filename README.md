@@ -78,22 +78,22 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 
 
 1. Start by compiling and test the core modules.
-	 ``` bash
+	``` bash
 	cd streamprocessor/core
 	mvn clean install -U
 	```
-1. Then run the actual pipeline. 
+1. Then run the actual pipeline.
 	```bash
 	cd streamprocessor/pipelines/<PIPELINE>
 	mvn -Pdataflow-runner -e compile exec:java \
-    -Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
-    -Dexec.args="--backupTopic=projects/< >/topics/<BACKUP_TOPIC> \
-    --bigQueryDataset=<BIGQUERY_DATASET> \
-    --deadLetterTopic=projects/<GCP_PROJECT>/topics/<DEADLETTER_TOPIC> \
-    --firestoreProjectId=<FIRESTORE_GCP_PROJECT> \
-    --project=<GCP_PROJECT> \
-    --inputSubscription=projects/<GCP_PROJECT>/subscriptions/<SUBSCRIPTION_NAME>  \
-    --schemaCheckRatio=<SCHEMA_CHECK_RATIO>"
+	-Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
+	-Dexec.args="--backupTopic=projects/<GCP_PROJECT>/topics/<BACKUP_TOPIC> \
+	--bigQueryDataset=<BIGQUERY_DATASET> \
+	--deadLetterTopic=projects/<GCP_PROJECT>/topics/<DEADLETTER_TOPIC> \
+	--firestoreProjectId=<FIRESTORE_GCP_PROJECT> \
+	--project=<GCP_PROJECT> \
+	--inputSubscription=projects/<GCP_PROJECT>/subscriptions/<SUBSCRIPTION_NAME>  \
+	--schemaCheckRatio=<SCHEMA_CHECK_RATIO>"
 	```
 where
 - `<PIPELINE>` is the pipeline you want to run e.g dynamodb
