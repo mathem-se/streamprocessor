@@ -275,7 +275,6 @@ public class Dynamodb {
                                                                                 + x.getError())
                                                                 .toString();
                                                 LOG.error("exception[FailedInsertsException] step[{}] details[{}]",
-                                                        e.getClass().getName(),
                                                         "Dynamodb.main()",
                                                         message
                                                 );
