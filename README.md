@@ -73,7 +73,38 @@ mvn spotless:apply
 	```
 
 ### Run a pipeline locally
-**TODO**
+
+Make sure you are logged in to gcloud and then assume a GCP service account to be able to access the datacatalog api.
+
+1. Start by compiling and installing the root project. It will fail on pipelines but succeed on the core components which is what's needed to run the pipeline.
+	``` bash
+	mvn clean install -U
+	```
+1. Then run a pipeline.
+	```bash
+	cd streamprocessor/pipelines/<PIPELINE>
+	mvn -Pdataflow-runner -e compile exec:java \
+	-Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
+	-Dexec.args="--backupTopic=projects/<GCP_PROJECT>/topics/<BACKUP_TOPIC> \
+	--bigQueryDataset=<BIGQUERY_DATASET> \
+	--deadLetterTopic=projects/<GCP_PROJECT>/topics/<DEADLETTER_TOPIC> \
+	--firestoreProjectId=<FIRESTORE_GCP_PROJECT> \
+	--project=<GCP_PROJECT> \
+	--inputSubscription=projects/<GCP_PROJECT>/subscriptions/<SUBSCRIPTION_NAME>  \
+	--schemaCheckRatio=<SCHEMA_CHECK_RATIO>"
+	```
+where
+- `<PIPELINE>` is the name of the main class for the pipeline you want to run e.g Dynamodb
+- `<BACKUP_TOPIC>` is the name of the backup topic
+- `<BIGQUERY_DATASET>` is the bigquery dataset to write the data to
+- `<GCP_PROJECT>` is the name of the GCP project
+- `<DEADLETTER_TOPIC>` is the name of the deadletter topic
+- `<FIRESTORE_GCP_PROJECT>` is the name of the firestore gcp project
+- `<SUBSCRIPTION_NAME>` is the name of the pub/sub subscription to pull data from
+- `<SCHEMA_CHECK_RATIO>` is the ratio of how often to check for schema updates e.g 0.01 would check once every 100 calls
+
+If you update the something in the core modules you need to recompile the root project and restart the pipeline to see the changes.
+
 
 ### Build and push to GCP
 
