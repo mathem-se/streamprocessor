@@ -76,11 +76,11 @@ mvn spotless:apply
 
 Make sure you are logged in to gcloud and then assume a GCP service account to be able to access the datacatalog api.
 
-1. Start by compiling the root project
+1. Start by compiling and installing the root project. It will fail on pipelines but succeed on the core components which is what's needed to run the pipeline.
 	``` bash
-	mvn clean compile
+	mvn clean install -U
 	```
-1. Then run the actual pipeline.
+1. Then run a pipeline.
 	```bash
 	cd streamprocessor/pipelines/<PIPELINE>
 	mvn -Pdataflow-runner -e compile exec:java \
