@@ -17,11 +17,9 @@
 package org.streamprocessor.core.transforms;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -29,8 +27,6 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.util.RowJson.RowJsonDeserializer;
-import org.apache.beam.sdk.util.RowJsonUtils;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -39,6 +35,7 @@ import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
@@ -66,51 +63,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
     public static <T> T getValueOrDefault(T value, T defaultValue) {
         return value == null ? defaultValue : value;
-    }
-
-    private static Set<String> getAllKeys(Schema schema) {
-        Set<String> keySet = new HashSet<String>();
-        return getAllKeys(schema.getFields(), keySet, "");
-    }
-
-    private static Set<String> getAllKeys(
-            List<Schema.Field> fields, Set<String> keySet, String prefix) {
-        try {
-            for (Schema.Field field : fields) {
-                keySet.add(prefix + field.getName());
-                if (field.getType().getTypeName().equals(Schema.TypeName.ROW)) {
-                    getAllKeys(
-                            field.getType().getRowSchema().getFields(),
-                            keySet,
-                            prefix + field.getName() + ".");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOG.error("getAllKeys: " + e.getMessage());
-        }
-        return keySet;
-    }
-
-    private static Set<String> getAllKeys(JSONObject jsonObject) {
-        Set<String> keySet = new HashSet<String>();
-        return getAllKeys(jsonObject, keySet, "");
-    }
-
-    private static Set<String> getAllKeys(
-            JSONObject jsonObject, Set<String> keySet, String prefix) {
-        try {
-            for (String key : jsonObject.keySet()) {
-                keySet.add(prefix + key);
-                if (jsonObject.get(key).getClass() == JSONObject.class) {
-                    getAllKeys(jsonObject.getJSONObject(key), keySet, key + ".");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOG.error("getAllKeys: " + e.getMessage());
-        }
-        return keySet;
     }
 
     private class NoSchemaException extends Exception {
@@ -150,14 +102,12 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         this.ratio = 0.001f;
     }
 
-    @Setup
-    public void setup() throws Exception {}
-
     @ProcessElement
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
             throws Exception {
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
+
         @Nullable Map<String, String> attributesMap = received.getAttributeMap();
         try {
             String linkedResource =
@@ -172,45 +122,16 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             }
 
             JSONObject json = new JSONObject(payload);
+
             if (json.isNull("event_timestamp")) {
                 json.put("event_timestamp", DateTime.now().withZone(DateTimeZone.UTC).toString());
             }
             JSONObject attributes = new JSONObject(received.getAttributeMap());
             json.put("_metadata", attributes);
+            TableRow tr = BqUtils.convertJsonToTableRow(json.toString());
 
-            // Identify unmapped fields in payload.
-            // Sample ratio to check for differences
-            if (random.nextInt(100) < ratio * 100) {
-                Set<String> jsonKeySet = getAllKeys(json);
-                Set<String> schemaKeySet = getAllKeys(schema);
-                if (jsonKeySet.size() > schemaKeySet.size()) {
-                    jsonKeySet.removeAll(schemaKeySet);
-                    String unmappedFields = String.join(",", jsonKeySet);
-                    LOG.warn(
-                            entity
-                                    + " unmapped fields: "
-                                    + unmappedFields
-                                    + " - payload: "
-                                    + json.toString());
-                }
-            }
-
-            Row row =
-                    RowJsonUtils.jsonToRow(
-                            RowJsonUtils.newObjectMapperWith(
-                                    RowJsonDeserializer.forSchema(schema)
-                                            .withNullBehavior(
-                                                    RowJsonDeserializer.NullBehavior
-                                                            .ACCEPT_MISSING_OR_NULL)),
-                            json.toString());
+            Row row = BqUtils.toBeamRow(schema, tr);
             out.get(successTag).output(row);
-        } catch (NoSchemaException e) {
-            // TODO:
-            // instead, pass the following to deadletter: original_payload, status, error_message
-            // can't put in unmodifiable map
-            // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
-            out.get(deadLetterTag)
-                    .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
         } catch (Exception e) {
             LOG.error(entity + ": " + e.toString());
             // TODO:

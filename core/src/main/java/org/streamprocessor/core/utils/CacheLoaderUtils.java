@@ -37,8 +37,6 @@ public final class CacheLoaderUtils implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(CacheLoaderUtils.class);
 
     public static Schema getSchema(String linkedResource) {
-        LOG.info("LinkedResource: " + linkedResource);
-
         try (DataCatalogClient dataCatalogClient = DataCatalogClient.create()) {
             // Get data catalog schema
             LookupEntryRequest request =
@@ -100,7 +98,6 @@ public final class CacheLoaderUtils implements Serializable {
             // Create a Row schema with message and field level options
             Schema schema =
                     Schema.builder().addFields(taggedFieldList).build().withOptions(schemaOptions);
-            LOG.info(schema.toString());
             return schema;
         } catch (Exception e) {
             LOG.error(e.toString());

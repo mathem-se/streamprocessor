@@ -79,7 +79,17 @@ class SchemaUtils {
         } else if ("REQUIRED".equals(column.getMode())) {
             field = field.withNullable(false);
         } else if ("REPEATED".equals(column.getMode())) {
-            field = Field.of(name, FieldType.array(fieldType));
+            if (isKeyValueMap(column)) {
+                ColumnSchema key = column.getSubcolumnsList().get(0);
+                ColumnSchema value = column.getSubcolumnsList().get(1);
+                field =
+                        Field.of(
+                                name,
+                                FieldType.map(
+                                        toBeamField(key).getType(), toBeamField(value).getType()));
+            } else {
+                field = Field.of(name, FieldType.array(fieldType.withNullable(true)));
+            }
             field = field.withNullable(true);
         } else {
             throw new UnsupportedOperationException(
@@ -91,6 +101,18 @@ class SchemaUtils {
         }
 
         return field;
+    }
+
+    private static boolean isKeyValueMap(ColumnSchema column) {
+        List<ColumnSchema> subColumns = column.getSubcolumnsList();
+        if (subColumns.size() == 2) {
+            ColumnSchema key = subColumns.get(0);
+            ColumnSchema value = subColumns.get(1);
+            if ("key".equals(key.getColumn()) && "value".equals(value.getColumn())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static FieldType getBeamFieldType(ColumnSchema column) {
