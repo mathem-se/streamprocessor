@@ -132,8 +132,28 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             Row row = BqUtils.toBeamRow(schema, tr);
             out.get(successTag).output(row);
+        } catch (NoSchemaException e) {
+            LOG.warn(
+                    "exception[{}] step[{}] details[{}] entity[{}]",
+                    "NoSchemaException",
+                    "SerializeMessageToRowFn.processElement()",
+                    e.toString(),
+                    entity);
         } catch (Exception e) {
-            LOG.error(entity + ": " + e.toString());
+            LOG.error(
+                    "exception[{}] step[{}] details[{}] entity[{}]",
+                    e.getClass().getName(),
+                    "SerializeMessageToRowFn.processElement()",
+                    e.toString(),
+                    entity
+                    // TODO: Add labels to error for consumption by log monitoring tool
+                    // Map.of(
+                    //     "entity", entity,
+                    //     "dataset", datasetId,
+                    //     "error_code", e.getClass().getName(),
+                    //     "error_step", "SerializeMessageToRowFn.processElement()"
+                    // )
+                    );
             // TODO:
             // instead, pass the following to deadletter: original_payload, status, error_message
             // can't put in unmodifiable map
