@@ -101,18 +101,18 @@ public final class CacheLoaderUtils implements Serializable {
                     Schema.builder().addFields(taggedFieldList).build().withOptions(schemaOptions);
             return schema;
         } catch (PermissionDeniedException e) {
-            LOG.warn("exception[{}] step[{}] details[{}]",
-                "PermissionDeniedException",
-                "CacheLoaderUtils.getSchema()",
-                e.toString()
-            );
+            LOG.warn(
+                    "exception[{}] step[{}] details[{}]",
+                    "PermissionDeniedException",
+                    "CacheLoaderUtils.getSchema()",
+                    e.toString());
             return Schema.builder().build();
         } catch (Exception e) {
-            LOG.error("exception[{}] step[{}] details[{}]",
-                e.getClass().getName(),
-                "CacheLoaderUtils.getSchema()",
-                e.toString()
-            );
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "CacheLoaderUtils.getSchema()",
+                    e.toString());
             return Schema.builder().build();
         }
     }
