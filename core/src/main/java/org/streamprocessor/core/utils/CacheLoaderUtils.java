@@ -16,6 +16,7 @@
 
 package org.streamprocessor.core.utils;
 
+import com.google.api.gax.rpc.PermissionDeniedException;
 import com.google.cloud.datacatalog.v1beta1.DataCatalogClient;
 import com.google.cloud.datacatalog.v1beta1.Entry;
 import com.google.cloud.datacatalog.v1beta1.LookupEntryRequest;
@@ -99,6 +100,13 @@ public final class CacheLoaderUtils implements Serializable {
             Schema schema =
                     Schema.builder().addFields(taggedFieldList).build().withOptions(schemaOptions);
             return schema;
+        } catch (PermissionDeniedException e) {
+            LOG.warn("exception[{}] step[{}] details[{}]",
+                "PermissionDeniedException",
+                "CacheLoaderUtils.getSchema()",
+                e.toString()
+            );
+            return Schema.builder().build();
         } catch (Exception e) {
             LOG.error("exception[{}] step[{}] details[{}]",
                 e.getClass().getName(),
