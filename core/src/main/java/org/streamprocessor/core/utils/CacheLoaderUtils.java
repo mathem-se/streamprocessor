@@ -102,14 +102,14 @@ public final class CacheLoaderUtils implements Serializable {
             return schema;
         } catch (PermissionDeniedException e) {
             LOG.warn("exception[{}] step[{}] details[{}]",
-                "NoSchemaException",
-                "CacheLoaderUtils.getSchema()",    
+                "PermissionDeniedException",
+                "CacheLoaderUtils.getSchema()",
                 e.toString()
             );
             return Schema.builder().build();
         } catch (Exception e) {
             LOG.error("exception[{}] step[{}] details[{}]",
-                "NoSchemaException",
+                e.getClass().getName(),
                 "CacheLoaderUtils.getSchema()",
                 e.toString()
             );
