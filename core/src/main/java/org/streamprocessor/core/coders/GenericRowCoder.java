@@ -70,11 +70,11 @@ public class GenericRowCoder extends CustomCoder<Row> {
         try {
             SerializableCoder.of(Row.class).encode(row, outStream);
         } catch (IOException e) {
-            LOG.error("exception[{}] step[{}] details[{}]",
-                e.getClass().getName(),
-                "GenericRowCoder.encode()",
-                e.toString()
-            );
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "GenericRowCoder.encode()",
+                    e.toString());
             throw (e);
         }
     }
@@ -92,11 +92,11 @@ public class GenericRowCoder extends CustomCoder<Row> {
         try {
             return SerializableCoder.of(Row.class).decode(inStream);
         } catch (IOException e) {
-            LOG.error("exception[{}] step[{}] details[{}]",
-                e.getClass().getName(),
-                "GenericRowCoder.decode()",
-                e.toString()
-            );
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "GenericRowCoder.decode()",
+                    e.toString());
             throw (e);
         }
     }

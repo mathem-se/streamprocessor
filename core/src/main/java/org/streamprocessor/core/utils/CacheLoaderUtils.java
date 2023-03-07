@@ -124,11 +124,11 @@ public final class CacheLoaderUtils implements Serializable {
                 try {
                     return getSchema(sqlResource);
                 } catch (Exception e) {
-                    LOG.error("exception[{}] step[{}] details[{}]",
-                        e.getClass().getName(),
-                        "CacheLoaderUtils.schemaCacheLoader()",
-                        e.toString()
-                    );
+                    LOG.error(
+                            "exception[{}] step[{}] details[{}]",
+                            e.getClass().getName(),
+                            "CacheLoaderUtils.schemaCacheLoader()",
+                            e.toString());
                     return null;
                 }
             }

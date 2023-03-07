@@ -111,28 +111,28 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                 out.output(
                         new PubsubMessage(payloadObject.toString().getBytes("UTF-8"), attributes));
             } catch (IllegalArgumentException e) {
-                LOG.error("exception[{}] step[{}] details[{}] entity[{}]",
-                    e.getClass().getName(),
-                    "DynamodbFn.processElement()",
-                    e.toString(),
-                    entity
-                );
+                LOG.error(
+                        "exception[{}] step[{}] details[{}] entity[{}]",
+                        e.getClass().getName(),
+                        "DynamodbFn.processElement()",
+                        e.toString(),
+                        entity);
             } catch (org.json.JSONException e) {
-                LOG.error("exception[{}] step[{}] details[{}] entity[{}]",
-                    e.getClass().getName(),
-                    "DynamodbFn.processElement()",
-                    e.toString(),
-                    entity
-                );
+                LOG.error(
+                        "exception[{}] step[{}] details[{}] entity[{}]",
+                        e.getClass().getName(),
+                        "DynamodbFn.processElement()",
+                        e.toString(),
+                        entity);
             } catch (Exception e) {
                 throw e;
             }
         } catch (Exception e) {
-            LOG.error("exception[{}] step[{}] details[{}]",
-                e.getClass().getName(),
-                "DynamodbFn.processElement()",
-                e.toString()
-            );
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "DynamodbFn.processElement()",
+                    e.toString());
         }
     }
 }

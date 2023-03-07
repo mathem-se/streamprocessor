@@ -161,12 +161,13 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
                 return futureTransaction.get();
             }
         } catch (Exception e) {
-            LOG.error("exception[{}] step[{}] details[{}] guess[race condition?]",
-                e.getClass().getName(),
-                "DeIdentifyFn.getFieldToken()",
-                e.toString()
-            );
-            throw new RuntimeException(e.toString()); // DEBATABLE: Why through new and wrapped in a RuntimeException?
+            LOG.error(
+                    "exception[{}] step[{}] details[{}] guess[race condition?]",
+                    e.getClass().getName(),
+                    "DeIdentifyFn.getFieldToken()",
+                    e.toString());
+            throw new RuntimeException(
+                    e.toString()); // DEBATABLE: Why through new and wrapped in a RuntimeException?
         }
     }
 
@@ -302,11 +303,11 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
             }
             out.output(rowBuilder.build());
         } catch (Exception e) {
-            LOG.error("exception[{}] step[{}] details[{}]",
-                e.getClass().getName(),
-                "DeIdentifyFn.processElement()",
-                e.toString()
-            );
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "DeIdentifyFn.processElement()",
+                    e.toString());
             throw e;
         }
     }

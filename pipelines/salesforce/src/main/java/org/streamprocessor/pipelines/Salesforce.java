@@ -277,10 +277,11 @@ public class Salesforce {
                                                                                 + x.getError())
                                                                 .toString();
                                                 LOG.error(message);
-                                                LOG.error("exception[FailedInsertsException] step[{}] details[{}]",
+                                                LOG.error(
+                                                        "exception[FailedInsertsException] step[{}]"
+                                                                + " details[{}]",
                                                         "Salesforce.main()",
-                                                        message
-                                                );
+                                                        message);
                                                 return "";
                                             }));
         }
