@@ -145,8 +145,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                     e.getClass().getName(),
                     "SerializeMessageToRowFn.processElement()",
                     e.toString(),
-                    entity
-                    );
+                    entity);
             // TODO:
             // instead, pass the following to deadletter: original_payload, status, error_message
             // can't put in unmodifiable map
