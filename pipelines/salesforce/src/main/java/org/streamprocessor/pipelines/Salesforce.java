@@ -276,7 +276,6 @@ public class Salesforce {
                                                                         " The error was "
                                                                                 + x.getError())
                                                                 .toString();
-                                                LOG.error(message);
                                                 LOG.error(
                                                         "exception[FailedInsertsException] step[{}]"
                                                                 + " details[{}]",
