@@ -117,8 +117,6 @@ public class SalesforceFn extends DoFn<PubsubMessage, PubsubMessage> {
                         "DynamodbFn.processElement()",
                         e.toString(),
                         entity);
-            } catch (Exception e) {
-                throw e;
             }
         } catch (Exception e) {
             LOG.error(
