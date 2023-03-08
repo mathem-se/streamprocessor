@@ -146,13 +146,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                     "SerializeMessageToRowFn.processElement()",
                     e.toString(),
                     entity
-                    // TODO: Add labels to error for consumption by log monitoring tool
-                    // Map.of(
-                    //     "entity", entity,
-                    //     "dataset", datasetId,
-                    //     "error_code", e.getClass().getName(),
-                    //     "error_step", "SerializeMessageToRowFn.processElement()"
-                    // )
                     );
             // TODO:
             // instead, pass the following to deadletter: original_payload, status, error_message
