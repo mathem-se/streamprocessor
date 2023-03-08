@@ -87,7 +87,11 @@ public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
 
             out.output(KV.of(entity, new PubsubMessage(str.getBytes("UTF-8"), attributes)));
         } catch (Exception e) {
-            LOG.error("RowToPubsubMessage: " + e.getMessage());
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "RowToPubsubMessageFn.processElement()",
+                    e.toString());
         }
     }
 }
