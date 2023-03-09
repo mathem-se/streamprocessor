@@ -96,16 +96,14 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                     if (!dynamodbStreamObject.isNull("Published")) {
                         payloadObject.put(
                                 "event_timestamp", dynamodbStreamObject.getString("Published"));
-                    } else {
-                        payloadObject.put(
-                                "event_timestamp",
-                                DateTime.now().withZone(DateTimeZone.UTC).toString());
-                    }
+                    }               
                 }
 
                 // Add meta-data from dynamoDB stream event as attributes
                 if (!dynamodbStreamObject.isNull("EventId")) {
                     attributes.put("dynamodbEventId", dynamodbStreamObject.getString("EventId"));
+                } else {
+                    attributes.put("event_id", payloadObject.getString("event_id"));
                 }
 
                 out.output(
