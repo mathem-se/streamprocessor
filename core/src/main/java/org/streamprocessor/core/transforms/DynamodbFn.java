@@ -26,8 +26,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
 public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DynamodbFn.class);
@@ -35,7 +33,7 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
 
     String unknownFieldLogger;
     String format;
-    
+
     private class MissingMetadataException extends Exception {
 
         private MissingMetadataException(String errorMessage) {
@@ -137,8 +135,7 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                         e.toString(),
                         entity,
                         uuid);
-            }
-            catch (MissingMetadataException e) {
+            } catch (MissingMetadataException e) {
                 LOG.error(
                         "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
                         e.getClass().getName(),
