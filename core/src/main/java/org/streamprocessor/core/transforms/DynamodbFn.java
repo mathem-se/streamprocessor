@@ -22,8 +22,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +33,13 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
 
     String unknownFieldLogger;
     String format;
+
+    private class MissingMetadataException extends Exception {
+
+        private MissingMetadataException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
 
     public static <T> T getValueOrDefault(T value, T defaultValue) {
         return value == null ? defaultValue : value;
@@ -60,6 +65,7 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                 attributes.put("entity", received.getAttribute("topic"));
             }
 
+            String uuid = received.getAttribute("uuid");
             String entity = attributes.get("entity");
             JSONObject payloadObject;
 
@@ -97,33 +103,46 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                         payloadObject.put(
                                 "event_timestamp", dynamodbStreamObject.getString("Published"));
                     } else {
-                        payloadObject.put(
-                                "event_timestamp",
-                                DateTime.now().withZone(DateTimeZone.UTC).toString());
+                        throw new MissingMetadataException("No event_timestamp found in message");
                     }
                 }
 
                 // Add meta-data from dynamoDB stream event as attributes
                 if (!dynamodbStreamObject.isNull("EventId")) {
                     attributes.put("dynamodbEventId", dynamodbStreamObject.getString("EventId"));
+                    // Add meta-data from custom events as attributes
+                } else if (!dynamodbStreamObject.isNull("event_id")) {
+                    attributes.put("event_id", payloadObject.getString("event_id"));
+                } else {
+                    throw new MissingMetadataException("No event_id found in message with uuid");
                 }
 
                 out.output(
                         new PubsubMessage(payloadObject.toString().getBytes("UTF-8"), attributes));
             } catch (IllegalArgumentException e) {
                 LOG.error(
-                        "exception[{}] step[{}] details[{}] entity[{}]",
+                        "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
                         e.getClass().getName(),
                         "DynamodbFn.processElement()",
                         e.toString(),
-                        entity);
+                        entity,
+                        uuid);
             } catch (org.json.JSONException e) {
                 LOG.error(
-                        "exception[{}] step[{}] details[{}] entity[{}]",
+                        "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
                         e.getClass().getName(),
                         "DynamodbFn.processElement()",
                         e.toString(),
-                        entity);
+                        entity,
+                        uuid);
+            } catch (MissingMetadataException e) {
+                LOG.error(
+                        "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
+                        e.getClass().getName(),
+                        "DynamodbFn.processElement()",
+                        e.toString(),
+                        entity,
+                        uuid);
             }
         } catch (Exception e) {
             LOG.error(
