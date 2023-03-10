@@ -22,8 +22,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,14 +94,19 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                     if (!dynamodbStreamObject.isNull("Published")) {
                         payloadObject.put(
                                 "event_timestamp", dynamodbStreamObject.getString("Published"));
-                    }               
+                    } else {
+                        LOG.error("No event_timestamp found in event");
+                    }
                 }
 
                 // Add meta-data from dynamoDB stream event as attributes
                 if (!dynamodbStreamObject.isNull("EventId")) {
                     attributes.put("dynamodbEventId", dynamodbStreamObject.getString("EventId"));
-                } else {
+                // Add meta-data from custom events as attributes
+                } else if (!dynamodbStreamObject.isNull("event_id")) {
                     attributes.put("event_id", payloadObject.getString("event_id"));
+                } else {
+                    LOG.error("No event_id found in event");
                 }
 
                 out.output(
