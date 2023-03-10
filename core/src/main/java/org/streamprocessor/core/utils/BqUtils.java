@@ -28,9 +28,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -54,12 +59,13 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Iterable
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Lists;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.io.BaseEncoding;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Instant;
-import org.joda.time.chrono.ISOChronology;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
+import org.joda.time.*;
+// import org.joda.time.DateTime;
+// import org.joda.time.DateTimeZone;
+// import org.joda.time.Instant;
+// import org.joda.time.chrono.ISOChronology;
+// import org.joda.time.format.DateTimeFormatter;
+// import org.joda.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,22 +125,34 @@ public class BqUtils {
     private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd'T'" + BIGQUERY_TIME_PATTERN);
 
-    private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PRINTER;
+    private static final org.joda.time.format.DateTimeFormatter BIGQUERY_TIMESTAMP_PRINTER;
+
+    // private static final String[] SUPPORTED_TIMESTAMP_PATTERNS = {
+    //     "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",  // 2023-03-10T12:34:56.789Z
+    //     "yyyy-MM-dd'T'HH:mm:ss.SSSX",    // 2023-03-10T12:34:56.789+01:00
+    //     "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",  // 2023-03-10T12:34:56.789+01:00:00
+    //     "yyyy-MM-dd'T'HH:mm:ss'Z'",      // 2023-03-10T12:34:56Z
+    //     "yyyy-MM-dd'T'HH:mm:ssX",        // 2023-03-10T12:34:56+01:00
+    //     "yyyy-MM-dd'T'HH:mm:ssXXX",      // 2023-03-10T12:34:56+01:00:00
+    //     "yyyy-MM-dd HH:mm:ss.SSS",       // 2023-03-10 12:34:56.789
+    //     "yyyy-MM-dd HH:mm:ss"            // 2023-03-10 12:34:56
+    // };
+    
 
     /**
      * Native BigQuery formatter for it's timestamp format, depending on the milliseconds stored in
      * the column, the milli second part will be 6, 3 or absent. Example {@code 2019-08-16
      * 00:52:07[.123]|[.123456] UTC}
      */
-    private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PARSER;
-
-    private static final DateTimeFormatter Z_TIMESTAMP_PARSER;
-    private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
-    private static final DateTimeFormatter DATETIME_PARSER;
+    
+    private static final org.joda.time.format.DateTimeFormatter BIGQUERY_TIMESTAMP_PARSER;
+    private static final org.joda.time.format.DateTimeFormatter Z_TIMESTAMP_PARSER;
+    private static final org.joda.time.format.DateTimeFormatter OFFS_TIMESTAMP_PARSER;
+    private static final org.joda.time.format.DateTimeFormatter DATETIME_PARSER;
 
     static {
-        DateTimeFormatter dateTimePart =
-                new DateTimeFormatterBuilder()
+        org.joda.time.format.DateTimeFormatter dateTimePart =
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .appendYear(4, 4)
                         .appendLiteral('-')
                         .appendMonthOfYear(2)
@@ -148,8 +166,8 @@ public class BqUtils {
                         .appendSecondOfMinute(2)
                         .toFormatter()
                         .withZoneUTC();
-        DateTimeFormatter dateTimePartT =
-                new DateTimeFormatterBuilder()
+        org.joda.time.format.DateTimeFormatter dateTimePartT =
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .appendYear(4, 4)
                         .appendLiteral('-')
                         .appendMonthOfYear(2)
@@ -164,10 +182,10 @@ public class BqUtils {
                         .toFormatter()
                         .withZoneUTC();
         Z_TIMESTAMP_PARSER =
-                new DateTimeFormatterBuilder()
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .append(dateTimePartT)
                         .appendOptional(
-                                new DateTimeFormatterBuilder()
+                                new org.joda.time.format.DateTimeFormatterBuilder()
                                         .appendLiteral('.')
                                         .appendFractionOfSecond(3, 7)
                                         .toParser())
@@ -176,10 +194,10 @@ public class BqUtils {
                         .withZoneUTC();
 
         OFFS_TIMESTAMP_PARSER =
-                new DateTimeFormatterBuilder()
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .append(dateTimePartT)
                         .appendOptional(
-                                new DateTimeFormatterBuilder()
+                                new org.joda.time.format.DateTimeFormatterBuilder()
                                         .appendLiteral('.')
                                         .appendFractionOfSecond(2, 7)
                                         .toParser())
@@ -188,10 +206,10 @@ public class BqUtils {
                         .withZoneUTC();
 
         DATETIME_PARSER =
-                new DateTimeFormatterBuilder()
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .append(dateTimePartT)
                         .appendOptional(
-                                new DateTimeFormatterBuilder()
+                                new org.joda.time.format.DateTimeFormatterBuilder()
                                         .appendLiteral('.')
                                         .appendFractionOfSecond(2, 7)
                                         .toParser())
@@ -199,10 +217,10 @@ public class BqUtils {
                         .withZoneUTC();
 
         BIGQUERY_TIMESTAMP_PARSER =
-                new DateTimeFormatterBuilder()
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .append(dateTimePart)
                         .appendOptional(
-                                new DateTimeFormatterBuilder()
+                                new org.joda.time.format.DateTimeFormatterBuilder()
                                         .appendLiteral('.')
                                         .appendFractionOfSecond(3, 6)
                                         .toParser())
@@ -210,7 +228,7 @@ public class BqUtils {
                         .toFormatter()
                         .withZoneUTC();
         BIGQUERY_TIMESTAMP_PRINTER =
-                new DateTimeFormatterBuilder()
+                new org.joda.time.format.DateTimeFormatterBuilder()
                         .append(dateTimePart)
                         .appendLiteral('.')
                         .appendFractionOfSecond(6, 6)
@@ -236,6 +254,40 @@ public class BqUtils {
                     .put(TypeName.BYTES, StandardSQLTypeName.BYTES)
                     .build();
 
+    private static final String[] SUPPORTED_TIMESTAMP_PATTERNS = {
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",  // 2023-03-10T12:34:56.789Z
+        "yyyy-MM-dd'T'HH:mm:ss.SSSX",    // 2023-03-10T12:34:56.789+01:00
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",  // 2023-03-10T12:34:56.789+01:00:00
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",      // 2023-03-10T12:34:56Z
+        "yyyy-MM-dd'T'HH:mm:ssX",        // 2023-03-10T12:34:56+01:00
+        "yyyy-MM-dd'T'HH:mm:ssXXX",      // 2023-03-10T12:34:56+01:00:00
+        "yyyy-MM-dd HH:mm:ss.SSS",       // 2023-03-10 12:34:56.789
+        "yyyy-MM-dd HH:mm:ss.SSSSSS",   // 2023-03-10 12:34:56.789098
+        "yyyy-MM-dd HH:mm:ss",           // 2023-03-10 12:34:56
+        "yyyy-MM-dd HH:mm:ss UTC",       // 2023-03-10 12:34:56 UTC
+        "yyyy-MM-dd HH:mm:ss.SSS UTC",   // 2023-03-10 12:34:56.789 UTC
+    };
+
+    private static DateTime parseTimestampString(String timestampString) {
+        if (timestampString == null || timestampString.length() == 0) {
+            return null;
+        }
+        DateTime parsedTimestamp = null;
+        for (String pattern : SUPPORTED_TIMESTAMP_PATTERNS) {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+                java.time.Instant parsedInstant = java.time.Instant.from(formatter.parse(timestampString));
+                parsedTimestamp = new DateTime(parsedInstant.toEpochMilli());
+                break;
+            } catch (DateTimeParseException e) {
+                // Ignore and try the next format pattern
+            }
+        }
+        return parsedTimestamp != null ? parsedTimestamp : new DateTime(
+            (long) (Double.parseDouble(timestampString) * 1000),
+            org.joda.time.chrono.ISOChronology.getInstanceUTC());
+    }
+
     private static final Map<TypeName, Function<String, @Nullable Object>> JSON_VALUE_PARSERS =
             ImmutableMap.<TypeName, Function<String, @Nullable Object>>builder()
                     .put(TypeName.BYTE, Byte::valueOf)
@@ -247,34 +299,7 @@ public class BqUtils {
                     .put(TypeName.DECIMAL, BigDecimal::new)
                     .put(TypeName.BOOLEAN, Boolean::valueOf)
                     .put(TypeName.STRING, str -> str)
-                    .put(
-                            TypeName.DATETIME,
-                            str -> {
-                                if (str == null || str.length() == 0) {
-                                    return null;
-                                }
-                                if (str.endsWith("UTC")) {
-                                    return BIGQUERY_TIMESTAMP_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.endsWith("Z")) {
-                                    return Z_TIMESTAMP_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.contains("T") && str.contains("+")) {
-                                    return OFFS_TIMESTAMP_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.contains("T")) {
-                                    return DATETIME_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else {
-                                    return new DateTime(
-                                            (long) (Double.parseDouble(str) * 1000),
-                                            ISOChronology.getInstanceUTC());
-                                }
-                            })
+                    .put(TypeName.DATETIME, str -> parseTimestampString(str))
                     .put(TypeName.BYTES, str -> BaseEncoding.base64().decode(str))
                     .build();
 
@@ -400,7 +425,7 @@ public class BqUtils {
                 return toTableRow((Row) fieldValue);
 
             case DATETIME:
-                return ((Instant) fieldValue)
+                return ((org.joda.time.Instant) fieldValue)
                         .toDateTime(DateTimeZone.UTC)
                         .toString(BIGQUERY_TIMESTAMP_PRINTER);
 
