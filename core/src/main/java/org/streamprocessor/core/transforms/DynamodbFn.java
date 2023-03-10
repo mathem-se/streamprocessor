@@ -95,24 +95,24 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                         payloadObject.put(
                                 "event_timestamp", dynamodbStreamObject.getString("Published"));
                     } else {
-                    LOG.error(
-                        "No event_timestamp found in message step[{}] entity[{}]",
-                        "DynamodbFn.processElement()",
-                        entity);
+                        LOG.error(
+                                "No event_timestamp found in message step[{}] entity[{}]",
+                                "DynamodbFn.processElement()",
+                                entity);
                     }
                 }
 
                 // Add meta-data from dynamoDB stream event as attributes
                 if (!dynamodbStreamObject.isNull("EventId")) {
                     attributes.put("dynamodbEventId", dynamodbStreamObject.getString("EventId"));
-                // Add meta-data from custom events as attributes
+                    // Add meta-data from custom events as attributes
                 } else if (!dynamodbStreamObject.isNull("event_id")) {
                     attributes.put("event_id", payloadObject.getString("event_id"));
                 } else {
                     LOG.error(
-                        "No event_id found in message step[{}] entity[{}]",
-                        "DynamodbFn.processElement()",
-                        entity);
+                            "No event_id found in message step[{}] entity[{}]",
+                            "DynamodbFn.processElement()",
+                            entity);
                 }
 
                 out.output(
