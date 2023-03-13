@@ -129,6 +129,7 @@ public class BqUtils {
     private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PARSER;
 
     private static final DateTimeFormatter Z_TIMESTAMP_PARSER;
+    private static final DateTimeFormatter Z_TIMESTAMP_PARSER_WITHOUT_T;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
     private static final DateTimeFormatter DATETIME_PARSER;
 
@@ -174,7 +175,12 @@ public class BqUtils {
                         .appendLiteral('Z')
                         .toFormatter()
                         .withZoneUTC();
-
+        Z_TIMESTAMP_PARSER_WITHOUT_T =
+                new DateTimeFormatterBuilder()
+                        .append(dateTimePart)
+                        .appendLiteral('Z')
+                        .toFormatter()
+                        .withZoneUTC();
         OFFS_TIMESTAMP_PARSER =
                 new DateTimeFormatterBuilder()
                         .append(dateTimePartT)
@@ -257,8 +263,12 @@ public class BqUtils {
                                     return BIGQUERY_TIMESTAMP_PARSER
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
-                                } else if (str.endsWith("Z")) {
+                                } else if (str.endsWith("Z") && str.contains("T")) {
                                     return Z_TIMESTAMP_PARSER
+                                            .parseDateTime(str)
+                                            .toDateTime(DateTimeZone.UTC);
+                                } else if (str.endsWith("Z")) {
+                                    return Z_TIMESTAMP_PARSER_WITHOUT_T
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
                                 } else if (str.contains("T") && str.contains("+")) {
