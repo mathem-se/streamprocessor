@@ -8,10 +8,10 @@ import org.junit.Test;
 
 public class SchemaUtilsTest {
 
-
     @Test
     public void testFromDataCatalog() {
-        Schema expectedBeamSchema = Schema.builder().addNullableField("id", Schema.FieldType.INT32).build();
+        Schema expectedBeamSchema =
+                Schema.builder().addNullableField("id", Schema.FieldType.INT32).build();
         com.google.cloud.datacatalog.v1beta1.Schema testSCHEMA =
                 com.google.cloud.datacatalog.v1beta1.Schema.newBuilder()
                         .addColumns(

@@ -1,7 +1,8 @@
 package org.streamprocessor.pipelines;
 
-import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.nio.charset.StandardCharsets;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.testing.PAssert;
@@ -21,67 +22,78 @@ import org.streamprocessor.core.transforms.DynamodbFn;
 
 /** Test cases for the {@link Dynamodb} class. */
 public class DynamodbTest {
-    
-  @Rule public final transient TestPipeline pipeline = TestPipeline.create();
 
-  /** Tests the {@link Dynamodb} pipeline. */
-  @Test
-  public void testWrongPayload() throws Exception {
-    // Test input
-    final String eventTimestamp = "2021-02-22T22:22:22.222Z";
-    final String payload = "{\"NewImage\": {\"id\": 123}, \"test\": " + eventTimestamp + ", \"EventId\": \"123\"}";
-    final PubsubMessage message =
-        new PubsubMessage(payload.getBytes(), ImmutableMap.of("uuid", "111"));
+    @Rule public final transient TestPipeline pipeline = TestPipeline.create();
 
-    final Instant timestamp =
-        new DateTime(2022, 2, 22, 22, 22, 22, 222, DateTimeZone.UTC).toInstant();
+    /** Tests the {@link Dynamodb} pipeline. */
+    @Test
+    public void testWrongPayload() throws Exception {
+        // Test input
+        final String eventTimestamp = "2021-02-22T22:22:22.222Z";
+        final String payload =
+                "{\"NewImage\": {\"id\": 123}, \"test\": "
+                        + eventTimestamp
+                        + ", \"EventId\": \"123\"}";
+        final PubsubMessage message =
+                new PubsubMessage(payload.getBytes(), ImmutableMap.of("uuid", "111"));
 
-    // Build pipeline
-    PCollection<PubsubMessage> transformOut =
-        pipeline
-            .apply(
-                "CreateInput",
-                Create.timestamped(TimestampedValue.of(message, timestamp))
-                    .withCoder(PubsubMessageWithAttributesCoder.of()))
-            .apply("Transform Dynamodb stream change events", ParDo.of(new DynamodbFn()));
+        final Instant timestamp =
+                new DateTime(2022, 2, 22, 22, 22, 22, 222, DateTimeZone.UTC).toInstant();
 
-    // Assert
-    PAssert.that(transformOut).empty();
-    // Execute pipeline
-    pipeline.run();
-  }
+        // Build pipeline
+        PCollection<PubsubMessage> transformOut =
+                pipeline.apply(
+                                "CreateInput",
+                                Create.timestamped(TimestampedValue.of(message, timestamp))
+                                        .withCoder(PubsubMessageWithAttributesCoder.of()))
+                        .apply(
+                                "Transform Dynamodb stream change events",
+                                ParDo.of(new DynamodbFn()));
 
-  /** Tests the {@link Dynamodb} pipeline. */
-  @Test
-  public void testCorrectPayload() throws Exception {
-    // Test input
-    final String payload = "{\"NewImage\": {\"id\": 123}, \"Published\": \"2021-02-22T22:22:22.222Z\", \"EventId\": \"123\"}";
-    final PubsubMessage message =
-        new PubsubMessage(payload.getBytes(), ImmutableMap.of("uuid", "111"));
+        // Assert
+        PAssert.that(transformOut).empty();
+        // Execute pipeline
+        pipeline.run();
+    }
 
-    final Instant timestamp =
-        new DateTime(2022, 2, 22, 22, 22, 22, 222, DateTimeZone.UTC).toInstant();
+    /** Tests the {@link Dynamodb} pipeline. */
+    @Test
+    public void testCorrectPayload() throws Exception {
+        // Test input
+        final String payload =
+                "{\"NewImage\": {\"id\": 123}, \"Published\": \"2021-02-22T22:22:22.222Z\","
+                        + " \"EventId\": \"123\"}";
+        final PubsubMessage message =
+                new PubsubMessage(payload.getBytes(), ImmutableMap.of("uuid", "111"));
 
-    // Build pipeline
-    PCollection<PubsubMessage> transformOut =
-        pipeline
-            .apply(
-                "CreateInput",
-                Create.timestamped(TimestampedValue.of(message, timestamp))
-                    .withCoder(PubsubMessageWithAttributesCoder.of()))
-            .apply("Transform Dynamodb stream change events", ParDo.of(new DynamodbFn()));
+        final Instant timestamp =
+                new DateTime(2022, 2, 22, 22, 22, 22, 222, DateTimeZone.UTC).toInstant();
 
-    PAssert.that(transformOut).satisfies(item -> {
-        PubsubMessage result = item.iterator().next();
-        String resultPayload = new String(result.getPayload(), StandardCharsets.UTF_8);
-        JSONObject resultPayloadJSON = new JSONObject(resultPayload);
-        Integer test = (Integer) resultPayloadJSON.get("id");
-        assertEquals(test, 123);
-        assertEquals(resultPayloadJSON.get("event_timestamp"), "2021-02-22T22:22:22.222Z");
-        return null;
-    });
-    // Execute pipeline
-    pipeline.run();
-  }
+        // Build pipeline
+        PCollection<PubsubMessage> transformOut =
+                pipeline.apply(
+                                "CreateInput",
+                                Create.timestamped(TimestampedValue.of(message, timestamp))
+                                        .withCoder(PubsubMessageWithAttributesCoder.of()))
+                        .apply(
+                                "Transform Dynamodb stream change events",
+                                ParDo.of(new DynamodbFn()));
 
+        PAssert.that(transformOut)
+                .satisfies(
+                        item -> {
+                            PubsubMessage result = item.iterator().next();
+                            String resultPayload =
+                                    new String(result.getPayload(), StandardCharsets.UTF_8);
+                            JSONObject resultPayloadJSON = new JSONObject(resultPayload);
+                            Integer test = (Integer) resultPayloadJSON.get("id");
+                            assertEquals(test, 123);
+                            assertEquals(
+                                    resultPayloadJSON.get("event_timestamp"),
+                                    "2021-02-22T22:22:22.222Z");
+                            return null;
+                        });
+        // Execute pipeline
+        pipeline.run();
+    }
 }
