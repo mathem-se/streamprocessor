@@ -45,6 +45,7 @@ import org.streamprocessor.core.coders.GenericRowCoder;
 import org.streamprocessor.core.io.SchemaDestinations;
 import org.streamprocessor.core.transforms.DeIdentifyFn;
 import org.streamprocessor.core.transforms.DynamodbFn;
+import org.streamprocessor.core.transforms.SalesforceFn;
 import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
 
 /**
@@ -62,7 +63,8 @@ public class StreamBackfillPipeline {
 
     private static final Logger LOG = LoggerFactory.getLogger(StreamBackfillPipeline.class);
 
-    private static final String DYNAMODB = "dynamoDb";
+    private static final String DYNAMODB = "dynamodb";
+    private static final String SALESFORCE = "salesforce";
 
     static final TupleTag<Row> SERIALIZED_SUCCESS_TAG =
             new TupleTag<Row>("Serialized success") {
@@ -180,94 +182,105 @@ public class StreamBackfillPipeline {
                                                 c.output(pubSubMessage);
                                             }
                                         }));
-        if (options.getPipelineType() == DYNAMODB) {
-            PCollectionTuple serialized =
-                    pubsubMessages
-                            .apply(
-                                    "Transform Dynamodb stream change events",
-                                    ParDo.of(new DynamodbFn()))
-                            .apply(
-                                    "Serialize to Rows",
-                                    ParDo.of(
-                                                    new SerializeMessageToRowFn(
-                                                            SERIALIZED_SUCCESS_TAG,
-                                                            SERIALIZED_DEADLETTER_TAG,
-                                                            options.getProject(),
-                                                            options.getBigQueryDataset(),
-                                                            options.getSchemaCheckRatio()))
-                                            .withOutputTags(
-                                                    SERIALIZED_SUCCESS_TAG,
-                                                    TupleTagList.of(SERIALIZED_DEADLETTER_TAG)));
 
-            if (options.getDeadLetterTopic() != null) {
-                serialized
-                        .get(SERIALIZED_DEADLETTER_TAG)
-                        .apply(
-                                "Write to deadLetter pubsub topic",
-                                PubsubIO.writeMessages().to(options.getDeadLetterTopic()));
-            }
+        PCollection<PubsubMessage> transformed;
+        if (options.getPipelineType().equals(DYNAMODB)) {
+            transformed =
+                    pubsubMessages.apply(
+                            "Transform Dynamodb stream change events", ParDo.of(new DynamodbFn()));
+        } else if (options.getPipelineType().equals(SALESFORCE)) {
+            transformed =
+                    pubsubMessages.apply(
+                            "Transform Dynamodb stream change events",
+                            ParDo.of(new SalesforceFn()));
 
-            PCollection<Row> tokenized =
-                    serialized
-                            .get(SERIALIZED_SUCCESS_TAG)
-                            .setCoder(coder)
-                            .apply(
-                                    "De-identify Rows",
-                                    ParDo.of(new DeIdentifyFn(options.getFirestoreProjectId())))
-                            .setCoder(coder);
-
-            if (options.getBigQueryDataset() != null) {
-                String projectId = options.getProject();
-                String bigQueryDataset = options.getBigQueryDataset();
-
-                WriteResult result =
-                        tokenized.apply(
-                                "Write de-identified Rows to BigQuery",
-                                BigQueryIO.<Row>write()
-                                        .withFormatFunction(r -> BigQueryUtils.toTableRow((Row) r))
-                                        .ignoreUnknownValues()
-                                        .withCreateDisposition(
-                                                BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-                                        .withWriteDisposition(
-                                                BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                                        .to(
-                                                SchemaDestinations.schemaDestination(
-                                                        projectId, bigQueryDataset))
-                                        .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
-                                        .withFailedInsertRetryPolicy(
-                                                InsertRetryPolicy.retryTransientErrors())
-                                        .withExtendedErrorInfo()
-                                // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
-                                // //https://issues.apache.org/jira/browse/BEAM-13954
-                                // .withAutoSharding()
-                                );
-
-                result.getFailedInsertsWithErr()
-                        .apply(
-                                MapElements.into(TypeDescriptors.strings())
-                                        .via(
-                                                x -> {
-                                                    String message =
-                                                            (new StringBuilder())
-                                                                    .append(
-                                                                            " The table was "
-                                                                                    + x.getTable())
-                                                                    .append(
-                                                                            " The row was "
-                                                                                    + x.getRow())
-                                                                    .append(
-                                                                            " The error was "
-                                                                                    + x.getError())
-                                                                    .toString();
-                                                    LOG.error(
-                                                            "exception[FailedInsertsException]"
-                                                                    + " step[{}] details[{}]",
-                                                            "Dynamodb.main()",
-                                                            message);
-                                                    return "";
-                                                }));
-            }
+        } else {
+            throw new RuntimeException("Pipeline type not supported");
         }
+
+        PCollectionTuple serialized =
+                transformed.apply(
+                        "Serialize to Rows",
+                        ParDo.of(
+                                        new SerializeMessageToRowFn(
+                                                SERIALIZED_SUCCESS_TAG,
+                                                SERIALIZED_DEADLETTER_TAG,
+                                                options.getProject(),
+                                                options.getBigQueryDataset(),
+                                                options.getSchemaCheckRatio()))
+                                .withOutputTags(
+                                        SERIALIZED_SUCCESS_TAG,
+                                        TupleTagList.of(SERIALIZED_DEADLETTER_TAG)));
+
+        if (options.getDeadLetterTopic() != null) {
+            serialized
+                    .get(SERIALIZED_DEADLETTER_TAG)
+                    .apply(
+                            "Write to deadLetter pubsub topic",
+                            PubsubIO.writeMessages().to(options.getDeadLetterTopic()));
+        }
+
+        PCollection<Row> tokenized =
+                serialized
+                        .get(SERIALIZED_SUCCESS_TAG)
+                        .setCoder(coder)
+                        .apply(
+                                "De-identify Rows",
+                                ParDo.of(new DeIdentifyFn(options.getFirestoreProjectId())))
+                        .setCoder(coder);
+
+        if (options.getBigQueryDataset() != null) {
+            String projectId = options.getProject();
+            String bigQueryDataset = options.getBigQueryDataset();
+
+            WriteResult result =
+                    tokenized.apply(
+                            "Write de-identified Rows to BigQuery",
+                            BigQueryIO.<Row>write()
+                                    .withFormatFunction(r -> BigQueryUtils.toTableRow((Row) r))
+                                    .ignoreUnknownValues()
+                                    .withCreateDisposition(
+                                            BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
+                                    .withWriteDisposition(
+                                            BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                                    .to(
+                                            SchemaDestinations.schemaDestination(
+                                                    projectId, bigQueryDataset))
+                                    .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
+                                    .withFailedInsertRetryPolicy(
+                                            InsertRetryPolicy.retryTransientErrors())
+                                    .withExtendedErrorInfo()
+                            // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
+                            // //https://issues.apache.org/jira/browse/BEAM-13954
+                            // .withAutoSharding()
+                            );
+
+            result.getFailedInsertsWithErr()
+                    .apply(
+                            MapElements.into(TypeDescriptors.strings())
+                                    .via(
+                                            x -> {
+                                                String message =
+                                                        (new StringBuilder())
+                                                                .append(
+                                                                        " The table was "
+                                                                                + x.getTable())
+                                                                .append(
+                                                                        " The row was "
+                                                                                + x.getRow())
+                                                                .append(
+                                                                        " The error was "
+                                                                                + x.getError())
+                                                                .toString();
+                                                LOG.error(
+                                                        "exception[FailedInsertsException]"
+                                                                + " step[{}] details[{}]",
+                                                        "Dynamodb.main()",
+                                                        message);
+                                                return "";
+                                            }));
+        }
+
         pipeline.run();
     }
 }
