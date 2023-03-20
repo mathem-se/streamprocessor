@@ -96,15 +96,10 @@ public class StreamBackfillPipeline {
 
     public interface StreamBackfillPipelineOptions extends DataflowPipelineOptions {
 
-        @Description("Pub/Sub topic")
-        String getPubsubTopic();
-
-        void setPubsubTopic(String topic);
-
         @Description("BigQuery query")
-        String getQuery();
+        String getBackfillQuery();
 
-        void setQuery(String query);
+        void setBackfillQuery(String backfillQuery);
 
         @Description("Pipeline type")
         String getPipelineType();
@@ -115,11 +110,6 @@ public class StreamBackfillPipeline {
         String getFirestoreProjectId();
 
         void setFirestoreProjectId(String value);
-
-        @Description("Pubsub topic for backup of tokenized data")
-        String getBackupTopic();
-
-        void setBackupTopic(String value);
 
         @Description("Pubsub topic for deadletter output")
         String getDeadLetterTopic();
@@ -154,7 +144,7 @@ public class StreamBackfillPipeline {
                                 "BigQuery SELECT job",
                                 BigQueryIO.readTableRows()
                                         // .withTemplateCompatibility()
-                                        .fromQuery(options.getQuery())
+                                        .fromQuery(options.getBackfillQuery())
                                         .usingStandardSql())
                         // .withoutValidation())
                         .apply(
