@@ -177,8 +177,7 @@ public class BackfillPipeline {
         } else if (options.getPipelineType().equals(SALESFORCE)) {
             transformed =
                     pubsubMessages.apply(
-                            "Transform salesforce events",
-                            ParDo.of(new SalesforceFn()));
+                            "Transform salesforce events", ParDo.of(new SalesforceFn()));
 
         } else {
             throw new RuntimeException("Pipeline type not supported");
