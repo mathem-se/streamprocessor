@@ -45,9 +45,9 @@ import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
  * @version 1.0
  * @since 2022-09-28
  */
-public class StreamBackfillPipeline {
+public class BackfillPipeline {
 
-    private static final Logger LOG = LoggerFactory.getLogger(StreamBackfillPipeline.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BackfillPipeline.class);
 
     private static final String DYNAMODB = "dynamodb";
     private static final String SALESFORCE = "salesforce";
@@ -82,7 +82,7 @@ public class StreamBackfillPipeline {
                 static final long serialVersionUID = 89472334422L;
             };
 
-    public interface StreamBackfillPipelineOptions extends DataflowPipelineOptions {
+    public interface BackfillPipelineOptions extends DataflowPipelineOptions {
 
         @Description("BigQuery query")
         String getBackfillQuery();
@@ -117,10 +117,10 @@ public class StreamBackfillPipeline {
     }
 
     public static void main(String[] args) {
-        StreamBackfillPipelineOptions options =
+        BackfillPipelineOptions options =
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
-                        .as(StreamBackfillPipelineOptions.class);
+                        .as(BackfillPipelineOptions.class);
         Pipeline pipeline = Pipeline.create(options);
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
         GenericRowCoder coder =
@@ -177,7 +177,7 @@ public class StreamBackfillPipeline {
         } else if (options.getPipelineType().equals(SALESFORCE)) {
             transformed =
                     pubsubMessages.apply(
-                            "Transform Dynamodb stream change events",
+                            "Transform salesforce events",
                             ParDo.of(new SalesforceFn()));
 
         } else {
