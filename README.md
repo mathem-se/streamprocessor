@@ -85,23 +85,30 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	cd streamprocessor/pipelines/<PIPELINE>
 	mvn -Pdataflow-runner -e compile exec:java \
 	-Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
-	-Dexec.args="--backupTopic=projects/<GCP_PROJECT>/topics/<BACKUP_TOPIC> \
-	--bigQueryDataset=<BIGQUERY_DATASET> \
-	--deadLetterTopic=projects/<GCP_PROJECT>/topics/<DEADLETTER_TOPIC> \
-	--firestoreProjectId=<FIRESTORE_GCP_PROJECT> \
+	-Dexec.args="--bigQueryDataset=<BIGQUERY_DATASET> \
 	--project=<GCP_PROJECT> \
-	--inputSubscription=projects/<GCP_PROJECT>/subscriptions/<SUBSCRIPTION_NAME>  \
-	--schemaCheckRatio=<SCHEMA_CHECK_RATIO>"
+	--schemaCheckRatio=<SCHEMA_CHECK_RATIO> \
+	--firestoreProjectId=<FIRESTORE_GCP_PROJECT> \
+	--deadLetterTopic=projects/<GCP_PROJECT>/topics/<DEADLETTER_TOPIC> \
+	# Regular pipelines
+	--backupTopic=projects/<GCP_PROJECT>/topics/<BACKUP_TOPIC> \
+	--inputSubscription=projects/<GCP_PROJECT>/subscriptions/<SUBSCRIPTION_NAME> \
+	# Backup pipeline
+	--pipelineType=<PIPELINE_TYPE> \
+	--backfillQuery=\"<BACKFILL_QUERY>\""
+
 	```
 where
 - `<PIPELINE>` is the name of the main class for the pipeline you want to run e.g Dynamodb
-- `<BACKUP_TOPIC>` is the name of the backup topic
 - `<BIGQUERY_DATASET>` is the bigquery dataset to write the data to
 - `<GCP_PROJECT>` is the name of the GCP project
-- `<DEADLETTER_TOPIC>` is the name of the deadletter topic
-- `<FIRESTORE_GCP_PROJECT>` is the name of the firestore gcp project
-- `<SUBSCRIPTION_NAME>` is the name of the pub/sub subscription to pull data from
 - `<SCHEMA_CHECK_RATIO>` is the ratio of how often to check for schema updates e.g 0.01 would check once every 100 calls
+- `<FIRESTORE_GCP_PROJECT>` is the name of the firestore gcp project that keeps run resources
+- `<DEADLETTER_TOPIC>` is the name of the deadletter topic
+- *regular pipe* `<BACKUP_TOPIC>` is the name of the backup topic
+- *regular pipe* `<SUBSCRIPTION_NAME>` is the name of the pub/sub subscription to pull data from
+- *backfill pipe* `<PIPELINE_TYPE>` is actually the transform pipeline used on the data you send in, which also corresponds to the source provider and the dataset that the data ends up in (`dynamodb|salesforce`).
+- *backfill pipe* `<BACKFILL_QUERY>` is the query used against backup table which extracts topic `data, attributes, publish_time` from some period.
 
 If you update the something in the core modules you need to recompile the root project and restart the pipeline to see the changes.
 

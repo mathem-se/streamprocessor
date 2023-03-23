@@ -1,0 +1,7 @@
+{
+  "mainClass": "org.streamprocessor.pipelines.BackfillPipeline",
+  "classPath": "/pipelines/backfill/*:/pipelines/backfill/libs/*://pipelines/backfill/classes",
+  "defaultParameterValues": {
+    "labels": "{\"stream-processor-template-type\":\"flex\",\"stream-processor-provided-template-name\":\"backfill\"}"
+  }
+}
