@@ -22,8 +22,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +33,13 @@ public class SalesforceFn extends DoFn<PubsubMessage, PubsubMessage> {
 
     String unknownFieldLogger;
     String format;
+
+    private class MissingMetadataException extends Exception {
+
+        private MissingMetadataException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
 
     public static <T> T getValueOrDefault(T value, T defaultValue) {
         return value == null ? defaultValue : value;
@@ -88,11 +93,11 @@ public class SalesforceFn extends DoFn<PubsubMessage, PubsubMessage> {
                     if (!salesforceStreamObject.isNull("time")) {
                         payloadObject.put(
                                 "event_timestamp", salesforceStreamObject.getString("time"));
+                    } else if (attributes.containsKey("timestamp")
+                            && !attributes.get("timestamp").isEmpty()) {
+                        payloadObject.put("event_timestamp", attributes.get("timestamp"));
                     } else {
-                        // NOTE: should we really infer the event_timestamp here?
-                        payloadObject.put(
-                                "event_timestamp",
-                                DateTime.now().withZone(DateTimeZone.UTC).toString());
+                        throw new MissingMetadataException("No event_timestamp found in message");
                     }
                 }
 
