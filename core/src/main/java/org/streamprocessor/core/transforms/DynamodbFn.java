@@ -115,7 +115,7 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                     // Add meta-data from custom events as attributes
                 } else if (!dynamodbStreamObject.isNull("event_id")) {
                     attributes.put("event_id", payloadObject.getString("event_id"));
-                  } else if (attributes.containsKey("uuid")) {
+                } else if (attributes.containsKey("uuid")) {
                     attributes.put("event_id", attributes.get("uuid"));
                 } else {
                     throw new MissingMetadataException("No event_id found in message with uuid");
