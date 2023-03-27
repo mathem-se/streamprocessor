@@ -102,6 +102,8 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                     if (!dynamodbStreamObject.isNull("Published")) {
                         payloadObject.put(
                                 "event_timestamp", dynamodbStreamObject.getString("Published"));
+                    } else if (attributes.containsKey("timestamp")) {
+                        payloadObject.put("event_timestamp", attributes.get("timestamp"));
                     } else {
                         throw new MissingMetadataException("No event_timestamp found in message");
                     }
@@ -113,6 +115,8 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                     // Add meta-data from custom events as attributes
                 } else if (!dynamodbStreamObject.isNull("event_id")) {
                     attributes.put("event_id", payloadObject.getString("event_id"));
+                } else if (attributes.containsKey("uuid")) {
+                    attributes.put("event_id", attributes.get("uuid"));
                 } else {
                     throw new MissingMetadataException("No event_id found in message with uuid");
                 }
