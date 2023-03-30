@@ -60,6 +60,15 @@
         ]
       },
       {
+        "name": "diskSizeGb",
+        "label": "Disk size in GB for dataflow workers",
+        "helpText": "The disk size in GB, use larger disk size for large backfills",
+        "isOptional": false,
+        "regexes": [
+          "[0-9]+"
+        ]
+      },
+      {
         "name": "schemaCheckRatio",
         "label": "Ratio between 0-1 to check for unmapped fields in message.",
         "helpText": "0.01 = default. 0 = no checks.",
