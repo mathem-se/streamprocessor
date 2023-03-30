@@ -164,12 +164,8 @@ public class Dynamodb {
         // options.setNumberOfWorkerHarnessThreads(10);
         options.setStreaming(true);
         options.setEnableStreamingEngine(true);
-        LOG.info(
-                "NumberOfWorkerHarnessThreads: "
-                        + options.getNumberOfWorkerHarnessThreads());
-        LOG.info(
-                "Disksize: "
-                        + options.getDiskSizeGb());
+        LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads());
+        LOG.info("Disksize: " + options.getDiskSizeGb());
         // validateOptions(options);  // to-do create a validation function...
 
         Pipeline pipeline = Pipeline.create(options);
