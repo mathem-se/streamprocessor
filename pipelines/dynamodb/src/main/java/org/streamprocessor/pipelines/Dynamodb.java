@@ -166,10 +166,10 @@ public class Dynamodb {
         options.setEnableStreamingEngine(true);
         LOG.info(
                 "NumberOfWorkerHarnessThreads: "
-                        + options.getNumberOfWorkerHarnessThreads()); // TODO: Logging msg not
-        // informative and labelled
-        // enough
-
+                        + options.getNumberOfWorkerHarnessThreads());
+        LOG.info(
+                "Disksize: "
+                        + options.getDiskSizeGb());
         // validateOptions(options);  // to-do create a validation function...
 
         Pipeline pipeline = Pipeline.create(options);
