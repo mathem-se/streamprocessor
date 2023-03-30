@@ -104,6 +104,8 @@ public class SalesforceFn extends DoFn<PubsubMessage, PubsubMessage> {
                 // Add meta-data from salesforce stream event as attributes
                 if (!salesforceStreamObject.isNull("id")) {
                     attributes.put("event_id", salesforceStreamObject.getString("id"));
+                } else if (!attributes.containsKey("event_id")) {
+                    attributes.put("event_id", attributes.get("uuid"));
                 }
 
                 out.output(
