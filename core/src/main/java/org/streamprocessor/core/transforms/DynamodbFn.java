@@ -93,7 +93,8 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
 
                 // Add meta-data from dynamoDB stream event as attributes
                 if (!dynamodbStreamObject.isNull("Published")) {
-                    attributes.put("dynamodbPublished", dynamodbStreamObject.getString("Published"));
+                    attributes.put(
+                            "dynamodbPublished", dynamodbStreamObject.getString("Published"));
                 } else if (attributes.containsKey("timestamp")) {
                     attributes.put("dynamodbPublished", attributes.get("timestamp"));
                 } else {
