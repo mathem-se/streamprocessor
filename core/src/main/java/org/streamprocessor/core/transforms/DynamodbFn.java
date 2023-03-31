@@ -95,6 +95,10 @@ public class DynamodbFn extends DoFn<PubsubMessage, PubsubMessage> {
                 if (!dynamodbStreamObject.isNull("Published")) {
                     attributes.put(
                             "dynamodbPublished", dynamodbStreamObject.getString("Published"));
+                } else if (attributes.containsKey("timestamp")) {
+                    attributes.put("dynamodbPublished", attributes.get("timestamp"));
+                } else {
+                    throw new MissingMetadataException("No published found in message");
                 }
 
                 // add event_time to payload root for streaming analytics use cases
