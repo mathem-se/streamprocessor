@@ -108,7 +108,8 @@ class SchemaUtils {
         if (subColumns.size() == 2) {
             ColumnSchema key = subColumns.get(0);
             ColumnSchema value = subColumns.get(1);
-            if ("key".equals(key.getColumn().toLowerCase()) && "value".equals(value.getColumn().toLowerCase())) {
+            if ("key".equals(key.getColumn().toLowerCase())
+                    && "value".equals(value.getColumn().toLowerCase())) {
                 return true;
             }
         }
