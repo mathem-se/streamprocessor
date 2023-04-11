@@ -131,6 +131,7 @@ public class BqUtils {
     private static final DateTimeFormatter Z_TIMESTAMP_PARSER;
     private static final DateTimeFormatter Z_TIMESTAMP_PARSER_WITHOUT_T;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
+    private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER_WITHOUT_T;
     private static final DateTimeFormatter DATETIME_PARSER;
 
     static {
@@ -184,6 +185,17 @@ public class BqUtils {
         OFFS_TIMESTAMP_PARSER =
                 new DateTimeFormatterBuilder()
                         .append(dateTimePartT)
+                        .appendOptional(
+                                new DateTimeFormatterBuilder()
+                                        .appendLiteral('.')
+                                        .appendFractionOfSecond(2, 7)
+                                        .toParser())
+                        .appendTimeZoneOffset(null, true, 2, 2)
+                        .toFormatter()
+                        .withZoneUTC();
+        OFFS_TIMESTAMP_PARSER_WITHOUT_T =
+                new DateTimeFormatterBuilder()
+                        .append(dateTimePart)
                         .appendOptional(
                                 new DateTimeFormatterBuilder()
                                         .appendLiteral('.')
@@ -277,6 +289,10 @@ public class BqUtils {
                                             .toDateTime(DateTimeZone.UTC);
                                 } else if (str.contains("T")) {
                                     return DATETIME_PARSER
+                                            .parseDateTime(str)
+                                            .toDateTime(DateTimeZone.UTC);
+                                } else if (str.contains("+")) {
+                                    return OFFS_TIMESTAMP_PARSER_WITHOUT_T
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
                                 } else {
@@ -518,7 +534,9 @@ public class BqUtils {
                             + field.getType()
                             + "`"
                             + " with value "
-                            + bqValue);
+                            + bqValue
+                            + "\nOriginal exception:"
+                            + e.toString());
         }
     }
 

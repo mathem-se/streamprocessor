@@ -54,6 +54,7 @@ public class BqUtilsTest {
                     .addNullableField("timestamp_variant3", Schema.FieldType.DATETIME)
                     .addNullableField("timestamp_variant4", Schema.FieldType.DATETIME)
                     .addNullableField("timestamp_variant5", Schema.FieldType.DATETIME)
+                    .addNullableField("timestamp_variant6", Schema.FieldType.DATETIME)
                     .addNullableField("datetime", Schema.FieldType.logicalType(SqlTypes.DATETIME))
                     .addNullableField(
                             "datetime0ms", Schema.FieldType.logicalType(SqlTypes.DATETIME))
@@ -100,6 +101,9 @@ public class BqUtilsTest {
                             ISODateTimeFormat.dateTimeNoMillis()
                                     .withZoneUTC()
                                     .parseDateTime("2019-08-19T16:52:07Z"),
+                            ISODateTimeFormat.dateHourMinuteSecondFraction()
+                                    .withZoneUTC()
+                                    .parseDateTime("2023-03-06T15:29:39.766"),
                             LocalDateTime.parse("2020-11-02T12:34:56.789876"),
                             LocalDateTime.parse("2020-11-02T12:34:56"),
                             LocalDateTime.parse("2020-11-02T12:34:00.789876"),
@@ -133,6 +137,7 @@ public class BqUtilsTest {
                                                     .getMillis()
                                             / 1000.0D))
                     .put("timestamp_variant5", "2019-08-19 16:52:07Z")
+                    .put("timestamp_variant6", "2023-03-06 15:29:39.766632+00:00")
                     .put("datetime", "2020-11-02T12:34:56.789876")
                     .put("datetime0ms", "2020-11-02T12:34:56")
                     .put("datetime0s_ns", "2020-11-02T12:34:00.789876")
@@ -183,7 +188,7 @@ public class BqUtilsTest {
             Row.withSchema(FLAT_TYPE)
                     .addValues(
                             null, null, null, null, null, null, null, null, null, null, null, null,
-                            null, null, null, null, null, null, null, null, null, null, null)
+                            null, null, null, null, null, null, null, null, null, null, null, null)
                     .build();
 
     private static final TableRow BQ_NULL_FLAT_ROW =
@@ -196,6 +201,7 @@ public class BqUtilsTest {
                     .set("timestamp_variant3", null)
                     .set("timestamp_variant4", null)
                     .set("timestamp_variant5", null)
+                    .set("timestamp_variant6", null)
                     .set("datetime", null)
                     .set("datetime0ms", null)
                     .set("datetime0s_ns", null)
