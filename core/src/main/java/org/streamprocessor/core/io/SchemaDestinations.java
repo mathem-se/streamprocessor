@@ -37,22 +37,19 @@ public class SchemaDestinations {
         return new SchemaDestination();
     }
 
-    public static DynamicDestinations<Row, Row> schemaDestination(
-            String projectId, String datasetId) {
-        return new SchemaDestination(projectId, datasetId);
+    public static DynamicDestinations<Row, Row> schemaDestination(String projectId) {
+        return new SchemaDestination(projectId);
     }
 
     public static class SchemaDestination extends DynamicDestinations<Row, Row> {
 
         static final long serialVersionUID = 897432972L;
         private String projectId;
-        private String datasetId;
 
         public SchemaDestination() {}
 
-        public SchemaDestination(String projectId, String datasetId) {
+        public SchemaDestination(String projectId) {
             this.projectId = projectId;
-            this.datasetId = datasetId;
         }
 
         @Override
@@ -65,7 +62,6 @@ public class SchemaDestinations {
             Schema schema = row.getSchema();
             String entity = schema.getOptions().getValue("entity", String.class);
             String tableProjectId = projectId;
-            String tableDatasetId = datasetId;
 
             TimePartitioning timePartitioning =
                     new TimePartitioning()
@@ -92,7 +88,7 @@ public class SchemaDestinations {
                                             .getValueOrDefault("projectId", tableProjectId))
                             .setDatasetId(
                                     schema.getOptions()
-                                            .getValueOrDefault("datasetId", tableDatasetId)
+                                            .getValue("datasetId", String.class)
                                             .replaceAll("-", "_"))
                             .setTableId(
                                     schema.getOptions()
@@ -111,7 +107,7 @@ public class SchemaDestinations {
 
         @Override
         public GenericRowCoder getDestinationCoder() {
-            return new GenericRowCoder(projectId, datasetId);
+            return new GenericRowCoder();
         }
     }
 }

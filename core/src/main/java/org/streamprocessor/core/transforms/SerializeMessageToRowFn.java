@@ -17,6 +17,7 @@
 package org.streamprocessor.core.transforms;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -46,19 +47,28 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     private static final Counter schemaCacheCallsCounter =
             Metrics.counter("SerializeMessageToRowFn", "schemaCacheCalls");
     static final long serialVersionUID = 234L;
-    private static final com.github.benmanes.caffeine.cache.LoadingCache<String, Schema>
-            schemaCache =
-                    Caffeine.newBuilder()
-                            .maximumSize(1000)
-                            .refreshAfterWrite(5, TimeUnit.MINUTES)
-                            .build(k -> getCachedSchema(k));
+    private static final LoadingCache<String, Schema> schemaCache =
+            Caffeine.newBuilder()
+                    .maximumSize(1000)
+                    .refreshAfterWrite(5, TimeUnit.MINUTES)
+                    .build(k -> getCachedSchema(k));
+
+    private static final Counter dataContractsCacheMissesCounter =
+            Metrics.counter("SerializeMessageToRowFn", "dataContractsCacheMissesCounter");
+    private static final Counter dataContractCacheCallsCounter =
+            Metrics.counter("SerializeMessageToRowFn", "dataContractCacheCallsCounter");
+    private static final LoadingCache<String, JSONObject> DataContractCache =
+            Caffeine.newBuilder()
+                    .maximumSize(1000)
+                    .refreshAfterWrite(5, TimeUnit.MINUTES)
+                    .build(k -> getDataContractForCache(k));
 
     TupleTag<Row> successTag;
     TupleTag<PubsubMessage> deadLetterTag;
     String unknownFieldLogger;
     String format;
     String projectId;
-    String datasetId;
+    String dataContractBaseApiUrl;
     float ratio;
 
     public static <T> T getValueOrDefault(T value, T defaultValue) {
@@ -77,16 +87,21 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         return CacheLoaderUtils.getSchema(ref);
     }
 
+    private static JSONObject getDataContractForCache(String endpoint) {
+        dataContractsCacheMissesCounter.inc();
+        return CacheLoaderUtils.getDataContract(endpoint);
+    }
+
     public SerializeMessageToRowFn(
             TupleTag<Row> successTag,
             TupleTag<PubsubMessage> deadLetterTag,
             String projectId,
-            String datasetId,
+            String dataContractBaseApiUrl,
             float ratio) {
         this.successTag = successTag;
         this.deadLetterTag = deadLetterTag;
         this.projectId = projectId;
-        this.datasetId = datasetId;
+        this.dataContractBaseApiUrl = dataContractBaseApiUrl;
         this.ratio = ratio;
     }
 
@@ -94,11 +109,11 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             TupleTag<Row> successTag,
             TupleTag<PubsubMessage> deadLetterTag,
             String projectId,
-            String datasetId) {
+            String dataContractBaseApiUrl) {
         this.successTag = successTag;
         this.deadLetterTag = deadLetterTag;
         this.projectId = projectId;
-        this.datasetId = datasetId;
+        this.dataContractBaseApiUrl = dataContractBaseApiUrl;
         this.ratio = 0.001f;
     }
 
@@ -107,9 +122,19 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             throws Exception {
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
+        String endpoint = dataContractBaseApiUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
         @Nullable Map<String, String> attributesMap = received.getAttributeMap();
+
         try {
+            dataContractCacheCallsCounter.inc();
+            JSONObject dataContract = DataContractCache.get(endpoint);
+            String datasetId =
+                    dataContract
+                            .getJSONObject("endpoints")
+                            .getJSONObject("target")
+                            .getString("dataset");
+
             String linkedResource =
                     String.format(
                             "//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s",

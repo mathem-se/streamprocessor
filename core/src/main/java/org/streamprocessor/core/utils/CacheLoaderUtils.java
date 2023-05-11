@@ -25,10 +25,12 @@ import com.google.cloud.datacatalog.v1beta1.TagField;
 import com.google.common.cache.CacheLoader;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.schemas.Schema;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,21 @@ public final class CacheLoaderUtils implements Serializable {
 
     static final long serialVersionUID = 89422138932L;
     private static final Logger LOG = LoggerFactory.getLogger(CacheLoaderUtils.class);
+
+    public static JSONObject getDataContract(String endpoint) {
+        try {
+            JSONObject dataContract = DataContractUtils.getDataContract(endpoint);
+            return dataContract;
+
+        } catch (Exception e) {
+            LOG.error(
+                    "exception[{}] step[{}] details[{}]",
+                    e.getClass().getName(),
+                    "CacheLoaderUtils.getDataContract()",
+                    e.toString());
+            return null;
+        }
+    }
 
     public static Schema getSchema(String linkedResource) {
         try (DataCatalogClient dataCatalogClient = DataCatalogClient.create()) {
@@ -46,11 +63,16 @@ public final class CacheLoaderUtils implements Serializable {
 
             // Add the entity as a Row option
             String entity = linkedResource.substring(linkedResource.lastIndexOf("/") + 1);
+            String[] linkedResourceComponents = linkedResource.split("/");
+            String datasetId =
+                    linkedResourceComponents[
+                            Arrays.asList(linkedResourceComponents).indexOf("datasets") + 1];
 
             // Message level options
             Schema.Options schemaOptions =
                     Schema.Options.builder()
                             .setOption("entity", Schema.FieldType.STRING, entity)
+                            .setOption("datasetId", Schema.FieldType.STRING, datasetId)
                             .build();
 
             // Iterate tags and store as Row field options (String, Enum, Bool)
