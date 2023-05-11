@@ -129,16 +129,16 @@ public class JsonTokenize {
 
         void setDeadLetterTopic(String value);
 
-        @Description("BigQuery Dataset")
-        String getBigQueryDataset();
-
-        void setBigQueryDataset(String value);
-
         @Description("Publish to entity topics")
         @Default.Boolean(false)
         boolean getEntityTopics();
 
         void setEntityTopics(boolean value);
+
+        @Description("Data contracts base api url")
+        String getDataContractBaseApiUrl();
+
+        void setDataContractBaseApiUrl(String value);
     }
 
     /**
@@ -166,8 +166,7 @@ public class JsonTokenize {
          */
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
         // GenericRowCoder coder = new GenericRowCoder();
-        GenericRowCoder coder =
-                new GenericRowCoder(options.getProject(), options.getBigQueryDataset());
+        GenericRowCoder coder = new GenericRowCoder();
         coderRegistry.registerCoderForClass(Row.class, coder);
 
         /*
@@ -185,7 +184,7 @@ public class JsonTokenize {
                                                         SERIALIZED_SUCCESS_TAG,
                                                         SERIALIZED_DEADLETTER_TAG,
                                                         options.getProject(),
-                                                        options.getBigQueryDataset()))
+                                                        options.getDataContractBaseApiUrl()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
                                                 TupleTagList.of(SERIALIZED_DEADLETTER_TAG)));
@@ -219,9 +218,8 @@ public class JsonTokenize {
          * according to topic.
          */
 
-        if (options.getBigQueryDataset() != null) {
+        if (options.getDataContractBaseApiUrl() != null) {
             String projectId = options.getProject();
-            String bigQueryDataset = options.getBigQueryDataset();
 
             tokenized.apply(
                     "Write de-identified Rows to BigQuery",
@@ -230,7 +228,7 @@ public class JsonTokenize {
                             .ignoreUnknownValues()
                             .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
                             .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                            .to(SchemaDestinations.schemaDestination(projectId, bigQueryDataset))
+                            .to(SchemaDestinations.schemaDestination(projectId))
                             .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
                     // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
                     // //https://issues.apache.org/jira/browse/BEAM-13954

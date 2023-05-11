@@ -42,9 +42,9 @@ public class DataContractUtils {
     }
 
     public static JSONObject getDataContract(String endpoint) throws IOException {
-        String[] enpointCompnents = endpoint.split("contract/");
-        String baseUrl = enpointCompnents[0];
-        String topic = enpointCompnents[1];
+        String[] endpointComponents = endpoint.split("contract/");
+        String baseUrl = endpointComponents[0];
+        String topic = endpointComponents[1];
         String endpointName = "contract/" + topic;
 
         HttpResponse response = makeGetRequest(baseUrl, endpointName);

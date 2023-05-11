@@ -132,11 +132,6 @@ public class Dynamodb {
 
         void setDeadLetterTopic(String value);
 
-        // @Description("BigQuery Dataset")
-        // String getBigQueryDataset();
-
-        // void setBigQueryDataset(String value);
-
         @Description("Publish to entity topics")
         @Default.Boolean(false)
         boolean getEntityTopics();
