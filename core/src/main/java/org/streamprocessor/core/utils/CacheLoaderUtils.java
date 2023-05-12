@@ -22,7 +22,6 @@ import com.google.cloud.datacatalog.v1beta1.Entry;
 import com.google.cloud.datacatalog.v1beta1.LookupEntryRequest;
 import com.google.cloud.datacatalog.v1beta1.Tag;
 import com.google.cloud.datacatalog.v1beta1.TagField;
-import com.google.common.cache.CacheLoader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -137,23 +136,5 @@ public final class CacheLoaderUtils implements Serializable {
                     e.toString());
             return Schema.builder().build();
         }
-    }
-
-    public static CacheLoader<String, Schema> schemaCacheLoader() {
-        return new CacheLoader<String, Schema>() {
-            @Override
-            public Schema load(String sqlResource) {
-                try {
-                    return getSchema(sqlResource);
-                } catch (Exception e) {
-                    LOG.error(
-                            "exception[{}] step[{}] details[{}]",
-                            e.getClass().getName(),
-                            "CacheLoaderUtils.schemaCacheLoader()",
-                            e.toString());
-                    return null;
-                }
-            }
-        };
     }
 }

@@ -46,20 +46,20 @@ export APP_ROOT=/${MODULE}
 export DATAFLOW_JAVA_COMMAND_SPEC=${APP_ROOT}/resources/command-spec.json
 export TEMPLATE_IMAGE_SPEC=${BUCKET_NAME}/images/${IMAGE_NAME}-image-spec-${IMAGE_VERSION}.json
 
-existing_tags=$(gcloud container images list-tags --filter="tags:$IMAGE_VERSION" --format=json ${REGION}-docker.pkg.dev/${PROJECT}/streamprocessor/${IMAGE_NAME})
+existing_tags=$(gcloud container images list-tags --filter="tags:$IMAGE_VERSION" --format="value(tags.list())" ${REGION}-docker.pkg.dev/${PROJECT}/streamprocessor/${IMAGE_NAME})
 
-if [[ "$existing_tags" == "[]" ]]; then
-  printf "\nNew tag: $IMAGE_VERSION"
+if [[ "$existing_tags" == "$IMAGE_VERSION"  ]]; then
+  printf "\n\nTag: $IMAGE_VERSION already exists. Overwrite? y/N "
+      read input_var4
+      if [ "$input_var4" = "y" ];
+      then
+          printf "\nOverwriting..."
+      else
+          printf "\nAborting\n"
+          exit 0
+      fi
 else
-    printf "\n\nTag: $IMAGE_VERSION already exists. Overwrite? y/N "
-    read input_var4
-    if [ "$input_var4" = "y" ];
-    then
-        printf "\nOverwriting..."
-    else
-        printf "\nAborting\n"
-        exit 0
-    fi
+    printf "\nNew tag: $IMAGE_VERSION"
 fi
 
 printf "\nRunning with the following variables:"
