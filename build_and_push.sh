@@ -48,19 +48,21 @@ export TEMPLATE_IMAGE_SPEC=${BUCKET_NAME}/images/${IMAGE_NAME}-image-spec-${IMAG
 
 existing_tags=$(gcloud container images list-tags --filter="tags:$IMAGE_VERSION" --format="value(tags.list())" ${REGION}-docker.pkg.dev/${PROJECT}/streamprocessor/${IMAGE_NAME})
 
-if [[ "$existing_tags" == "$IMAGE_VERSION"  ]]; then
-  printf "\n\nTag: $IMAGE_VERSION already exists. Overwrite? y/N "
-      read input_var4
-      if [ "$input_var4" = "y" ];
-      then
-          printf "\nOverwriting..."
-      else
-          printf "\nAborting\n"
-          exit 0
-      fi
-else
-    printf "\nNew tag: $IMAGE_VERSION"
-fi
+for tag in $existing_tags; do
+    if [[ "$tag" == "$IMAGE_VERSION"  ]]; then
+        printf "\n\nTag: $IMAGE_VERSION already exists. Overwrite? y/N "
+        read input_var4
+        if [ "$input_var4" = "y" ]; then
+            printf "\nOverwriting...\n"
+            break
+        else
+            printf "\nAborting\n"
+            exit 0
+        fi
+    fi
+done
+
+printf "\nTag: $IMAGE_VERSION"
 
 printf "\nRunning with the following variables:"
 printf "\n\tPROJECT=$PROJECT"
