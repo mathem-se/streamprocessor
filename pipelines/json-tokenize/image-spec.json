@@ -45,15 +45,6 @@
         ]
       },
       {
-        "name": "bigQueryDataset",
-        "label": "BigQuery dataset",
-        "helpText": "BigQuery dataset to write to, in the form 'dataset'. Also contains the destination tables to write to.",
-        "isOptional": false,
-        "regexes": [
-          "[_a-zA-Z0-9]+"
-        ]
-      },
-      {
         "name": "entityTopics",
         "label": "Publish to entity topics",
         "helpText": "true or false (default)",
@@ -70,6 +61,13 @@
         "regexes": [
           "[0-9]+"
         ]
+      },
+      {
+        "name": "dataContractsServiceUrl",
+        "label": "Data contract service URL",
+        "helpText": "Base url for data contract API. API has to have a /contract/topic endpoint.",
+        "isOptional": false,
+        "regexes": ["https?:\/\/.*"]
       },
       {
         "name": "numStorageWriteApiStreams",

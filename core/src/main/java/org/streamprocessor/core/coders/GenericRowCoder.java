@@ -40,19 +40,12 @@ import org.slf4j.LoggerFactory;
 public class GenericRowCoder extends CustomCoder<Row> {
 
     private static final Logger LOG = LoggerFactory.getLogger(CustomCoder.class);
-    String projectId;
-    String datasetId;
 
     public static GenericRowCoder of() {
         return new GenericRowCoder();
     }
 
     public GenericRowCoder() {}
-
-    public GenericRowCoder(String projectId, String datasetId) {
-        this.projectId = projectId;
-        this.datasetId = datasetId;
-    }
 
     static final long serialVersionUID = 8767646534L;
 

@@ -46,6 +46,24 @@ export APP_ROOT=/${MODULE}
 export DATAFLOW_JAVA_COMMAND_SPEC=${APP_ROOT}/resources/command-spec.json
 export TEMPLATE_IMAGE_SPEC=${BUCKET_NAME}/images/${IMAGE_NAME}-image-spec-${IMAGE_VERSION}.json
 
+existing_tags=$(gcloud container images list-tags --filter="tags:$IMAGE_VERSION" --format="value(tags.list())" ${REGION}-docker.pkg.dev/${PROJECT}/streamprocessor/${IMAGE_NAME})
+
+for tag in $existing_tags; do
+    if [[ "$tag" == "$IMAGE_VERSION"  ]]; then
+        printf "\n\nTag: $IMAGE_VERSION already exists. Overwrite? y/N "
+        read input_var4
+        if [ "$input_var4" = "y" ]; then
+            printf "\nOverwriting...\n"
+            break
+        else
+            printf "\nAborting\n"
+            exit 0
+        fi
+    fi
+done
+
+printf "\nTag: $IMAGE_VERSION"
+
 printf "\nRunning with the following variables:"
 printf "\n\tPROJECT=$PROJECT"
 printf "\n\tTARGET_GCR_IMAGE=$TARGET_GCR_IMAGE"
@@ -57,8 +75,8 @@ printf "\n\tMODULE=$MODULE"
 printf "\n\tTEMPLATE_IMAGE_SPEC=$TEMPLATE_IMAGE_SPEC"
 
 printf "\n\nContinue? y/N "
-read input_var4
-if [ "$input_var4" = "y" ];
+read input_var5
+if [ "$input_var5" = "y" ];
 then
     printf "\nStarting deploy..."
 else

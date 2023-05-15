@@ -85,7 +85,7 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	cd streamprocessor/pipelines/<PIPELINE>
 	mvn -Pdataflow-runner -e compile exec:java \
 	-Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
-	-Dexec.args="--bigQueryDataset=<BIGQUERY_DATASET> \
+	-Dexec.args="--dataContractsServiceUrl=<DATA_CONTRACT_BASE_URL> \
 	--project=<GCP_PROJECT> \
 	--schemaCheckRatio=<SCHEMA_CHECK_RATIO> \
 	--firestoreProjectId=<FIRESTORE_GCP_PROJECT> \
@@ -100,7 +100,7 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	```
 where
 - `<PIPELINE>` is the name of the main class for the pipeline you want to run e.g Dynamodb
-- `<BIGQUERY_DATASET>` is the bigquery dataset to write the data to
+- `<DATA_CONTRACT_BASE_URL>` is the base url for the data contract api
 - `<GCP_PROJECT>` is the name of the GCP project
 - `<SCHEMA_CHECK_RATIO>` is the ratio of how often to check for schema updates e.g 0.01 would check once every 100 calls
 - `<FIRESTORE_GCP_PROJECT>` is the name of the firestore gcp project that keeps run resources

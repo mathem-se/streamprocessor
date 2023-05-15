@@ -134,11 +134,6 @@ public class Salesforce {
 
         void setDeadLetterTopic(String value);
 
-        @Description("BigQuery Dataset")
-        String getBigQueryDataset();
-
-        void setBigQueryDataset(String value);
-
         @Description("Publish to entity topics")
         @Default.Boolean(false)
         boolean getEntityTopics();
@@ -150,6 +145,11 @@ public class Salesforce {
         float getSchemaCheckRatio();
 
         void setSchemaCheckRatio(float value);
+
+        @Description("Data contracts base api url")
+        String getDataContractsServiceUrl();
+
+        void setDataContractsServiceUrl(String value);
     }
 
     /**
@@ -176,8 +176,7 @@ public class Salesforce {
          * Create a coder that can seriealize rows with different schemas
          */
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
-        GenericRowCoder coder =
-                new GenericRowCoder(options.getProject(), options.getBigQueryDataset());
+        GenericRowCoder coder = new GenericRowCoder();
         coderRegistry.registerCoderForClass(Row.class, coder);
 
         /*
@@ -198,7 +197,7 @@ public class Salesforce {
                                                         SERIALIZED_SUCCESS_TAG,
                                                         SERIALIZED_DEADLETTER_TAG,
                                                         options.getProject(),
-                                                        options.getBigQueryDataset(),
+                                                        options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
@@ -233,9 +232,8 @@ public class Salesforce {
          * according to topic.
          */
 
-        if (options.getBigQueryDataset() != null) {
+        if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
-            String bigQueryDataset = options.getBigQueryDataset();
 
             WriteResult result =
                     tokenized.apply(
@@ -247,9 +245,7 @@ public class Salesforce {
                                             BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
                                     .withWriteDisposition(
                                             BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                                    .to(
-                                            SchemaDestinations.schemaDestination(
-                                                    projectId, bigQueryDataset))
+                                    .to(SchemaDestinations.schemaDestination(projectId))
                                     .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
                                     .withFailedInsertRetryPolicy(
                                             InsertRetryPolicy.retryTransientErrors())

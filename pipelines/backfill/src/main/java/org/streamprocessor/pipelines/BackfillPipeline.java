@@ -104,16 +104,16 @@ public class BackfillPipeline {
 
         void setDeadLetterTopic(String value);
 
-        @Description("BigQuery Dataset")
-        String getBigQueryDataset();
-
-        void setBigQueryDataset(String value);
-
         @Description("Schema check sample ratio")
         @Default.Float(0.01f)
         float getSchemaCheckRatio();
 
         void setSchemaCheckRatio(float value);
+
+        @Description("Data contracts service url")
+        String getDataContractsServiceUrl();
+
+        void setDataContractsServiceUrl(String value);
     }
 
     public static void main(String[] args) {
@@ -123,8 +123,7 @@ public class BackfillPipeline {
                         .as(BackfillPipelineOptions.class);
         Pipeline pipeline = Pipeline.create(options);
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
-        GenericRowCoder coder =
-                new GenericRowCoder(options.getProject(), options.getBigQueryDataset());
+        GenericRowCoder coder = new GenericRowCoder();
         coderRegistry.registerCoderForClass(Row.class, coder);
 
         PCollection<PubsubMessage> pubsubMessages =
@@ -191,7 +190,7 @@ public class BackfillPipeline {
                                                 SERIALIZED_SUCCESS_TAG,
                                                 SERIALIZED_DEADLETTER_TAG,
                                                 options.getProject(),
-                                                options.getBigQueryDataset(),
+                                                options.getDataContractsServiceUrl(),
                                                 options.getSchemaCheckRatio()))
                                 .withOutputTags(
                                         SERIALIZED_SUCCESS_TAG,
@@ -214,9 +213,8 @@ public class BackfillPipeline {
                                 ParDo.of(new DeIdentifyFn(options.getFirestoreProjectId())))
                         .setCoder(coder);
 
-        if (options.getBigQueryDataset() != null) {
+        if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
-            String bigQueryDataset = options.getBigQueryDataset();
 
             WriteResult result =
                     tokenized.apply(
@@ -228,9 +226,7 @@ public class BackfillPipeline {
                                             BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
                                     .withWriteDisposition(
                                             BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                                    .to(
-                                            SchemaDestinations.schemaDestination(
-                                                    projectId, bigQueryDataset))
+                                    .to(SchemaDestinations.schemaDestination(projectId))
                                     .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
                                     .withFailedInsertRetryPolicy(
                                             InsertRetryPolicy.retryTransientErrors())

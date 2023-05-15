@@ -42,15 +42,6 @@
         ]
       },
       {
-        "name": "bigQueryDataset",
-        "label": "BigQuery dataset",
-        "helpText": "BigQuery dataset to write to, in the form 'dataset'. Also contains the destination tables to write to.",
-        "isOptional": false,
-        "regexes": [
-          "[_a-zA-Z0-9]+"
-        ]
-      },
-      {
         "name": "numberOfWorkerHarnessThreads",
         "label": "Number of worker harness threads",
         "helpText": "The number of threads per each worker harness process (default: 300)",
@@ -76,6 +67,13 @@
         "regexes": [
           "^([0-9]+([.][0-9]*)?|[.][0-9]+)$"
         ]
+      },
+      {
+        "name": "dataContractsServiceUrl",
+        "label": "Data contract service URL",
+        "helpText": "Base url for data contract API. API has to have a /contract/topic endpoint.",
+        "isOptional": false,
+        "regexes": ["https?:\/\/.*"]
       },
       {
         "name": "numStorageWriteApiStreams",
