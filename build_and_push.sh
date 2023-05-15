@@ -75,8 +75,8 @@ printf "\n\tMODULE=$MODULE"
 printf "\n\tTEMPLATE_IMAGE_SPEC=$TEMPLATE_IMAGE_SPEC"
 
 printf "\n\nContinue? y/N "
-read input_var4
-if [ "$input_var4" = "y" ];
+read input_var5
+if [ "$input_var5" = "y" ];
 then
     printf "\nStarting deploy..."
 else
