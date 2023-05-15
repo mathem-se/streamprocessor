@@ -136,9 +136,9 @@ public class JsonTokenize {
         void setEntityTopics(boolean value);
 
         @Description("Data contracts base api url")
-        String getDataContractBaseApiUrl();
+        String getDataContractsServiceUrl();
 
-        void setDataContractBaseApiUrl(String value);
+        void setDataContractsServiceUrl(String value);
     }
 
     /**
@@ -184,7 +184,7 @@ public class JsonTokenize {
                                                         SERIALIZED_SUCCESS_TAG,
                                                         SERIALIZED_DEADLETTER_TAG,
                                                         options.getProject(),
-                                                        options.getDataContractBaseApiUrl()))
+                                                        options.getDataContractsServiceUrl()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
                                                 TupleTagList.of(SERIALIZED_DEADLETTER_TAG)));
@@ -218,7 +218,7 @@ public class JsonTokenize {
          * according to topic.
          */
 
-        if (options.getDataContractBaseApiUrl() != null) {
+        if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
 
             tokenized.apply(

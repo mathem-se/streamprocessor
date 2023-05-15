@@ -68,7 +68,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     String unknownFieldLogger;
     String format;
     String projectId;
-    String dataContractBaseApiUrl;
+    String dataContractsServiceUrl;
     float ratio;
 
     public static <T> T getValueOrDefault(T value, T defaultValue) {
@@ -96,12 +96,12 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             TupleTag<Row> successTag,
             TupleTag<PubsubMessage> deadLetterTag,
             String projectId,
-            String dataContractBaseApiUrl,
+            String dataContractsServiceUrl,
             float ratio) {
         this.successTag = successTag;
         this.deadLetterTag = deadLetterTag;
         this.projectId = projectId;
-        this.dataContractBaseApiUrl = dataContractBaseApiUrl;
+        this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = ratio;
     }
 
@@ -109,11 +109,11 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             TupleTag<Row> successTag,
             TupleTag<PubsubMessage> deadLetterTag,
             String projectId,
-            String dataContractBaseApiUrl) {
+            String dataContractsServiceUrl) {
         this.successTag = successTag;
         this.deadLetterTag = deadLetterTag;
         this.projectId = projectId;
-        this.dataContractBaseApiUrl = dataContractBaseApiUrl;
+        this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = 0.001f;
     }
 
@@ -122,7 +122,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             throws Exception {
         String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
-        String endpoint = dataContractBaseApiUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
+        String endpoint = dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
         @Nullable Map<String, String> attributesMap = received.getAttributeMap();
 

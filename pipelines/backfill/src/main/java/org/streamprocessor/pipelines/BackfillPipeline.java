@@ -110,10 +110,10 @@ public class BackfillPipeline {
 
         void setSchemaCheckRatio(float value);
 
-        @Description("Data contracts base api url")
-        String getDataContractBaseApiUrl();
+        @Description("Data contracts service url")
+        String getDataContractsServiceUrl();
 
-        void setDataContractBaseApiUrl(String value);
+        void setDataContractsServiceUrl(String value);
     }
 
     public static void main(String[] args) {
@@ -190,7 +190,7 @@ public class BackfillPipeline {
                                                 SERIALIZED_SUCCESS_TAG,
                                                 SERIALIZED_DEADLETTER_TAG,
                                                 options.getProject(),
-                                                options.getDataContractBaseApiUrl(),
+                                                options.getDataContractsServiceUrl(),
                                                 options.getSchemaCheckRatio()))
                                 .withOutputTags(
                                         SERIALIZED_SUCCESS_TAG,
@@ -213,7 +213,7 @@ public class BackfillPipeline {
                                 ParDo.of(new DeIdentifyFn(options.getFirestoreProjectId())))
                         .setCoder(coder);
 
-        if (options.getDataContractBaseApiUrl() != null) {
+        if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
 
             WriteResult result =

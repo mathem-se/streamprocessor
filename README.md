@@ -85,7 +85,7 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	cd streamprocessor/pipelines/<PIPELINE>
 	mvn -Pdataflow-runner -e compile exec:java \
 	-Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
-	-Dexec.args="--dataContractBaseApiUrl=<DATA_CONTRACT_BASE_URL> \
+	-Dexec.args="--dataContractsServiceUrl=<DATA_CONTRACT_BASE_URL> \
 	--project=<GCP_PROJECT> \
 	--schemaCheckRatio=<SCHEMA_CHECK_RATIO> \
 	--firestoreProjectId=<FIRESTORE_GCP_PROJECT> \

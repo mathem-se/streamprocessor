@@ -63,8 +63,8 @@
         ]
       },
       {
-        "name": "dataContractBaseApiUrl",
-        "label": "Data contract base API URL",
+        "name": "dataContractsServiceUrl",
+        "label": "Data contract service URL",
         "helpText": "Base url for data contract API. API has to have a /contract/topic endpoint.",
         "isOptional": false,
         "regexes": ["https?:\/\/.*"]

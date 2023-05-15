@@ -147,9 +147,9 @@ public class Salesforce {
         void setSchemaCheckRatio(float value);
 
         @Description("Data contracts base api url")
-        String getDataContractBaseApiUrl();
+        String getDataContractsServiceUrl();
 
-        void setDataContractBaseApiUrl(String value);
+        void setDataContractsServiceUrl(String value);
     }
 
     /**
@@ -197,7 +197,7 @@ public class Salesforce {
                                                         SERIALIZED_SUCCESS_TAG,
                                                         SERIALIZED_DEADLETTER_TAG,
                                                         options.getProject(),
-                                                        options.getDataContractBaseApiUrl(),
+                                                        options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
@@ -232,7 +232,7 @@ public class Salesforce {
          * according to topic.
          */
 
-        if (options.getDataContractBaseApiUrl() != null) {
+        if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
 
             WriteResult result =
