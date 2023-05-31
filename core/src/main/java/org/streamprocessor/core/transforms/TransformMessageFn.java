@@ -59,7 +59,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
             JSONObject dataContract = DataContractCache.getDataContractFromCache().get(endpoint);
             String provider =
                     dataContract
-                            .getJSONObject("endpoint")
+                            .getJSONObject("endpoints")
                             .getJSONObject("source")
                             .getString("provider");
 
