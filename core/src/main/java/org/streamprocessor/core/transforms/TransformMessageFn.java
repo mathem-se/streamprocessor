@@ -30,6 +30,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
         }
     }
 
+    @ProcessElement
     public void processElement(@Element PubsubMessage received, OutputReceiver<PubsubMessage> out) {
         String uuid = null;
         String entity = null;

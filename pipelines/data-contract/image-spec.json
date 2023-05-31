@@ -1,6 +1,6 @@
 {
     "image": "ARTIFACT_REGISTRY",
-    "name": "dataContract",
+    "name": "DataContract",
     "defaultEnvironment": {},
     "sdk_info": {
         "language": "JAVA"
