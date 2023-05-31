@@ -56,7 +56,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
             String endpoint =
                     dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
-            JSONObject dataContract = DataContractCache.getDataContractFromCache().get(endpoint);
+            JSONObject dataContract = DataContractCache.getDataContractFromCache(endpoint);
             String provider =
                     dataContract
                             .getJSONObject("endpoints")

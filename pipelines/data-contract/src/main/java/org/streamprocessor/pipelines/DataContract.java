@@ -187,7 +187,7 @@ public class DataContract {
                                 PubsubIO.readMessagesWithAttributes()
                                         .fromSubscription(options.getInputSubscription()))
                         .apply(
-                                "Transform Dynamodb stream change events",
+                                "Transform message stream change events",
                                 ParDo.of(
                                         new TransformMessageFn(
                                                 options.getDataContractsServiceUrl())))
