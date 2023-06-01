@@ -42,7 +42,7 @@
         <os-maven-plugin.version>1.5.0.Final</os-maven-plugin.version>
         <slf4j.version>1.7.36</slf4j.version>
         <mvn-target-dir>${basedir}/target</mvn-target-dir>
-        <json.version>20200518</json.version>
+        <json.version>20230227</json.version>
         <spotless-maven-plugin.version>2.31.0</spotless-maven-plugin.version>
     </properties>
 
