@@ -1,7 +1,0 @@
-{
-  "mainClass": "org.streamprocessor.pipelines.Salesforce",
-  "classPath": "/pipelines/salesforce/*:/pipelines/salesforce/libs/*://pipelines/salesforce/classes",
-  "defaultParameterValues": {
-    "labels": "{\"stream-processor-template-type\":\"flex\",\"stream-processor-provided-template-name\":\"salesforce\"}"
-  }
-}
