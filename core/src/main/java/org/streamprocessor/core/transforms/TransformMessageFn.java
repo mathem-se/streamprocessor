@@ -9,7 +9,7 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.streamprocessor.core.caches.DataContractCache;
+import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
 import org.streamprocessor.core.helpers.SalesforceHelper;
@@ -51,7 +51,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
             String endpoint =
                     dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
-            JSONObject dataContract = DataContractCache.getDataContractFromCache(endpoint);
+            JSONObject dataContract = DataContractsCache.getDataContractFromCache(endpoint);
             String provider =
                     dataContract
                             .getJSONObject("endpoints")

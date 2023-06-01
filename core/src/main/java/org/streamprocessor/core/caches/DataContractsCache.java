@@ -8,16 +8,16 @@ import org.apache.beam.sdk.metrics.Metrics;
 import org.json.JSONObject;
 import org.streamprocessor.core.utils.CacheLoaderUtils;
 
-public class DataContractCache {
-    private static final Counter dataContractCacheCallsCounter =
-            Metrics.counter("DataContractCache", "dataContractCacheCalls");
+public class DataContractsCache {
+    private static final Counter dataContractsCacheCallsCounter =
+            Metrics.counter("DataContractsCache", "dataContractsCacheCalls");
     private static final Counter dataContractsCacheMissesCounter =
-            Metrics.counter("DataContractCache", "dataContractsCacheMisses");
-    private static final LoadingCache<String, JSONObject> dataContractCache =
+            Metrics.counter("DataContractsCache", "dataContractsCacheMisses");
+    private static final LoadingCache<String, JSONObject> dataContractsCache =
             Caffeine.newBuilder()
                     .maximumSize(1000)
                     .refreshAfterWrite(5, TimeUnit.MINUTES)
-                    .build(DataContractCache::loadDataContractToCache);
+                    .build(DataContractsCache::loadDataContractToCache);
 
     private static JSONObject loadDataContractToCache(String endpoint) {
         dataContractsCacheMissesCounter.inc();
@@ -25,7 +25,7 @@ public class DataContractCache {
     }
 
     public static JSONObject getDataContractFromCache(String endpoint) {
-        dataContractCacheCallsCounter.inc();
-        return dataContractCache.get(endpoint);
+        dataContractsCacheCallsCounter.inc();
+        return dataContractsCache.get(endpoint);
     }
 }

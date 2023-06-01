@@ -30,7 +30,7 @@ import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.streamprocessor.core.caches.DataContractCache;
+import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.caches.SchemaCache;
 import org.streamprocessor.core.utils.BqUtils;
 
@@ -92,7 +92,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         @Nullable Map<String, String> attributesMap = received.getAttributeMap();
 
         try {
-            JSONObject dataContract = DataContractCache.getDataContractFromCache(endpoint);
+            JSONObject dataContract = DataContractsCache.getDataContractFromCache(endpoint);
             String datasetId =
                     dataContract
                             .getJSONObject("endpoints")
