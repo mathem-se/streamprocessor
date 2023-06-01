@@ -796,7 +796,6 @@
     <modules>
         <module>core</module>
         <module>pipelines/json-tokenize</module>
-        <module>pipelines/backfill</module>
         <module>pipelines/data-contracts</module>
     </modules>
 
