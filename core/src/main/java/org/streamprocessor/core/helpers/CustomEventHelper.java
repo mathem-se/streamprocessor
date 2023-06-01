@@ -1,15 +1,12 @@
 package org.streamprocessor.core.helpers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
+import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class CustomEventHelper {
-    private static class MissingMetadataException extends Exception {
-        private MissingMetadataException(String errorMessage) {
-            super(errorMessage);
-        }
-    }
 
     public static PubsubMessage enrichPubsubMessage(
             JSONObject customEventStreamObject, HashMap<String, String> attributes)
@@ -20,7 +17,8 @@ public class CustomEventHelper {
             if (attributes.containsKey("timestamp")) {
                 customEventStreamObject.put("event_timestamp", attributes.get("timestamp"));
             } else {
-                throw new MissingMetadataException("No event_timestamp found in message");
+                throw new CustomExceptionsUtils.MissingMetadataException(
+                        "No `event_timestamp` found in message");
             }
         }
 
@@ -30,9 +28,11 @@ public class CustomEventHelper {
         } else if (attributes.containsKey("uuid")) {
             attributes.put("event_id", attributes.get("uuid"));
         } else {
-            throw new MissingMetadataException("No event_id found in message with uuid");
+            throw new CustomExceptionsUtils.MissingMetadataException(
+                    "No `event_id` or `uuid` found in message.");
         }
 
-        return new PubsubMessage(customEventStreamObject.toString().getBytes("UTF-8"), attributes);
+        return new PubsubMessage(
+                customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }
 }

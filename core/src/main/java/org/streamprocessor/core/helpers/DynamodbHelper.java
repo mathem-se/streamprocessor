@@ -1,15 +1,12 @@
 package org.streamprocessor.core.helpers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
+import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class DynamodbHelper {
-    private static class MissingMetadataException extends Exception {
-        private MissingMetadataException(String errorMessage) {
-            super(errorMessage);
-        }
-    }
 
     public static PubsubMessage enrichPubsubMessage(
             JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
@@ -29,42 +26,44 @@ public class DynamodbHelper {
             attributes.put("operation", "MODIFY");
             payloadObject = dynamodbStreamObject.getJSONObject("NewImage");
         } else {
-            // Not a dynamoDB change event
-            payloadObject = dynamodbStreamObject;
+            throw new CustomExceptionsUtils.MalformedEventException(
+                    "No NewImage or OldImage found in message. Maybe the provider is not configured"
+                            + " correctly?");
         }
 
         // Add meta-data from dynamoDB stream event as attributes
         if (!dynamodbStreamObject.isNull("Published")) {
             attributes.put("dynamodbPublished", dynamodbStreamObject.getString("Published"));
+            // Used for backfill purposes
         } else if (attributes.containsKey("timestamp")) {
             attributes.put("dynamodbPublished", attributes.get("timestamp"));
         } else {
-            throw new MissingMetadataException("No published found in message");
+            throw new CustomExceptionsUtils.MissingMetadataException(
+                    "No `published` found in message");
         }
 
         // add event_time to payload root for streaming analytics use cases
         if (dynamodbStreamObject.isNull("event_timestamp")) {
             if (!dynamodbStreamObject.isNull("Published")) {
                 payloadObject.put("event_timestamp", dynamodbStreamObject.getString("Published"));
+                // Used for backfill purposes
             } else if (attributes.containsKey("timestamp")) {
                 payloadObject.put("event_timestamp", attributes.get("timestamp"));
             } else {
-                throw new MissingMetadataException("No event_timestamp found in message");
+                throw new CustomExceptionsUtils.MissingMetadataException(
+                        "No `event_timestamp` found in message");
             }
         }
 
         // Add meta-data from dynamoDB stream event as attributes
         if (!dynamodbStreamObject.isNull("EventId")) {
             attributes.put("dynamodbEventId", dynamodbStreamObject.getString("EventId"));
-            // Add meta-data from custom events as attributes
-        } else if (!dynamodbStreamObject.isNull("event_id")) {
-            attributes.put("event_id", payloadObject.getString("event_id"));
-        } else if (attributes.containsKey("uuid")) {
-            attributes.put("event_id", attributes.get("uuid"));
         } else {
-            throw new MissingMetadataException("No event_id found in message with uuid");
+            throw new CustomExceptionsUtils.MissingMetadataException(
+                    "No `EventId` found in message.");
         }
 
-        return new PubsubMessage(payloadObject.toString().getBytes("UTF-8"), attributes);
+        return new PubsubMessage(
+                payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }
 }

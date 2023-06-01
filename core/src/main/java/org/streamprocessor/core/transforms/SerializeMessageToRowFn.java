@@ -106,7 +106,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                             projectId, datasetId, entity);
 
             Schema schema = SchemaCache.getSchemaFromCache(linkedResource);
-            SplittableRandom random = new SplittableRandom();
             if (schema.getFieldCount() == 0) {
                 throw new NoSchemaException("Schema for " + linkedResource + " doesn't exist");
             }
@@ -141,7 +140,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // can't put in unmodifiable map
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
             out.get(deadLetterTag)
-                    .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
+                    .output(new PubsubMessage(payload.getBytes(StandardCharsets.UTF_8), attributesMap));
         }
     }
 }

@@ -13,6 +13,7 @@ import org.streamprocessor.core.caches.DataContractCache;
 import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
 import org.streamprocessor.core.helpers.SalesforceHelper;
+import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
@@ -22,12 +23,6 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
 
     public TransformMessageFn(String dataContractsServiceUrl) {
         this.dataContractsServiceUrl = dataContractsServiceUrl;
-    }
-
-    private class UnknownPorviderException extends Exception {
-        private UnknownPorviderException(String errorMessage) {
-            super(errorMessage);
-        }
     }
 
     @ProcessElement
@@ -74,7 +69,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
                     msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
-                    throw new UnknownPorviderException(
+                    throw new CustomExceptionsUtils.UnknownPorviderException(
                             "Provider: "
                                     + provider
                                     + ".\n"
