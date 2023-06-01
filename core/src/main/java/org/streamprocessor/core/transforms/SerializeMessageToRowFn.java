@@ -19,7 +19,6 @@ package org.streamprocessor.core.transforms;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.SplittableRandom;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -140,7 +139,9 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // can't put in unmodifiable map
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
             out.get(deadLetterTag)
-                    .output(new PubsubMessage(payload.getBytes(StandardCharsets.UTF_8), attributesMap));
+                    .output(
+                            new PubsubMessage(
+                                    payload.getBytes(StandardCharsets.UTF_8), attributesMap));
         }
     }
 }
