@@ -799,7 +799,7 @@
         <module>pipelines/dynamodb</module>
         <module>pipelines/salesforce</module>
         <module>pipelines/backfill</module>
-        <module>pipelines/data-contract</module>
+        <module>pipelines/data-contracts</module>
     </modules>
 
 </project>

@@ -71,9 +71,9 @@ import org.streamprocessor.core.transforms.TransformMessageFn;
  * @version 1.0
  * @since 2022-09-28
  */
-public class DataContract {
+public class DataContracts {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DataContract.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataContracts.class);
 
     static final TupleTag<Row> SERIALIZED_SUCCESS_TAG =
             new TupleTag<Row>("Serialized success") {

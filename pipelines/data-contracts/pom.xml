@@ -11,7 +11,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>data-contract</artifactId>
+    <artifactId>data-contracts</artifactId>
 
     <description>
         Stream and tokenize data streams with a data contract to BigQuery using Dataflow
