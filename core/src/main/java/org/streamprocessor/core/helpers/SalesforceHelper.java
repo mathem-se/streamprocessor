@@ -35,9 +35,9 @@ public class SalesforceHelper {
             attributes.put("salesforcePublished", attributes.get("timestamp"));
             payloadObject.put("event_timestamp", attributes.get("timestamp"));
         } else {
-            throw new CustomExceptionsUtils.MissingMetadataException("No `time` or `timestamp` found in message");
+            throw new CustomExceptionsUtils.MissingMetadataException(
+                    "No `time` or `timestamp` found in message");
         }
-
 
         // Add meta-data from salesforce stream event as attributes
         if (!salesforceStreamObject.isNull("id")) {
