@@ -27,31 +27,17 @@ public class SalesforceHelper {
         }
 
         // Add meta-data from salesforce stream event as attributes
-        // TODO: Throw exception if these fields are missing, align with data producers first.
+        // TODO: consolidate to be consistent with dynamodb events
         if (!salesforceStreamObject.isNull("time")) {
             attributes.put("salesforcePublished", salesforceStreamObject.getString("time"));
-            // Used for backfill purposes
-        } else if (attributes.containsKey("timestamp")) {
+            payloadObject.put("event_timestamp", salesforceStreamObject.getString("time"));
+        } else if (attributes.containsKey("timestamp") && !attributes.get("timestamp").isEmpty()) {
             attributes.put("salesforcePublished", attributes.get("timestamp"));
+            payloadObject.put("event_timestamp", attributes.get("timestamp"));
         } else {
-            throw new CustomExceptionsUtils.MissingMetadataException("No `time` found in message");
+            throw new CustomExceptionsUtils.MissingMetadataException("No `time` or `timestamp` found in message");
         }
 
-        // TODO: consolidate to be consistent with dynamodb events
-
-        // add event_time to payload root for streaming analytics use cases
-        if (salesforceStreamObject.isNull("event_timestamp")) {
-            if (!salesforceStreamObject.isNull("time")) {
-                payloadObject.put("event_timestamp", salesforceStreamObject.getString("time"));
-                // Used for backfill purposes
-            } else if (attributes.containsKey("timestamp")
-                    && !attributes.get("timestamp").isEmpty()) {
-                payloadObject.put("event_timestamp", attributes.get("timestamp"));
-            } else {
-                throw new CustomExceptionsUtils.MissingMetadataException(
-                        "No `event_timestamp` found in message");
-            }
-        }
 
         // Add meta-data from salesforce stream event as attributes
         if (!salesforceStreamObject.isNull("id")) {
