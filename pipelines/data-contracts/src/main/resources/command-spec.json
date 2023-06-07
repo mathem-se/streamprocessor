@@ -1,0 +1,7 @@
+{
+  "mainClass": "org.streamprocessor.pipelines.DataContracts",
+  "classPath": "/pipelines/data-contracts/*:/pipelines/data-contracts/libs/*://pipelines/data-contracts/classes",
+  "defaultParameterValues": {
+    "labels": "{\"stream-processor-template-type\":\"flex\",\"stream-processor-provided-template-name\":\"data-contracts\"}"
+  }
+}

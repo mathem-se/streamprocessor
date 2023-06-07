@@ -16,16 +16,10 @@
 
 package org.streamprocessor.core.transforms;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.SplittableRandom;
-import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.metrics.Counter;
-import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
@@ -36,32 +30,13 @@ import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.streamprocessor.core.caches.DataContractsCache;
+import org.streamprocessor.core.caches.SchemaCache;
 import org.streamprocessor.core.utils.BqUtils;
-import org.streamprocessor.core.utils.CacheLoaderUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerializeMessageToRowFn.class);
-    private static final Counter schemaCacheMissesCounter =
-            Metrics.counter("SerializeMessageToRowFn", "schemaCacheMisses");
-    private static final Counter schemaCacheCallsCounter =
-            Metrics.counter("SerializeMessageToRowFn", "schemaCacheCalls");
-    static final long serialVersionUID = 234L;
-    private static final LoadingCache<String, Schema> schemaCache =
-            Caffeine.newBuilder()
-                    .maximumSize(1000)
-                    .refreshAfterWrite(5, TimeUnit.MINUTES)
-                    .build(k -> getCachedSchema(k));
-
-    private static final Counter dataContractsCacheMissesCounter =
-            Metrics.counter("SerializeMessageToRowFn", "dataContractsCacheMissesCounter");
-    private static final Counter dataContractCacheCallsCounter =
-            Metrics.counter("SerializeMessageToRowFn", "dataContractCacheCallsCounter");
-    private static final LoadingCache<String, JSONObject> DataContractCache =
-            Caffeine.newBuilder()
-                    .maximumSize(1000)
-                    .refreshAfterWrite(5, TimeUnit.MINUTES)
-                    .build(k -> getDataContractForCache(k));
 
     TupleTag<Row> successTag;
     TupleTag<PubsubMessage> deadLetterTag;
@@ -80,16 +55,6 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         private NoSchemaException(String errorMessage) {
             super(errorMessage);
         }
-    }
-
-    private static Schema getCachedSchema(String ref) {
-        schemaCacheMissesCounter.inc();
-        return CacheLoaderUtils.getSchema(ref);
-    }
-
-    private static JSONObject getDataContractForCache(String endpoint) {
-        dataContractsCacheMissesCounter.inc();
-        return CacheLoaderUtils.getDataContract(endpoint);
     }
 
     public SerializeMessageToRowFn(
@@ -127,8 +92,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
         @Nullable Map<String, String> attributesMap = received.getAttributeMap();
 
         try {
-            dataContractCacheCallsCounter.inc();
-            JSONObject dataContract = DataContractCache.get(endpoint);
+            JSONObject dataContract = DataContractsCache.getDataContractFromCache(endpoint);
             String datasetId =
                     dataContract
                             .getJSONObject("endpoints")
@@ -139,9 +103,8 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
                     String.format(
                             "//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s",
                             projectId, datasetId, entity);
-            schemaCacheCallsCounter.inc();
-            Schema schema = schemaCache.get(linkedResource);
-            SplittableRandom random = new SplittableRandom();
+
+            Schema schema = SchemaCache.getSchemaFromCache(linkedResource);
             if (schema.getFieldCount() == 0) {
                 throw new NoSchemaException("Schema for " + linkedResource + " doesn't exist");
             }
@@ -176,7 +139,9 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // can't put in unmodifiable map
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
             out.get(deadLetterTag)
-                    .output(new PubsubMessage(payload.getBytes("UTF-8"), attributesMap));
+                    .output(
+                            new PubsubMessage(
+                                    payload.getBytes(StandardCharsets.UTF_8), attributesMap));
         }
     }
 }
