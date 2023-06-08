@@ -68,6 +68,12 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
                 case "custom_event":
                     msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
+                case "marketing_cloud":
+                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
+                    break;
+                case "postgres":
+                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
+                    break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(
                             "Provider: "
