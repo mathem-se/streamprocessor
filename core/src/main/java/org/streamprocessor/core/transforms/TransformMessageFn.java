@@ -6,30 +6,39 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.values.TupleTag;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
-import org.streamprocessor.core.helpers.CustomEventHelper;
-import org.streamprocessor.core.helpers.DynamodbHelper;
-import org.streamprocessor.core.helpers.SalesforceHelper;
+import org.streamprocessor.core.helpers.*;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
+import org.streamprocessor.core.helpers.FailSafePubsubMessage;
 
-public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
+public class TransformMessageFn extends DoFn<PubsubMessage, FailSafePubsubMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
     static final long serialVersionUID = 238L;
 
     String dataContractsServiceUrl;
+    TupleTag<FailSafePubsubMessage> successTag;
+    TupleTag<Failure> failureTag;
 
-    public TransformMessageFn(String dataContractsServiceUrl) {
+    public TransformMessageFn(
+            String dataContractsServiceUrl,
+            TupleTag<FailSafePubsubMessage> successTag,
+            TupleTag<Failure> failureTag
+    ) {
         this.dataContractsServiceUrl = dataContractsServiceUrl;
+        this.successTag = successTag;
+        this.failureTag = failureTag;
     }
 
     @ProcessElement
-    public void processElement(@Element PubsubMessage received, OutputReceiver<PubsubMessage> out) {
+    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) {
         String uuid = null;
         String entity = null;
         PubsubMessage msg;
+        FailSafePubsubMessage pubsubMessage = null;
 
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
@@ -77,8 +86,12 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
                                     + " not valid.");
             }
 
-            out.output(msg);
+            pubsubMessage = FailSafePubsubMessage.builder()
+                    .originalPubsubMessage(received)
+                    .newPubsubMessage(msg)
+                    .build();
 
+            out.get(successTag).output(pubsubMessage);
         } catch (Exception e) {
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
@@ -87,6 +100,14 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
                     e.toString(),
                     entity,
                     uuid);
+            out.get(failureTag).output(
+                    Failure
+                            .builder()
+                            .pipelineStep("TransformMessageFn.processElement()")
+                            .pubsubMessageRaw(received)
+                            .exception(e.getClass().getName())
+                            .exceptionDetails(e)
+                            .build());
         }
     }
 }

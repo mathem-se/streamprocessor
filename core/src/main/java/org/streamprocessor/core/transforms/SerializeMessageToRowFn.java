@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.caches.SchemaCache;
+import org.streamprocessor.core.helpers.Failure;
 import org.streamprocessor.core.utils.BqUtils;
 
 public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
@@ -39,7 +40,7 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
     private static final Logger LOG = LoggerFactory.getLogger(SerializeMessageToRowFn.class);
 
     TupleTag<Row> successTag;
-    TupleTag<PubsubMessage> deadLetterTag;
+    TupleTag<Failure> failureTag;
     String unknownFieldLogger;
     String format;
     String projectId;
@@ -138,10 +139,14 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             // instead, pass the following to deadletter: original_payload, status, error_message
             // can't put in unmodifiable map
             // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
-            out.get(deadLetterTag)
-                    .output(
-                            new PubsubMessage(
-                                    payload.getBytes(StandardCharsets.UTF_8), attributesMap));
+            out.get(failureTag).output(
+                    Failure
+                    .builder()
+                    .pipelineStep("SerializeMessageToRowFn.processElement()")
+                    .pubsubMessageRaw()
+                    .exception(e.getClass().getName())
+                    .exceptionDetails(e)
+                    .build());
         }
     }
 }
