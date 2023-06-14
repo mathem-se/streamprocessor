@@ -31,6 +31,7 @@ import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.caches.SchemaCache;
 import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.utils.BqUtils;
+import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class SerializeMessageToRowFn
         extends DoFn<FailsafeElement<PubsubMessage>, FailsafeElement<Row>> {
@@ -44,13 +45,6 @@ public class SerializeMessageToRowFn
     String projectId;
     String dataContractsServiceUrl;
     float ratio;
-
-    private class NoSchemaException extends Exception {
-
-        private NoSchemaException(String errorMessage) {
-            super(errorMessage);
-        }
-    }
 
     public SerializeMessageToRowFn(
             TupleTag<FailsafeElement<Row>> successTag,
@@ -107,7 +101,8 @@ public class SerializeMessageToRowFn
 
             Schema schema = SchemaCache.getSchemaFromCache(linkedResource);
             if (schema.getFieldCount() == 0) {
-                throw new NoSchemaException("Schema for " + linkedResource + " doesn't exist");
+                throw new CustomExceptionsUtils.NoSchemaException(
+                        "Schema for " + linkedResource + " doesn't exist");
             }
 
             JSONObject payloadJson = new JSONObject(payload);

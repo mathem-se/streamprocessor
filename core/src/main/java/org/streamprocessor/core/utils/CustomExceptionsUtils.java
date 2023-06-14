@@ -25,4 +25,11 @@ public class CustomExceptionsUtils {
             super(errorMessage);
         }
     }
+
+    public static class NoSchemaException extends Exception {
+
+        public NoSchemaException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
 }

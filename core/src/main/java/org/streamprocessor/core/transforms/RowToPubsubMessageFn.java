@@ -34,8 +34,9 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.streamprocessor.core.helpers.FailsafeElement;
 
-public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
+public class RowToPubsubMessageFn extends DoFn<FailsafeElement<Row>, KV<String, PubsubMessage>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RowToPubsubMessageFn.class);
 
@@ -47,8 +48,10 @@ public class RowToPubsubMessageFn extends DoFn<Row, KV<String, PubsubMessage>> {
     public void setup() throws Exception {}
 
     @ProcessElement
-    public void processElement(@Element Row row, OutputReceiver<KV<String, PubsubMessage>> out)
+    public void processElement(
+            @Element FailsafeElement<Row> received, OutputReceiver<KV<String, PubsubMessage>> out)
             throws Exception {
+        Row row = received.getNewElement();
         try {
             TableRow tr = BigQueryUtils.toTableRow(row);
             ByteArrayOutputStream jsonStream = new ByteArrayOutputStream();

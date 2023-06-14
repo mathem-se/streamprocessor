@@ -1,11 +1,12 @@
 package org.streamprocessor.core.helpers;
 
+import java.io.Serializable;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 @Getter
-public class FailsafeElement<T> {
+public class FailsafeElement<T> implements Serializable {
     private final PubsubMessage originalElement;
     private final T newElement;
     private String pipelineStep;
