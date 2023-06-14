@@ -50,7 +50,11 @@ import org.streamprocessor.core.coders.FailsafeCoder;
 import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
-import org.streamprocessor.core.transforms.*;
+import org.streamprocessor.core.transforms.DeIdentifyFn;
+import org.streamprocessor.core.transforms.ExtractRowFromFailsafeElement;
+import org.streamprocessor.core.transforms.RowToPubsubMessageFn;
+import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
+import org.streamprocessor.core.transforms.TransformMessageFn;
 
 /**
  * Streamer pipeline
