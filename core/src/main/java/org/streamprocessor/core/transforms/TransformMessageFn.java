@@ -71,7 +71,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, PubsubMessage> {
                 case "marketing_cloud":
                     msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
-                case "postgres":
+                case "pi":
                     msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
