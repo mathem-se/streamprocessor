@@ -19,4 +19,10 @@ public class CustomExceptionsUtils {
             super(errorMessage);
         }
     }
+
+    public static class MissingIdentifierException extends Exception {
+        public MissingIdentifierException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
 }

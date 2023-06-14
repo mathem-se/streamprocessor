@@ -12,22 +12,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.helpers.*;
+import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
-import org.streamprocessor.core.helpers.FailSafePubsubMessage;
 
-public class TransformMessageFn extends DoFn<PubsubMessage, FailSafePubsubMessage> {
+public class TransformMessageFn extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
     static final long serialVersionUID = 238L;
 
     String dataContractsServiceUrl;
-    TupleTag<FailSafePubsubMessage> successTag;
-    TupleTag<Failure> failureTag;
+    TupleTag<FailsafeElement<PubsubMessage>> successTag;
+    TupleTag<FailsafeElement<PubsubMessage>> failureTag;
 
     public TransformMessageFn(
             String dataContractsServiceUrl,
-            TupleTag<FailSafePubsubMessage> successTag,
-            TupleTag<Failure> failureTag
-    ) {
+            TupleTag<FailsafeElement<PubsubMessage>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage>> failureTag) {
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.successTag = successTag;
         this.failureTag = failureTag;
@@ -37,8 +36,8 @@ public class TransformMessageFn extends DoFn<PubsubMessage, FailSafePubsubMessag
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) {
         String uuid = null;
         String entity = null;
-        PubsubMessage msg;
-        FailSafePubsubMessage pubsubMessage = null;
+        PubsubMessage newPubsubMessage = null;
+        FailsafeElement<PubsubMessage> outputElement;
 
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
@@ -69,13 +68,15 @@ public class TransformMessageFn extends DoFn<PubsubMessage, FailSafePubsubMessag
 
             switch (provider) {
                 case "dynamodb":
-                    msg = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
+                    newPubsubMessage = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "salesforce":
-                    msg = SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
+                    newPubsubMessage =
+                            SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
-                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
+                    newPubsubMessage =
+                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(
@@ -86,28 +87,27 @@ public class TransformMessageFn extends DoFn<PubsubMessage, FailSafePubsubMessag
                                     + " not valid.");
             }
 
-            pubsubMessage = FailSafePubsubMessage.builder()
-                    .originalPubsubMessage(received)
-                    .newPubsubMessage(msg)
-                    .build();
+            outputElement = new FailsafeElement<>(received, newPubsubMessage);
 
-            out.get(successTag).output(pubsubMessage);
+            out.get(successTag).output(outputElement);
         } catch (Exception e) {
+            outputElement =
+                    new FailsafeElement<>(
+                            received,
+                            newPubsubMessage,
+                            "TransformMessageFn.processElement()",
+                            e.getClass().getName(),
+                            e);
+
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
-                    e.getClass().getName(),
-                    "TransformMessageFn.processElement()",
-                    e.toString(),
+                    outputElement.getException(),
+                    outputElement.getPipelineStep(),
+                    outputElement.getExceptionDetails(),
                     entity,
                     uuid);
-            out.get(failureTag).output(
-                    Failure
-                            .builder()
-                            .pipelineStep("TransformMessageFn.processElement()")
-                            .pubsubMessageRaw(received)
-                            .exception(e.getClass().getName())
-                            .exceptionDetails(e)
-                            .build());
+
+            out.get(failureTag).output(outputElement);
         }
     }
 }
