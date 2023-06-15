@@ -96,8 +96,8 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
             String datasetId =
                     dataContract
                             .getJSONObject("endpoints")
-                            .getJSONObject("target")
-                            .getString("dataset");
+                            .getJSONObject("source")
+                            .getString("provider");
 
             String linkedResource =
                     String.format(
