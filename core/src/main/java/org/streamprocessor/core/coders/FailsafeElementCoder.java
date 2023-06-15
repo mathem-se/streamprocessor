@@ -14,14 +14,14 @@ import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.helpers.FailsafeElement;
 
 // TODO: Testing the FailsafeCoder raw class, check if type is needed.
-public class FailsafeCoder extends CustomCoder<FailsafeElement<Row>> {
+public class FailsafeElementCoder extends CustomCoder<FailsafeElement<Row>> {
     private static final Logger LOG = LoggerFactory.getLogger(CustomCoder.class);
 
-    public static FailsafeCoder of() {
-        return new FailsafeCoder();
+    public static FailsafeElementCoder of() {
+        return new FailsafeElementCoder();
     }
 
-    public FailsafeCoder() {}
+    public FailsafeElementCoder() {}
 
     static final long serialVersionUID = 8767646534L;
 

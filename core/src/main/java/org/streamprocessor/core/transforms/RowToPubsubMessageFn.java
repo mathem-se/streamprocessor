@@ -51,7 +51,7 @@ public class RowToPubsubMessageFn extends DoFn<FailsafeElement<Row>, KV<String, 
     public void processElement(
             @Element FailsafeElement<Row> received, OutputReceiver<KV<String, PubsubMessage>> out)
             throws Exception {
-        Row row = received.getNewElement();
+        Row row = received.getCurrentElement();
         try {
             TableRow tr = BigQueryUtils.toTableRow(row);
             ByteArrayOutputStream jsonStream = new ByteArrayOutputStream();

@@ -202,7 +202,7 @@ public class DeIdentifyFn extends DoFn<FailsafeElement<Row>, FailsafeElement<Row
             throws Exception {
         FailsafeElement<Row> outputElement;
         Row outputRow;
-        Row row = received.getNewElement();
+        Row row = received.getCurrentElement();
 
         try {
             org.apache.beam.sdk.values.Row.FieldValueBuilder rowBuilder = Row.fromRow(row);

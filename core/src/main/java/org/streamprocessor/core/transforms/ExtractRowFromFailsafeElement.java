@@ -8,6 +8,6 @@ public class ExtractRowFromFailsafeElement extends DoFn<FailsafeElement<Row>, Ro
 
     @ProcessElement
     public void processElement(@Element FailsafeElement<Row> received, OutputReceiver<Row> out) {
-        out.output(received.getNewElement());
+        out.output(received.getCurrentElement());
     }
 }

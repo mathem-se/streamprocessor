@@ -76,7 +76,7 @@ public class SerializeMessageToRowFn
             @Element FailsafeElement<PubsubMessage> received, MultiOutputReceiver out)
             throws Exception {
 
-        PubsubMessage pubsubMessage = received.getNewElement();
+        PubsubMessage pubsubMessage = received.getCurrentElement();
         FailsafeElement<Row> outputElement;
         Row row = null;
 

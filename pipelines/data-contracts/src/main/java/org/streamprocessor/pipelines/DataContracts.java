@@ -46,7 +46,7 @@ import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.application.StreamProcessorOptions;
-import org.streamprocessor.core.coders.FailsafeCoder;
+import org.streamprocessor.core.coders.FailsafeElementCoder;
 import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
@@ -132,8 +132,8 @@ public class DataContracts {
          * Create a coder that can seriealize rows with different schemas
          */
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
-        FailsafeCoder failsafeCoder = new FailsafeCoder();
-        coderRegistry.registerCoderForClass(FailsafeElement.class, failsafeCoder);
+        FailsafeElementCoder failsafeElementCoder = new FailsafeElementCoder();
+        coderRegistry.registerCoderForClass(FailsafeElement.class, failsafeElementCoder);
 
         PCollection<PubsubMessage> pubsubMessagesCollection =
                 pipeline.apply(
@@ -171,7 +171,7 @@ public class DataContracts {
         PCollectionTuple tokenized =
                 serialized
                         .get(ROW_SUCCESS_TAG)
-                        .setCoder(failsafeCoder)
+                        .setCoder(failsafeElementCoder)
                         .apply(
                                 "De-identify Rows",
                                 ParDo.of(
@@ -197,7 +197,7 @@ public class DataContracts {
             WriteResult result =
                     tokenized
                             .get(ROW_SUCCESS_TAG)
-                            .setCoder(failsafeCoder)
+                            .setCoder(failsafeElementCoder)
                             .apply(ParDo.of(new ExtractRowFromFailsafeElement()))
                             .apply(
                                     "Write de-identified Rows to BigQuery",
@@ -252,7 +252,7 @@ public class DataContracts {
             PCollection<KV<String, PubsubMessage>> pubsubMessages =
                     tokenized
                             .get(ROW_SUCCESS_TAG)
-                            .setCoder(failsafeCoder)
+                            .setCoder(failsafeElementCoder)
                             .apply(
                                     "Transform Rows to Pubsub Messages",
                                     ParDo.of(new RowToPubsubMessageFn()));
