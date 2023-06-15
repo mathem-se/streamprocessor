@@ -7,21 +7,34 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.CustomCoder;
+import org.apache.beam.sdk.coders.NullableCoder;
 import org.apache.beam.sdk.coders.SerializableCoder;
-import org.apache.beam.sdk.values.Row;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.helpers.FailsafeElement;
 
-// TODO: Testing the FailsafeCoder raw class, check if type is needed.
-public class FailsafeElementCoder extends CustomCoder<FailsafeElement<Row>> {
+public class FailsafeElementCoder<OriginalT, CurrentT>
+        extends CustomCoder<FailsafeElement<OriginalT, CurrentT>> {
     private static final Logger LOG = LoggerFactory.getLogger(CustomCoder.class);
 
-    public static FailsafeElementCoder of() {
-        return new FailsafeElementCoder();
+    private static final NullableCoder<String> STRING_CODER =
+            NullableCoder.of(StringUtf8Coder.of());
+
+    private final Coder<OriginalT> originalElementCoder;
+
+    private final Coder<CurrentT> currentElementCoder;
+
+    private FailsafeElementCoder(
+            Coder<OriginalT> originalElementCoder, Coder<CurrentT> currentElementCoder) {
+        this.originalElementCoder = originalElementCoder;
+        this.currentElementCoder = currentElementCoder;
     }
 
-    public FailsafeElementCoder() {}
+    public static <OriginalT, CurrentT> FailsafeElementCoder<OriginalT, CurrentT> of(
+            Coder<OriginalT> originalElementCoder, Coder<CurrentT> currentElementCoder) {
+        return new FailsafeElementCoder<>(originalElementCoder, currentElementCoder);
+    }
 
     static final long serialVersionUID = 8767646534L;
 
@@ -31,13 +44,18 @@ public class FailsafeElementCoder extends CustomCoder<FailsafeElement<Row>> {
      *
      * @param value
      * @param outStream
-     * @return Nothing
      * @exception IOException
      */
     @Override
-    public void encode(FailsafeElement<Row> value, OutputStream outStream) throws IOException {
+    public void encode(FailsafeElement<OriginalT, CurrentT> value, OutputStream outStream)
+            throws IOException {
         try {
-            SerializableCoder.of(FailsafeElement.class).encode(value, outStream);
+            originalElementCoder.encode(value.getOriginalElement(), outStream);
+            currentElementCoder.encode(value.getCurrentElement(), outStream);
+            STRING_CODER.encode(value.getPipelineStep(), outStream);
+            STRING_CODER.encode(value.getException(), outStream);
+            SerializableCoder.of(Throwable.class).encode(value.getExceptionDetails(), outStream);
+
         } catch (IOException e) {
             LOG.error(
                     "exception[{}] step[{}] details[{}]",
@@ -58,9 +76,19 @@ public class FailsafeElementCoder extends CustomCoder<FailsafeElement<Row>> {
      * @exception IOException
      */
     @Override
-    public FailsafeElement decode(InputStream inStream) throws IOException {
+    public FailsafeElement<OriginalT, CurrentT> decode(InputStream inStream) throws IOException {
+
         try {
-            return SerializableCoder.of(FailsafeElement.class).decode(inStream);
+            OriginalT originalElement = originalElementCoder.decode(inStream);
+            CurrentT currentElement = currentElementCoder.decode(inStream);
+            String pipelineStep = STRING_CODER.decode(inStream);
+            String exception = STRING_CODER.decode(inStream);
+            Throwable exceptionDetails = SerializableCoder.of(Throwable.class).decode(inStream);
+
+            return FailsafeElement.of(originalElement, currentElement)
+                    .setPipelineStep(pipelineStep)
+                    .setException(exception)
+                    .setExceptionDetails(exceptionDetails);
         } catch (IOException e) {
             LOG.error(
                     "exception[{}] step[{}] details[{}]",

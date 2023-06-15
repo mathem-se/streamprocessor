@@ -34,12 +34,14 @@ import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class SerializeMessageToRowFn
-        extends DoFn<FailsafeElement<PubsubMessage>, FailsafeElement<Row>> {
+        extends DoFn<
+                FailsafeElement<PubsubMessage, PubsubMessage>,
+                FailsafeElement<PubsubMessage, Row>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerializeMessageToRowFn.class);
 
-    TupleTag<FailsafeElement<Row>> successTag;
-    TupleTag<FailsafeElement<Row>> failureTag;
+    TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
+    TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
     String unknownFieldLogger;
     String format;
     String projectId;
@@ -47,8 +49,8 @@ public class SerializeMessageToRowFn
     float ratio;
 
     public SerializeMessageToRowFn(
-            TupleTag<FailsafeElement<Row>> successTag,
-            TupleTag<FailsafeElement<Row>> failureTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
             String projectId,
             String dataContractsServiceUrl,
             float ratio) {
@@ -60,8 +62,8 @@ public class SerializeMessageToRowFn
     }
 
     public SerializeMessageToRowFn(
-            TupleTag<FailsafeElement<Row>> successTag,
-            TupleTag<FailsafeElement<Row>> failureTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
             String projectId,
             String dataContractsServiceUrl) {
         this.successTag = successTag;
@@ -73,11 +75,12 @@ public class SerializeMessageToRowFn
 
     @ProcessElement
     public void processElement(
-            @Element FailsafeElement<PubsubMessage> received, MultiOutputReceiver out)
+            @Element FailsafeElement<PubsubMessage, PubsubMessage> received,
+            MultiOutputReceiver out)
             throws Exception {
 
         PubsubMessage pubsubMessage = received.getCurrentElement();
-        FailsafeElement<Row> outputElement;
+        FailsafeElement<PubsubMessage, Row> outputElement;
         Row row = null;
 
         String entity = pubsubMessage.getAttribute("entity").replace("-", "_").toLowerCase();
@@ -126,12 +129,10 @@ public class SerializeMessageToRowFn
 
         } catch (Exception e) {
             outputElement =
-                    new FailsafeElement<>(
-                            received.getOriginalElement(),
-                            row,
-                            "TransformMessageFn.processElement()",
-                            e.getClass().getName(),
-                            e);
+                    new FailsafeElement<>(received.getOriginalElement(), row)
+                            .setPipelineStep("TransformMessageFn.processElement()")
+                            .setException(e.getClass().getName())
+                            .setExceptionDetails(e);
 
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}]",

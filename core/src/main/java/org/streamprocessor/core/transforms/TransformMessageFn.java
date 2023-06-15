@@ -17,18 +17,19 @@ import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.helpers.SalesforceHelper;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
-public class TransformMessageFn extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage>> {
+public class TransformMessageFn
+        extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
     static final long serialVersionUID = 238L;
 
     String dataContractsServiceUrl;
-    TupleTag<FailsafeElement<PubsubMessage>> successTag;
-    TupleTag<FailsafeElement<PubsubMessage>> failureTag;
+    TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag;
+    TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag;
 
     public TransformMessageFn(
             String dataContractsServiceUrl,
-            TupleTag<FailsafeElement<PubsubMessage>> successTag,
-            TupleTag<FailsafeElement<PubsubMessage>> failureTag) {
+            TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag) {
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.successTag = successTag;
         this.failureTag = failureTag;
@@ -39,7 +40,7 @@ public class TransformMessageFn extends DoFn<PubsubMessage, FailsafeElement<Pubs
         String uuid = null;
         String entity = null;
         PubsubMessage newPubsubMessage = null;
-        FailsafeElement<PubsubMessage> outputElement;
+        FailsafeElement<PubsubMessage, PubsubMessage> outputElement;
 
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
@@ -94,12 +95,10 @@ public class TransformMessageFn extends DoFn<PubsubMessage, FailsafeElement<Pubs
             out.get(successTag).output(outputElement);
         } catch (Exception e) {
             outputElement =
-                    new FailsafeElement<>(
-                            received,
-                            newPubsubMessage,
-                            "TransformMessageFn.processElement()",
-                            e.getClass().getName(),
-                            e);
+                    new FailsafeElement<>(received, newPubsubMessage)
+                            .setPipelineStep("TransformMessageFn.processElement()")
+                            .setException(getClass().getName())
+                            .setExceptionDetails(e);
 
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",

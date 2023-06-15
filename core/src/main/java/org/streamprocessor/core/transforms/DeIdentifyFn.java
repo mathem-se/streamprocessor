@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
@@ -40,7 +41,8 @@ import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
-public class DeIdentifyFn extends DoFn<FailsafeElement<Row>, FailsafeElement<Row>> {
+public class DeIdentifyFn
+        extends DoFn<FailsafeElement<PubsubMessage, Row>, FailsafeElement<PubsubMessage, Row>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DeIdentifyFn.class);
     private static final Counter tokenCacheMissesCounter =
@@ -59,8 +61,8 @@ public class DeIdentifyFn extends DoFn<FailsafeElement<Row>, FailsafeElement<Row
     private Firestore db;
     String firestoreProjectId;
 
-    TupleTag<FailsafeElement<Row>> successTag;
-    TupleTag<FailsafeElement<Row>> failureTag;
+    TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
+    TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
 
     public static Object getFieldToken(String tokenFullRef, Firestore db) {
         try {
@@ -172,8 +174,8 @@ public class DeIdentifyFn extends DoFn<FailsafeElement<Row>, FailsafeElement<Row
 
     public DeIdentifyFn(
             String firestoreProjectId,
-            TupleTag<FailsafeElement<Row>> successTag,
-            TupleTag<FailsafeElement<Row>> failureTag) {
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag) {
         this.firestoreProjectId = firestoreProjectId;
         this.successTag = successTag;
         this.failureTag = failureTag;
@@ -198,9 +200,10 @@ public class DeIdentifyFn extends DoFn<FailsafeElement<Row>, FailsafeElement<Row
     }
 
     @ProcessElement
-    public void processElement(@Element FailsafeElement<Row> received, MultiOutputReceiver out)
+    public void processElement(
+            @Element FailsafeElement<PubsubMessage, Row> received, MultiOutputReceiver out)
             throws Exception {
-        FailsafeElement<Row> outputElement;
+        FailsafeElement<PubsubMessage, Row> outputElement;
         Row outputRow;
         Row row = received.getCurrentElement();
 
@@ -318,12 +321,10 @@ public class DeIdentifyFn extends DoFn<FailsafeElement<Row>, FailsafeElement<Row
 
         } catch (Exception e) {
             outputElement =
-                    new FailsafeElement<>(
-                            received.getOriginalElement(),
-                            row,
-                            "DeIdentifyFn.processElement()",
-                            e.getClass().getName(),
-                            e);
+                    new FailsafeElement<>(received.getOriginalElement(), row)
+                            .setPipelineStep("DeIdentifyFn.processElement()")
+                            .setException(e.getClass().getName())
+                            .setExceptionDetails(e);
 
             LOG.error(
                     "exception[{}] step[{}] details[{}]",

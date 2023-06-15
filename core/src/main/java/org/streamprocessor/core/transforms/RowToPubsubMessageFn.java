@@ -36,7 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.helpers.FailsafeElement;
 
-public class RowToPubsubMessageFn extends DoFn<FailsafeElement<Row>, KV<String, PubsubMessage>> {
+public class RowToPubsubMessageFn
+        extends DoFn<FailsafeElement<PubsubMessage, Row>, KV<String, PubsubMessage>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RowToPubsubMessageFn.class);
 
@@ -49,7 +50,8 @@ public class RowToPubsubMessageFn extends DoFn<FailsafeElement<Row>, KV<String, 
 
     @ProcessElement
     public void processElement(
-            @Element FailsafeElement<Row> received, OutputReceiver<KV<String, PubsubMessage>> out)
+            @Element FailsafeElement<PubsubMessage, Row> received,
+            OutputReceiver<KV<String, PubsubMessage>> out)
             throws Exception {
         Row row = received.getCurrentElement();
         try {

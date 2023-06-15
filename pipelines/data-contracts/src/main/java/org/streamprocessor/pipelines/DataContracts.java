@@ -20,12 +20,14 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.CoderRegistry;
+import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.GroupIntoBatches;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -47,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.application.StreamProcessorOptions;
 import org.streamprocessor.core.coders.FailsafeElementCoder;
+import org.streamprocessor.core.coders.GenericRowCoder;
 import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
@@ -74,15 +77,16 @@ public class DataContracts {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataContracts.class);
 
-    static final TupleTag<FailsafeElement<PubsubMessage>> PUBSUB_TRANSFORMED_SUCCESS_TAG =
-            new TupleTag<>() {};
-    static final TupleTag<FailsafeElement<PubsubMessage>> PUBSUB_TRANSFORMED_FAILURE_TAG =
-            new TupleTag<>() {};
-    static final TupleTag<FailsafeElement<Row>> ROW_SUCCESS_TAG =
+    static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
+            PUBSUB_TRANSFORMED_SUCCESS_TAG = new TupleTag<>() {};
+    static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
+            PUBSUB_TRANSFORMED_FAILURE_TAG = new TupleTag<>() {};
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_SUCCESS_TAG =
             new TupleTag<>() {
                 static final long serialVersionUID = 894723987432L;
             };
-    static final TupleTag<FailsafeElement<Row>> ROW_FAILURE_TAG = new TupleTag<>() {};
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_FAILURE_TAG =
+            new TupleTag<>() {};
 
     static final TupleTag<Row> DEIDENTIFY_SUCCESS_TAG =
             new TupleTag<Row>("deidentify success") {
@@ -132,8 +136,21 @@ public class DataContracts {
          * Create a coder that can seriealize rows with different schemas
          */
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
-        FailsafeElementCoder failsafeElementCoder = new FailsafeElementCoder();
-        coderRegistry.registerCoderForClass(FailsafeElement.class, failsafeElementCoder);
+
+        FailsafeElementCoder<PubsubMessage, PubsubMessage> pubsubFailsafeElementCoder =
+                FailsafeElementCoder.of(
+                        PubsubMessageWithAttributesCoder.of(),
+                        PubsubMessageWithAttributesCoder.of());
+
+        FailsafeElementCoder<PubsubMessage, Row> rowFailsafeElementCoder =
+                FailsafeElementCoder.of(
+                        PubsubMessageWithAttributesCoder.of(), SerializableCoder.of(Row.class));
+
+        GenericRowCoder rowCoder = new GenericRowCoder();
+
+        coderRegistry.registerCoderForClass(FailsafeElement.class, pubsubFailsafeElementCoder);
+        coderRegistry.registerCoderForClass(FailsafeElement.class, rowFailsafeElementCoder);
+        coderRegistry.registerCoderForClass(Row.class, rowCoder);
 
         PCollection<PubsubMessage> pubsubMessagesCollection =
                 pipeline.apply(
@@ -156,6 +173,7 @@ public class DataContracts {
         PCollectionTuple serialized =
                 enrichedMessages
                         .get(PUBSUB_TRANSFORMED_SUCCESS_TAG)
+                        .setCoder(pubsubFailsafeElementCoder)
                         .apply(
                                 "Serialize to Rows",
                                 ParDo.of(
@@ -171,7 +189,7 @@ public class DataContracts {
         PCollectionTuple tokenized =
                 serialized
                         .get(ROW_SUCCESS_TAG)
-                        .setCoder(failsafeElementCoder)
+                        .setCoder(rowFailsafeElementCoder)
                         .apply(
                                 "De-identify Rows",
                                 ParDo.of(
@@ -181,6 +199,11 @@ public class DataContracts {
                                                         ROW_FAILURE_TAG))
                                         .withOutputTags(
                                                 ROW_SUCCESS_TAG, TupleTagList.of(ROW_FAILURE_TAG)));
+
+        PCollection<FailsafeElement<PubsubMessage, Row>> tokenizedSuccessWithCoder =
+                tokenized
+                        .get(ROW_SUCCESS_TAG)
+                        .setCoder(rowFailsafeElementCoder);
 
         // PCollection<Row> failures = deIdentified.get(DEIDENTIFY_FAILURE_TAG).setCoder(coder);
         // PCollection<Row> tokens = deIdentified.get(DEIDENTIFY_TOKENS_TAG).setCoder(coder);
@@ -194,30 +217,30 @@ public class DataContracts {
         if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
 
-            WriteResult result =
-                    tokenized
-                            .get(ROW_SUCCESS_TAG)
-                            .setCoder(failsafeElementCoder)
+            PCollection<Row> extractRowElement =
+                    tokenizedSuccessWithCoder
                             .apply(ParDo.of(new ExtractRowFromFailsafeElement()))
-                            .apply(
-                                    "Write de-identified Rows to BigQuery",
-                                    BigQueryIO.<Row>write()
-                                            .withFormatFunction(
-                                                    r -> BigQueryUtils.toTableRow((Row) r))
-                                            .ignoreUnknownValues()
-                                            .withCreateDisposition(
-                                                    BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-                                            .withWriteDisposition(
-                                                    BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                                            .to(SchemaDestinations.schemaDestination(projectId))
-                                            .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
-                                            .withFailedInsertRetryPolicy(
-                                                    InsertRetryPolicy.retryTransientErrors())
-                                            .withExtendedErrorInfo()
-                                    // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
-                                    // //https://issues.apache.org/jira/browse/BEAM-13954
-                                    // .withAutoSharding()
-                                    );
+                            .setCoder(rowCoder);
+
+            WriteResult result =
+                    extractRowElement.apply(
+                            "Write de-identified Rows to BigQuery",
+                            BigQueryIO.<Row>write()
+                                    .withFormatFunction(r -> BigQueryUtils.toTableRow((Row) r))
+                                    .ignoreUnknownValues()
+                                    .withCreateDisposition(
+                                            BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
+                                    .withWriteDisposition(
+                                            BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                                    .to(SchemaDestinations.schemaDestination(projectId))
+                                    .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
+                                    .withFailedInsertRetryPolicy(
+                                            InsertRetryPolicy.retryTransientErrors())
+                                    .withExtendedErrorInfo()
+                            // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
+                            // //https://issues.apache.org/jira/browse/BEAM-13954
+                            // .withAutoSharding()
+                            );
 
             result.getFailedInsertsWithErr()
                     .apply(
@@ -248,14 +271,13 @@ public class DataContracts {
         /*
          * Transform tokenized rows to pubsub messages and fan out to multiple topics for streaming analytics
          */
+
         if (options.getEntityTopics() || options.getBackupTopic() != null) {
             PCollection<KV<String, PubsubMessage>> pubsubMessages =
-                    tokenized
-                            .get(ROW_SUCCESS_TAG)
-                            .setCoder(failsafeElementCoder)
+                    tokenizedSuccessWithCoder
                             .apply(
-                                    "Transform Rows to Pubsub Messages",
-                                    ParDo.of(new RowToPubsubMessageFn()));
+                            "Transform Rows to Pubsub Messages",
+                            ParDo.of(new RowToPubsubMessageFn()));
 
             /*
              * Fan out to multiple topics for streaming analytics
