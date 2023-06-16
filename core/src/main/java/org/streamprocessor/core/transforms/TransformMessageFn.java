@@ -78,14 +78,10 @@ public class TransformMessageFn
                             SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
+                case "marketing_cloud":
+                case "pi":
                     newPubsubMessage =
                             CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
-                    break;
-                case "marketing_cloud":
-                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
-                    break;
-                case "pi":
-                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(
