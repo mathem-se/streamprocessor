@@ -170,10 +170,12 @@ public class DataContracts {
                                         PUBSUB_TRANSFORMED_SUCCESS_TAG,
                                         TupleTagList.of(PUBSUB_TRANSFORMED_FAILURE_TAG)));
 
+        enrichedMessages.get(PUBSUB_TRANSFORMED_SUCCESS_TAG).setCoder(pubsubFailsafeElementCoder);
+        enrichedMessages.get(PUBSUB_TRANSFORMED_FAILURE_TAG).setCoder(pubsubFailsafeElementCoder);
+
         PCollectionTuple serialized =
                 enrichedMessages
                         .get(PUBSUB_TRANSFORMED_SUCCESS_TAG)
-                        .setCoder(pubsubFailsafeElementCoder)
                         .apply(
                                 "Serialize to Rows",
                                 ParDo.of(
@@ -185,6 +187,9 @@ public class DataContracts {
                                                         options.getSchemaCheckRatio()))
                                         .withOutputTags(
                                                 ROW_SUCCESS_TAG, TupleTagList.of(ROW_FAILURE_TAG)));
+
+        serialized.get(ROW_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
+        serialized.get(ROW_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
         PCollectionTuple tokenized =
                 serialized
@@ -200,10 +205,8 @@ public class DataContracts {
                                         .withOutputTags(
                                                 ROW_SUCCESS_TAG, TupleTagList.of(ROW_FAILURE_TAG)));
 
-        PCollection<FailsafeElement<PubsubMessage, Row>> tokenizedSuccessWithCoder =
-                tokenized
-                        .get(ROW_SUCCESS_TAG)
-                        .setCoder(rowFailsafeElementCoder);
+        tokenized.get(ROW_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
+        tokenized.get(ROW_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
         // PCollection<Row> failures = deIdentified.get(DEIDENTIFY_FAILURE_TAG).setCoder(coder);
         // PCollection<Row> tokens = deIdentified.get(DEIDENTIFY_TOKENS_TAG).setCoder(coder);
@@ -218,7 +221,8 @@ public class DataContracts {
             String projectId = options.getProject();
 
             PCollection<Row> extractRowElement =
-                    tokenizedSuccessWithCoder
+                    tokenized
+                            .get(ROW_SUCCESS_TAG)
                             .apply(ParDo.of(new ExtractRowFromFailsafeElement()))
                             .setCoder(rowCoder);
 
@@ -274,10 +278,11 @@ public class DataContracts {
 
         if (options.getEntityTopics() || options.getBackupTopic() != null) {
             PCollection<KV<String, PubsubMessage>> pubsubMessages =
-                    tokenizedSuccessWithCoder
+                    tokenized
+                            .get(ROW_SUCCESS_TAG)
                             .apply(
-                            "Transform Rows to Pubsub Messages",
-                            ParDo.of(new RowToPubsubMessageFn()));
+                                    "Transform Rows to Pubsub Messages",
+                                    ParDo.of(new RowToPubsubMessageFn()));
 
             /*
              * Fan out to multiple topics for streaming analytics
@@ -311,7 +316,6 @@ public class DataContracts {
                                 PubsubIO.writeMessages().to(options.getBackupTopic()));
             }
         }
-
         pipeline.run();
     }
 }

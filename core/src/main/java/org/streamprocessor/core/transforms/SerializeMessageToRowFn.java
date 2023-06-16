@@ -130,7 +130,7 @@ public class SerializeMessageToRowFn
         } catch (Exception e) {
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), row)
-                            .setPipelineStep("TransformMessageFn.processElement()")
+                            .setPipelineStep("SerializeMessageToRowFn.processElement()")
                             .setException(e.getClass().getName())
                             .setExceptionDetails(e);
 
