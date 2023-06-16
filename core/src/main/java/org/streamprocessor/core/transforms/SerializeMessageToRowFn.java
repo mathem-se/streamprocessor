@@ -94,8 +94,8 @@ public class SerializeMessageToRowFn
             String datasetId =
                     dataContract
                             .getJSONObject("endpoints")
-                            .getJSONObject("target")
-                            .getString("dataset");
+                            .getJSONObject("source")
+                            .getString("provider");
 
             String linkedResource =
                     String.format(

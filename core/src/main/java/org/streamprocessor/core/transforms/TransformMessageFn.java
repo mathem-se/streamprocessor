@@ -81,6 +81,12 @@ public class TransformMessageFn
                     newPubsubMessage =
                             CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
+                case "marketing_cloud":
+                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
+                    break;
+                case "pi":
+                    msg = CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
+                    break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(
                             "Provider: "
