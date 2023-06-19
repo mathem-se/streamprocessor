@@ -204,7 +204,7 @@ public class DeIdentifyFn
             @Element FailsafeElement<PubsubMessage, Row> received, MultiOutputReceiver out)
             throws Exception {
         FailsafeElement<PubsubMessage, Row> outputElement;
-        Row outputRow;
+        Row currentElement = null;
         Row row = received.getCurrentElement();
 
         try {
@@ -314,17 +314,19 @@ public class DeIdentifyFn
                     }
                 }
             }
-            outputRow = rowBuilder.build();
+            currentElement = rowBuilder.build();
 
-            outputElement = new FailsafeElement<>(received.getOriginalElement(), outputRow);
+            outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
+
             out.get(successTag).output(outputElement);
 
         } catch (Exception e) {
             outputElement =
-                    new FailsafeElement<>(received.getOriginalElement(), row)
+                    new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("DeIdentifyFn.processElement()")
                             .setException(e.getClass().getName())
-                            .setExceptionDetails(e);
+                            .setExceptionDetails(e)
+                            .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
                     "exception[{}] step[{}] details[{}]",

@@ -54,7 +54,7 @@ import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
 import org.streamprocessor.core.transforms.DeIdentifyFn;
-import org.streamprocessor.core.transforms.ExtractRowFromFailsafeElement;
+import org.streamprocessor.core.transforms.ExtractCurrentElement;
 import org.streamprocessor.core.transforms.RowToPubsubMessageFn;
 import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
 import org.streamprocessor.core.transforms.TransformMessageFn;
@@ -78,34 +78,28 @@ public class DataContracts {
     private static final Logger LOG = LoggerFactory.getLogger(DataContracts.class);
 
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
-            PUBSUB_TRANSFORMED_SUCCESS_TAG = new TupleTag<>() {};
+            PUBSUB_TRANSFORMED_SUCCESS_TAG = new TupleTag<>(
+                    "pubsub transformed success"
+    ) {
+        static final long serialVersionUID = -7062806547763956169L;
+    };
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
-            PUBSUB_TRANSFORMED_FAILURE_TAG = new TupleTag<>() {};
+            PUBSUB_TRANSFORMED_FAILURE_TAG = new TupleTag<>(
+                    "pubsub transformed failure"
+    ) {
+        static final long serialVersionUID = -7391614518888199305L;
+    };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_SUCCESS_TAG =
-            new TupleTag<>() {
-                static final long serialVersionUID = 894723987432L;
+            new TupleTag<>(
+                    "row success"
+            ) {
+                static final long serialVersionUID = -3622861873011005150L;
             };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_FAILURE_TAG =
-            new TupleTag<>() {};
-
-    static final TupleTag<Row> DEIDENTIFY_SUCCESS_TAG =
-            new TupleTag<Row>("deidentify success") {
-                static final long serialVersionUID = 89472335672L;
-            };
-
-    static final TupleTag<Row> DEIDENTIFY_TOKENS_TAG =
-            new TupleTag<Row>("deidentify tokens") {
-                static final long serialVersionUID = 89472335673L;
-            };
-
-    static final TupleTag<Row> DEIDENTIFY_FAILURE_TAG =
-            new TupleTag<Row>("deidentify failure") {
-                static final long serialVersionUID = 89472335674L;
-            };
-
-    static final TupleTag<PubsubMessage> JSON_MESSAGE_TAG =
-            new TupleTag<PubsubMessage>("jsonMessage") {
-                static final long serialVersionUID = 89472334422L;
+            new TupleTag<>(
+                    "row failure"
+            ) {
+                static final long serialVersionUID = -340619314275667434L;
             };
 
     /**
@@ -194,7 +188,6 @@ public class DataContracts {
         PCollectionTuple tokenized =
                 serialized
                         .get(ROW_SUCCESS_TAG)
-                        .setCoder(rowFailsafeElementCoder)
                         .apply(
                                 "De-identify Rows",
                                 ParDo.of(
@@ -208,10 +201,6 @@ public class DataContracts {
         tokenized.get(ROW_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
         tokenized.get(ROW_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
-        // PCollection<Row> failures = deIdentified.get(DEIDENTIFY_FAILURE_TAG).setCoder(coder);
-        // PCollection<Row> tokens = deIdentified.get(DEIDENTIFY_TOKENS_TAG).setCoder(coder);
-        // PCollection<Row> tokenized = deIdentified.get(DEIDENTIFY_SUCCESS_TAG).setCoder(coder);
-
         /*
          * If a BigQuery Dataset is configured, dynamically create table if not exists and name it
          * according to topic.
@@ -223,7 +212,7 @@ public class DataContracts {
             PCollection<Row> extractRowElement =
                     tokenized
                             .get(ROW_SUCCESS_TAG)
-                            .apply(ParDo.of(new ExtractRowFromFailsafeElement()))
+                            .apply("Extract Row element", ParDo.of(new ExtractCurrentElement<>()))
                             .setCoder(rowCoder);
 
             WriteResult result =
@@ -266,7 +255,7 @@ public class DataContracts {
                                                 LOG.error(
                                                         "exception[FailedInsertsException] step[{}]"
                                                                 + " details[{}]",
-                                                        "Dynamodb.main()",
+                                                        "DataContracts.main()",
                                                         message);
                                                 return "";
                                             }));
@@ -275,7 +264,6 @@ public class DataContracts {
         /*
          * Transform tokenized rows to pubsub messages and fan out to multiple topics for streaming analytics
          */
-
         if (options.getEntityTopics() || options.getBackupTopic() != null) {
             PCollection<KV<String, PubsubMessage>> pubsubMessages =
                     tokenized

@@ -8,9 +8,10 @@ import lombok.Getter;
 public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
     private final OriginalT originalElement;
     @Nullable private final CurrentT currentElement;
-    @Nullable private String pipelineStep;
-    @Nullable private String exception;
-    @Nullable private Throwable exceptionDetails;
+    private String pipelineStep;
+    private String exception;
+    private Throwable exceptionDetails;
+    private String eventTimestamp;
 
     public FailsafeElement(OriginalT originalElement, @Nullable CurrentT currentElement) {
         this.originalElement = originalElement;
@@ -34,6 +35,11 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
 
     public FailsafeElement<OriginalT, CurrentT> setExceptionDetails(Throwable exceptionDetails) {
         this.exceptionDetails = exceptionDetails;
+        return this;
+    }
+
+    public FailsafeElement<OriginalT, CurrentT> setEventTimestamp(String eventTimestamp) {
+        this.eventTimestamp = eventTimestamp;
         return this;
     }
 }

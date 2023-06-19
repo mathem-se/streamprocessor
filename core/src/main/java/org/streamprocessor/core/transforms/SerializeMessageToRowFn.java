@@ -18,6 +18,7 @@ package org.streamprocessor.core.transforms;
 
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.schemas.Schema;
@@ -81,7 +82,7 @@ public class SerializeMessageToRowFn
 
         PubsubMessage pubsubMessage = received.getCurrentElement();
         FailsafeElement<PubsubMessage, Row> outputElement;
-        Row row = null;
+        Row currentElement = null;
 
         String entity = pubsubMessage.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(pubsubMessage.getPayload(), StandardCharsets.UTF_8);
@@ -121,18 +122,19 @@ public class SerializeMessageToRowFn
 
             TableRow tr = BqUtils.convertJsonToTableRow(payloadJson.toString());
 
-            row = BqUtils.toBeamRow(schema, tr);
+            currentElement = BqUtils.toBeamRow(schema, tr);
 
-            outputElement = new FailsafeElement<>(received.getOriginalElement(), row);
+            outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
             out.get(successTag).output(outputElement);
 
         } catch (Exception e) {
             outputElement =
-                    new FailsafeElement<>(received.getOriginalElement(), row)
+                    new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("SerializeMessageToRowFn.processElement()")
                             .setException(e.getClass().getName())
-                            .setExceptionDetails(e);
+                            .setExceptionDetails(e)
+                            .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}]",

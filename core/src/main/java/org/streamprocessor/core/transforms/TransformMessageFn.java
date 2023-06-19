@@ -39,7 +39,7 @@ public class TransformMessageFn
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) {
         String uuid = null;
         String entity = null;
-        PubsubMessage newPubsubMessage = null;
+        PubsubMessage currentElement = null;
         FailsafeElement<PubsubMessage, PubsubMessage> outputElement;
 
         try {
@@ -71,16 +71,16 @@ public class TransformMessageFn
 
             switch (provider) {
                 case "dynamodb":
-                    newPubsubMessage = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
+                    currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "salesforce":
-                    newPubsubMessage =
+                    currentElement =
                             SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":
                 case "pi":
-                    newPubsubMessage =
+                    currentElement =
                             CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
@@ -92,15 +92,16 @@ public class TransformMessageFn
                                     + " not valid.");
             }
 
-            outputElement = new FailsafeElement<>(received, newPubsubMessage);
+            outputElement = new FailsafeElement<>(received, currentElement);
 
             out.get(successTag).output(outputElement);
         } catch (Exception e) {
             outputElement =
-                    new FailsafeElement<>(received, newPubsubMessage)
+                    new FailsafeElement<>(received, currentElement)
                             .setPipelineStep("TransformMessageFn.processElement()")
                             .setException(getClass().getName())
-                            .setExceptionDetails(e);
+                            .setExceptionDetails(e)
+                            .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
