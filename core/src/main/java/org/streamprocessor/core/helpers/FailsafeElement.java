@@ -9,7 +9,7 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
     private final OriginalT originalElement;
     @Nullable private final CurrentT currentElement;
     private String pipelineStep;
-    private String exception;
+    private String exceptionType;
     private Throwable exceptionDetails;
     private String eventTimestamp;
 
@@ -28,8 +28,8 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
         return this;
     }
 
-    public FailsafeElement<OriginalT, CurrentT> setException(String exception) {
-        this.exception = exception;
+    public FailsafeElement<OriginalT, CurrentT> setExceptionType(String exception) {
+        this.exceptionType = exception;
         return this;
     }
 

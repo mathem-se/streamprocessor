@@ -132,13 +132,13 @@ public class SerializeMessageToRowFn
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("SerializeMessageToRowFn.processElement()")
-                            .setException(e.getClass().getName())
+                            .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e)
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}]",
-                    outputElement.getException(),
+                    outputElement.getExceptionType(),
                     outputElement.getPipelineStep(),
                     outputElement.getExceptionDetails(),
                     entity);

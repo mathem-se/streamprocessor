@@ -324,13 +324,13 @@ public class DeIdentifyFn
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("DeIdentifyFn.processElement()")
-                            .setException(e.getClass().getName())
+                            .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e)
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
                     "exception[{}] step[{}] details[{}]",
-                    outputElement.getException(),
+                    outputElement.getExceptionType(),
                     outputElement.getPipelineStep(),
                     outputElement.getExceptionDetails());
 

@@ -98,13 +98,13 @@ public class TransformMessageFn
             outputElement =
                     new FailsafeElement<>(received, currentElement)
                             .setPipelineStep("TransformMessageFn.processElement()")
-                            .setException(getClass().getName())
+                            .setExceptionType(getClass().getName())
                             .setExceptionDetails(e)
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
                     "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
-                    outputElement.getException(),
+                    outputElement.getExceptionType(),
                     outputElement.getPipelineStep(),
                     outputElement.getExceptionDetails(),
                     entity,

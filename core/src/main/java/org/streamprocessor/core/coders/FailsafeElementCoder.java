@@ -63,7 +63,7 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
             originalElementCoder.encode(value.getOriginalElement(), outStream);
             currentElementCoder.encode(value.getCurrentElement(), outStream);
             STRING_CODER.encode(value.getPipelineStep(), outStream);
-            STRING_CODER.encode(value.getException(), outStream);
+            STRING_CODER.encode(value.getExceptionType(), outStream);
             SerializableCoder.of(Throwable.class).encode(value.getExceptionDetails(), outStream);
             STRING_CODER.encode(value.getEventTimestamp(), outStream);
 
@@ -95,7 +95,7 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
 
             return FailsafeElement.of(originalElement, currentElement)
                     .setPipelineStep(pipelineStep)
-                    .setException(exception)
+                    .setExceptionType(exception)
                     .setExceptionDetails(exceptionDetails)
                     .setEventTimestamp(eventTimestamp);
         } catch (IOException e) {
