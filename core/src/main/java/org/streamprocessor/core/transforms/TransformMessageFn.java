@@ -74,8 +74,7 @@ public class TransformMessageFn
                     currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "salesforce":
-                    currentElement =
-                            SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
+                    currentElement = SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":

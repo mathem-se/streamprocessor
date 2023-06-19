@@ -78,27 +78,21 @@ public class DataContracts {
     private static final Logger LOG = LoggerFactory.getLogger(DataContracts.class);
 
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
-            PUBSUB_TRANSFORMED_SUCCESS_TAG = new TupleTag<>(
-                    "pubsub transformed success"
-    ) {
-        static final long serialVersionUID = -7062806547763956169L;
-    };
+            PUBSUB_TRANSFORMED_SUCCESS_TAG =
+                    new TupleTag<>("pubsub transformed success") {
+                        static final long serialVersionUID = -7062806547763956169L;
+                    };
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
-            PUBSUB_TRANSFORMED_FAILURE_TAG = new TupleTag<>(
-                    "pubsub transformed failure"
-    ) {
-        static final long serialVersionUID = -7391614518888199305L;
-    };
+            PUBSUB_TRANSFORMED_FAILURE_TAG =
+                    new TupleTag<>("pubsub transformed failure") {
+                        static final long serialVersionUID = -7391614518888199305L;
+                    };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_SUCCESS_TAG =
-            new TupleTag<>(
-                    "row success"
-            ) {
+            new TupleTag<>("row success") {
                 static final long serialVersionUID = -3622861873011005150L;
             };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_FAILURE_TAG =
-            new TupleTag<>(
-                    "row failure"
-            ) {
+            new TupleTag<>("row failure") {
                 static final long serialVersionUID = -340619314275667434L;
             };
 
