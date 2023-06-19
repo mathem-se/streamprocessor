@@ -54,7 +54,7 @@ import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
 import org.streamprocessor.core.transforms.DeIdentifyFn;
-import org.streamprocessor.core.transforms.ExtractCurrentElement;
+import org.streamprocessor.core.transforms.ExtractCurrentElementFn;
 import org.streamprocessor.core.transforms.RowToPubsubMessageFn;
 import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
 import org.streamprocessor.core.transforms.TransformMessageFn;
@@ -206,7 +206,7 @@ public class DataContracts {
             PCollection<Row> extractRowElement =
                     tokenized
                             .get(ROW_SUCCESS_TAG)
-                            .apply("Extract Row element", ParDo.of(new ExtractCurrentElement<>()))
+                            .apply("Extract Row element", ParDo.of(new ExtractCurrentElementFn<>()))
                             .setCoder(rowCoder);
 
             WriteResult result =
