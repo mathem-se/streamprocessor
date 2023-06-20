@@ -38,8 +38,8 @@ import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
+import org.streamprocessor.core.values.FailsafeElement;
 
 public class DeIdentifyFn
         extends DoFn<FailsafeElement<PubsubMessage, Row>, FailsafeElement<PubsubMessage, Row>> {
@@ -325,7 +325,7 @@ public class DeIdentifyFn
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("DeIdentifyFn.processElement()")
                             .setExceptionType(e.getClass().getName())
-                            .setExceptionDetails(e)
+                            .setExceptionDetails(e.toString())
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
@@ -333,9 +333,6 @@ public class DeIdentifyFn
                     outputElement.getExceptionType(),
                     outputElement.getPipelineStep(),
                     outputElement.getExceptionDetails());
-
-            // TODO: remove?
-            // throw e;
 
             out.get(failureTag).output(outputElement);
         }

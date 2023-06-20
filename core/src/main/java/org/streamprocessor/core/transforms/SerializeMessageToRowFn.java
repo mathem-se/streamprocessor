@@ -30,9 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.caches.SchemaCache;
-import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
+import org.streamprocessor.core.values.FailsafeElement;
 
 public class SerializeMessageToRowFn
         extends DoFn<
@@ -133,7 +133,7 @@ public class SerializeMessageToRowFn
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("SerializeMessageToRowFn.processElement()")
                             .setExceptionType(e.getClass().getName())
-                            .setExceptionDetails(e)
+                            .setExceptionDetails(e.toString())
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(

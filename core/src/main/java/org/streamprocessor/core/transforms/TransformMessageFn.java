@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
-import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.helpers.SalesforceHelper;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
+import org.streamprocessor.core.values.FailsafeElement;
 
 public class TransformMessageFn
         extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
@@ -99,7 +99,7 @@ public class TransformMessageFn
                     new FailsafeElement<>(received, currentElement)
                             .setPipelineStep("TransformMessageFn.processElement()")
                             .setExceptionType(getClass().getName())
-                            .setExceptionDetails(e)
+                            .setExceptionDetails(e.toString())
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(

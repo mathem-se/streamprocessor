@@ -29,26 +29,38 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.*;
+import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.GroupIntoBatches;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.windowing.AfterWatermark;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.windowing.Window;
-import org.apache.beam.sdk.values.*;
+import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionList;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.Row;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.application.StreamProcessorOptions;
 import org.streamprocessor.core.coders.FailsafeElementCoder;
 import org.streamprocessor.core.coders.GenericRowCoder;
-import org.streamprocessor.core.helpers.FailsafeElement;
 import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
 import org.streamprocessor.core.transforms.DeIdentifyFn;
 import org.streamprocessor.core.transforms.ExtractCurrentElementFn;
+import org.streamprocessor.core.transforms.FailSafeElementToPubsubMessageFn;
 import org.streamprocessor.core.transforms.RowToPubsubMessageFn;
 import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
 import org.streamprocessor.core.transforms.TransformMessageFn;
+import org.streamprocessor.core.values.FailsafeElement;
 
 /**
  * Streamer pipeline
@@ -290,11 +302,38 @@ public class DataContracts {
             }
         }
 
+        /*
+         * Write failed elements out to dead letter topic if dead letter topic is set
+         */
         if (options.getDeadLetterTopic() != null) {
-            // TODO: Send failed messages to dead letter topic
+            // Failed elements of type PubsubMessage
+            PCollection<PubsubMessage> failedPubsubElements =
+                    enrichedMessages
+                            .get(PUBSUB_TRANSFORMED_FAILURE_TAG)
+                            .apply(
+                                    "Failed Pubsub elements",
+                                    ParDo.of(
+                                            new FailSafeElementToPubsubMessageFn<PubsubMessage>(
+                                                    "placeholder")));
+
+            // Failed elements of type Row
+            PCollection<PubsubMessage> failedRowElements =
+                    PCollectionList.of(tokenized.get(ROW_FAILURE_TAG))
+                            .and(serialized.get(ROW_FAILURE_TAG))
+                            .apply("Collect failed Row elements", Flatten.pCollections())
+                            .apply(
+                                    "Failed Row elements",
+                                    ParDo.of(
+                                            new FailSafeElementToPubsubMessageFn<Row>(
+                                                    "placeholder")));
+
+            PCollectionList.of(failedPubsubElements)
+                    .and(failedRowElements)
+                    .apply("Failure collector", Flatten.pCollections())
+                    .apply(
+                            "Write to dead-letter pubsub topic",
+                            PubsubIO.writeMessages().to(options.getDeadLetterTopic()));
         }
-
-
 
         pipeline.run();
     }

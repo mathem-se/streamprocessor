@@ -34,7 +34,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.streamprocessor.core.helpers.FailsafeElement;
+import org.streamprocessor.core.values.FailsafeElement;
 
 public class RowToPubsubMessageFn
         extends DoFn<FailsafeElement<PubsubMessage, Row>, KV<String, PubsubMessage>> {

@@ -9,13 +9,12 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.CoderException;
 import org.apache.beam.sdk.coders.CustomCoder;
 import org.apache.beam.sdk.coders.NullableCoder;
-import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.streamprocessor.core.helpers.FailsafeElement;
+import org.streamprocessor.core.values.FailsafeElement;
 
 /**
  * The {@link FailsafeElementCoder} encodes and decodes {@link FailsafeElement} objects.
@@ -64,14 +63,14 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
             currentElementCoder.encode(value.getCurrentElement(), outStream);
             STRING_CODER.encode(value.getPipelineStep(), outStream);
             STRING_CODER.encode(value.getExceptionType(), outStream);
-            SerializableCoder.of(Throwable.class).encode(value.getExceptionDetails(), outStream);
+            STRING_CODER.encode(value.getExceptionDetails(), outStream);
             STRING_CODER.encode(value.getEventTimestamp(), outStream);
 
         } catch (IOException e) {
             LOG.error(
                     "exception[{}] step[{}] details[{}]",
                     e.getClass().getName(),
-                    "FailsafeCoder.encode()",
+                    "FailsafeElement.encode()",
                     e.toString());
             throw (e);
         }
@@ -90,7 +89,7 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
             CurrentT currentElement = currentElementCoder.decode(inStream);
             String pipelineStep = STRING_CODER.decode(inStream);
             String exception = STRING_CODER.decode(inStream);
-            Throwable exceptionDetails = SerializableCoder.of(Throwable.class).decode(inStream);
+            String exceptionDetails = STRING_CODER.decode(inStream);
             String eventTimestamp = STRING_CODER.decode(inStream);
 
             return FailsafeElement.of(originalElement, currentElement)
@@ -102,7 +101,7 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
             LOG.error(
                     "exception[{}] step[{}] details[{}]",
                     e.getClass().getName(),
-                    "FailsafeCoder.decode()",
+                    "FailsafeElement.decode()",
                     e.toString());
             throw (e);
         }
