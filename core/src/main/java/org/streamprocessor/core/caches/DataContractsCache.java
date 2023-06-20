@@ -19,7 +19,7 @@ public class DataContractsCache {
                     .refreshAfterWrite(5, TimeUnit.MINUTES)
                     .build(DataContractsCache::loadDataContractToCache);
 
-    private static JSONObject loadDataContractToCache(String endpoint) {
+    private static JSONObject loadDataContractToCache(String endpoint) throws Exception {
         dataContractsCacheMissesCounter.inc();
         return CacheLoaderUtils.getDataContract(endpoint);
     }

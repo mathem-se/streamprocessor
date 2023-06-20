@@ -111,12 +111,6 @@ public class SerializeMessageToRowFn
 
             JSONObject payloadJson = new JSONObject(payload);
 
-            /* TODO: is this needed?
-            if (payloadJson.isNull("event_timestamp")) {
-                payloadJson.put("event_timestamp", DateTime.now().withZone(DateTimeZone.UTC).toString());
-            }
-            */
-
             JSONObject attributesJson = new JSONObject(pubsubMessage.getAttributeMap());
             payloadJson.put("_metadata", attributesJson);
 
