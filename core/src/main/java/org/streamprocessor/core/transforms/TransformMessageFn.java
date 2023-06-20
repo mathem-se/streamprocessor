@@ -98,7 +98,7 @@ public class TransformMessageFn
             outputElement =
                     new FailsafeElement<>(received, currentElement)
                             .setPipelineStep("TransformMessageFn.processElement()")
-                            .setExceptionType(getClass().getName())
+                            .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e.toString())
                             .setEventTimestamp(Instant.now().toString());
 

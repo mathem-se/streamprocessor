@@ -28,19 +28,19 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
 
     private final Coder<OriginalT> originalElementCoder;
 
-    private final Coder<CurrentT> currentElementCoder;
+    private final NullableCoder<CurrentT> currentElementCoder;
 
     private static final NullableCoder<String> STRING_CODER =
             NullableCoder.of(StringUtf8Coder.of());
 
     private FailsafeElementCoder(
-            Coder<OriginalT> originalElementCoder, Coder<CurrentT> currentElementCoder) {
+            Coder<OriginalT> originalElementCoder, NullableCoder<CurrentT> currentElementCoder) {
         this.originalElementCoder = originalElementCoder;
         this.currentElementCoder = currentElementCoder;
     }
 
     public static <OriginalT, CurrentT> FailsafeElementCoder<OriginalT, CurrentT> of(
-            Coder<OriginalT> originalElementCoder, Coder<CurrentT> currentElementCoder) {
+            Coder<OriginalT> originalElementCoder, NullableCoder<CurrentT> currentElementCoder) {
         return new FailsafeElementCoder<>(originalElementCoder, currentElementCoder);
     }
 

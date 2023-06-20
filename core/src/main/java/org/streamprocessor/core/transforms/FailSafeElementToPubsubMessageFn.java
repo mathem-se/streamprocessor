@@ -11,18 +11,16 @@ public class FailSafeElementToPubsubMessageFn<T>
 
     private static final Logger LOG =
             LoggerFactory.getLogger(FailSafeElementToPubsubMessageFn.class);
-    private final String deadletterEntity;
 
-    public FailSafeElementToPubsubMessageFn(String deadletterEntity) {
-        this.deadletterEntity = deadletterEntity;
-    }
+    public FailSafeElementToPubsubMessageFn() {}
+    ;
 
     @ProcessElement
     public void processElement(
             @Element FailsafeElement<PubsubMessage, T> received, OutputReceiver<PubsubMessage> out)
             throws Exception {
         try {
-            out.output(received.getDeadletterPubsubMessage(deadletterEntity));
+            out.output(received.getDeadletterPubsubMessage());
         } catch (Exception e) {
             LOG.error(
                     "exception[{}] step[{}] details[{}]",

@@ -51,36 +51,43 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
     }
 
     /**
-     * @param deadletterEntity Data contract entity for deadletter contract.
      * @return PubsubMessage with the original payload and attributes, and the error details.
      */
-    public PubsubMessage getDeadletterPubsubMessage(String deadletterEntity) {
+    public PubsubMessage getDeadletterPubsubMessage() {
 
         if (!(originalElement instanceof PubsubMessage)) {
             throw new IllegalArgumentException("Original element is not of type PubsubMessage.");
         }
 
+        Map<String, String> originalAttributes =
+                ((PubsubMessage) originalElement).getAttributeMap();
+
+        String originalPayload =
+                new String(((PubsubMessage) originalElement).getPayload(), StandardCharsets.UTF_8);
+
+        String originalEntity = originalAttributes.get("entity");
+
+        /*
+         * TODO: Decide what should be included in the deadletter attributes.
+         * Setting entity of the failed message as original entity for now.
+         */
         Map<String, String> attributes =
                 new HashMap<>() {
                     {
                         put("timestamp", Instant.now().toString());
                         put("event_timestamp", eventTimestamp);
-                        put("entity", deadletterEntity);
+                        put("original_entity", originalEntity);
                     }
                 };
 
-        JSONObject pubsubAttributes =
-                new JSONObject(((PubsubMessage) originalElement).getAttributeMap());
-        JSONObject pubsubData = new JSONObject(((PubsubMessage) originalElement).getPayload());
-
         JSONObject payload =
                 new JSONObject()
-                        .put(FailureFields.ORIGINAL_ATTRIBUTE.getValue(), pubsubAttributes)
-                        .put(FailureFields.ORIGINAL_PAYLOAD.getValue(), pubsubData)
+                        .put(FailureFields.ORIGINAL_ATTRIBUTE.getValue(), originalAttributes)
+                        .put(FailureFields.ORIGINAL_PAYLOAD.getValue(), originalPayload)
                         .put(FailureFields.PIPELINE_STEP.getValue(), pipelineStep)
                         .put(FailureFields.EXCEPTION_TYPE.getValue(), exceptionType)
                         .put(FailureFields.EXCEPTION_DETAILS.getValue(), exceptionDetails)
-                        .put(FailureFields.METADATA_TIMESTAMP.getValue(), eventTimestamp);
+                        .put(FailureFields.EVENT_TIMESTAMP.getValue(), eventTimestamp);
 
         return new PubsubMessage(payload.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }

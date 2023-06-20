@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.CoderRegistry;
+import org.apache.beam.sdk.coders.NullableCoder;
 import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
@@ -131,11 +132,12 @@ public class DataContracts {
         FailsafeElementCoder<PubsubMessage, PubsubMessage> pubsubFailsafeElementCoder =
                 FailsafeElementCoder.of(
                         PubsubMessageWithAttributesCoder.of(),
-                        PubsubMessageWithAttributesCoder.of());
+                        NullableCoder.of(PubsubMessageWithAttributesCoder.of()));
 
         FailsafeElementCoder<PubsubMessage, Row> rowFailsafeElementCoder =
                 FailsafeElementCoder.of(
-                        PubsubMessageWithAttributesCoder.of(), SerializableCoder.of(Row.class));
+                        PubsubMessageWithAttributesCoder.of(),
+                        NullableCoder.of(SerializableCoder.of(Row.class)));
 
         GenericRowCoder rowCoder = new GenericRowCoder();
 
@@ -313,8 +315,7 @@ public class DataContracts {
                             .apply(
                                     "Failed Pubsub elements",
                                     ParDo.of(
-                                            new FailSafeElementToPubsubMessageFn<PubsubMessage>(
-                                                    "placeholder")));
+                                            new FailSafeElementToPubsubMessageFn<PubsubMessage>()));
 
             // Failed elements of type Row
             PCollection<PubsubMessage> failedRowElements =
@@ -323,9 +324,7 @@ public class DataContracts {
                             .apply("Collect failed Row elements", Flatten.pCollections())
                             .apply(
                                     "Failed Row elements",
-                                    ParDo.of(
-                                            new FailSafeElementToPubsubMessageFn<Row>(
-                                                    "placeholder")));
+                                    ParDo.of(new FailSafeElementToPubsubMessageFn<Row>()));
 
             PCollectionList.of(failedPubsubElements)
                     .and(failedRowElements)
