@@ -82,22 +82,31 @@ public class DataContracts {
     private static final Logger LOG = LoggerFactory.getLogger(DataContracts.class);
 
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
-            PUBSUB_TRANSFORMED_SUCCESS_TAG =
-                    new TupleTag<>("pubsub transformed success") {
+            TRANSFORM_MESSAGE_SUCCESS_TAG =
+                    new TupleTag<>("Transform message success") {
                         static final long serialVersionUID = -7062806547763956169L;
                     };
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
-            PUBSUB_TRANSFORMED_FAILURE_TAG =
-                    new TupleTag<>("pubsub transformed failure") {
+            TRANSFORM_MESSAGE_FAILURE_TAG =
+                    new TupleTag<>("Transform message failure") {
                         static final long serialVersionUID = -7391614518888199305L;
                     };
-    static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_SUCCESS_TAG =
-            new TupleTag<>("row success") {
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> SERIALIZED_SUCCESS_TAG =
+            new TupleTag<>("Serialized success") {
                 static final long serialVersionUID = -3622861873011005150L;
             };
-    static final TupleTag<FailsafeElement<PubsubMessage, Row>> ROW_FAILURE_TAG =
-            new TupleTag<>("row failure") {
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> SERIALIZED_FAILURE_TAG =
+            new TupleTag<>("Serialized failure") {
                 static final long serialVersionUID = -340619314275667434L;
+            };
+
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> DEIDENTIFY_SUCCESS_TAG =
+            new TupleTag<>("De-identify success") {
+                static final long serialVersionUID = 7951850606419059736L;
+            };
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> DEIDENTIFY_FAILURE_TAG =
+            new TupleTag<>("De-identify failure") {
+                static final long serialVersionUID = -4268824351853108280L;
             };
 
     /**
@@ -157,48 +166,50 @@ public class DataContracts {
                         ParDo.of(
                                         new TransformMessageFn(
                                                 options.getDataContractsServiceUrl(),
-                                                PUBSUB_TRANSFORMED_SUCCESS_TAG,
-                                                PUBSUB_TRANSFORMED_FAILURE_TAG))
+                                                TRANSFORM_MESSAGE_SUCCESS_TAG,
+                                                TRANSFORM_MESSAGE_FAILURE_TAG))
                                 .withOutputTags(
-                                        PUBSUB_TRANSFORMED_SUCCESS_TAG,
-                                        TupleTagList.of(PUBSUB_TRANSFORMED_FAILURE_TAG)));
+                                        TRANSFORM_MESSAGE_SUCCESS_TAG,
+                                        TupleTagList.of(TRANSFORM_MESSAGE_FAILURE_TAG)));
 
-        enrichedMessages.get(PUBSUB_TRANSFORMED_SUCCESS_TAG).setCoder(pubsubFailsafeElementCoder);
-        enrichedMessages.get(PUBSUB_TRANSFORMED_FAILURE_TAG).setCoder(pubsubFailsafeElementCoder);
+        enrichedMessages.get(TRANSFORM_MESSAGE_SUCCESS_TAG).setCoder(pubsubFailsafeElementCoder);
+        enrichedMessages.get(TRANSFORM_MESSAGE_FAILURE_TAG).setCoder(pubsubFailsafeElementCoder);
 
         PCollectionTuple serialized =
                 enrichedMessages
-                        .get(PUBSUB_TRANSFORMED_SUCCESS_TAG)
+                        .get(TRANSFORM_MESSAGE_SUCCESS_TAG)
                         .apply(
                                 "Serialize to Rows",
                                 ParDo.of(
                                                 new SerializeMessageToRowFn(
-                                                        ROW_SUCCESS_TAG,
-                                                        ROW_FAILURE_TAG,
+                                                        SERIALIZED_SUCCESS_TAG,
+                                                        SERIALIZED_FAILURE_TAG,
                                                         options.getProject(),
                                                         options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio()))
                                         .withOutputTags(
-                                                ROW_SUCCESS_TAG, TupleTagList.of(ROW_FAILURE_TAG)));
+                                                SERIALIZED_SUCCESS_TAG,
+                                                TupleTagList.of(SERIALIZED_FAILURE_TAG)));
 
-        serialized.get(ROW_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
-        serialized.get(ROW_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
+        serialized.get(SERIALIZED_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
+        serialized.get(SERIALIZED_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
         PCollectionTuple tokenized =
                 serialized
-                        .get(ROW_SUCCESS_TAG)
+                        .get(SERIALIZED_SUCCESS_TAG)
                         .apply(
                                 "De-identify Rows",
                                 ParDo.of(
                                                 new DeIdentifyFn(
                                                         options.getFirestoreProjectId(),
-                                                        ROW_SUCCESS_TAG,
-                                                        ROW_FAILURE_TAG))
+                                                        DEIDENTIFY_SUCCESS_TAG,
+                                                        DEIDENTIFY_FAILURE_TAG))
                                         .withOutputTags(
-                                                ROW_SUCCESS_TAG, TupleTagList.of(ROW_FAILURE_TAG)));
+                                                DEIDENTIFY_SUCCESS_TAG,
+                                                TupleTagList.of(DEIDENTIFY_FAILURE_TAG)));
 
-        tokenized.get(ROW_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
-        tokenized.get(ROW_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
+        tokenized.get(DEIDENTIFY_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
+        tokenized.get(DEIDENTIFY_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
         /*
          * If a BigQuery Dataset is configured, dynamically create table if not exists and name it
@@ -210,7 +221,7 @@ public class DataContracts {
 
             PCollection<Row> extractRowElement =
                     tokenized
-                            .get(ROW_SUCCESS_TAG)
+                            .get(DEIDENTIFY_SUCCESS_TAG)
                             .apply("Extract Row element", ParDo.of(new ExtractCurrentElementFn<>()))
                             .setCoder(rowCoder);
 
@@ -266,7 +277,7 @@ public class DataContracts {
         if (options.getEntityTopics() || options.getBackupTopic() != null) {
             PCollection<KV<String, PubsubMessage>> pubsubMessages =
                     tokenized
-                            .get(ROW_SUCCESS_TAG)
+                            .get(DEIDENTIFY_SUCCESS_TAG)
                             .apply(
                                     "Transform Rows to Pubsub Messages",
                                     ParDo.of(new RowToPubsubMessageFn()));
@@ -311,7 +322,7 @@ public class DataContracts {
             // Failed elements of type PubsubMessage
             PCollection<PubsubMessage> failedPubsubElements =
                     enrichedMessages
-                            .get(PUBSUB_TRANSFORMED_FAILURE_TAG)
+                            .get(TRANSFORM_MESSAGE_FAILURE_TAG)
                             .apply(
                                     "Failed Pubsub elements",
                                     ParDo.of(
@@ -319,8 +330,8 @@ public class DataContracts {
 
             // Failed elements of type Row
             PCollection<PubsubMessage> failedRowElements =
-                    PCollectionList.of(tokenized.get(ROW_FAILURE_TAG))
-                            .and(serialized.get(ROW_FAILURE_TAG))
+                    PCollectionList.of(serialized.get(SERIALIZED_FAILURE_TAG))
+                            .and(tokenized.get(DEIDENTIFY_FAILURE_TAG))
                             .apply("Collect failed Row elements", Flatten.pCollections())
                             .apply(
                                     "Failed Row elements",
