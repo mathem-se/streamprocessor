@@ -1,7 +1,0 @@
-{
-  "mainClass": "org.streamprocessor.pipelines.JsonTokenize",
-  "classPath": "/pipelines/json-tokenize/*:/pipelines/json-tokenize/libs/*://pipelines/json-tokenize/classes",
-  "defaultParameterValues": {
-    "labels": "{\"stream-processor-template-type\":\"flex\",\"stream-processor-provided-template-name\":\"json_tokenize\"}"
-  }
-}
