@@ -84,29 +84,29 @@ public class DataContracts {
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
             TRANSFORM_MESSAGE_SUCCESS_TAG =
                     new TupleTag<>("Transform message success") {
-                        static final long serialVersionUID = -7062806547763956169L;
+                        static final long serialVersionUID = 7062806547763956169L;
                     };
     static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
             TRANSFORM_MESSAGE_FAILURE_TAG =
                     new TupleTag<>("Transform message failure") {
-                        static final long serialVersionUID = -7391614518888199305L;
+                        static final long serialVersionUID = 7391614518888199305L;
                     };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> SERIALIZED_SUCCESS_TAG =
             new TupleTag<>("Serialized success") {
-                static final long serialVersionUID = -3622861873011005150L;
+                static final long serialVersionUID = 894723987432L;
             };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> SERIALIZED_FAILURE_TAG =
             new TupleTag<>("Serialized failure") {
-                static final long serialVersionUID = -340619314275667434L;
+                static final long serialVersionUID = 89472335422L;
             };
 
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> DEIDENTIFY_SUCCESS_TAG =
             new TupleTag<>("De-identify success") {
-                static final long serialVersionUID = 7951850606419059736L;
+                static final long serialVersionUID = 89472335672L;
             };
     static final TupleTag<FailsafeElement<PubsubMessage, Row>> DEIDENTIFY_FAILURE_TAG =
             new TupleTag<>("De-identify failure") {
-                static final long serialVersionUID = -4268824351853108280L;
+                static final long serialVersionUID = 89472335674L;
             };
 
     /**
