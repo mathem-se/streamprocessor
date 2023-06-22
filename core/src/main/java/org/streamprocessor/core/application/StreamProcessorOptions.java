@@ -32,12 +32,6 @@ public interface StreamProcessorOptions extends DataflowPipelineOptions {
 
     void setDeadLetterTopic(String value);
 
-    @Description("Publish to entity topics")
-    @Default.Boolean(false)
-    boolean getEntityTopics();
-
-    void setEntityTopics(boolean value);
-
     @Description("Schema check sample ratio")
     @Default.Float(0.01f)
     float getSchemaCheckRatio();
