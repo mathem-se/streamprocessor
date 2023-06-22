@@ -86,7 +86,7 @@ public class TransformMessageFn
                                     + "Data contract is valid from: "
                                     + validFrom);
 
-                } else if (dataContract.isNull("valid_to")) {
+                } else if (!dataContract.isNull("valid_to")) {
                     String validTo = dataContract.getString("valid_to");
                     LocalDate validToDate = LocalDate.parse(validTo);
 
