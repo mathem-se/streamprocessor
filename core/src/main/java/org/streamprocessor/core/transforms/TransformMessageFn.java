@@ -2,6 +2,8 @@ package org.streamprocessor.core.transforms;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -68,6 +70,36 @@ public class TransformMessageFn
                             .getJSONObject("endpoints")
                             .getJSONObject("source")
                             .getString("provider");
+
+            LocalDate currentDate = LocalDate.now(ZoneId.of("Europe/Stockholm"));
+
+            if (dataContract.isNull("valid_from")) {
+                throw new CustomExceptionsUtils.MissingMetadataException(
+                        "No `valid_from` found in data contract");
+            } else {
+                String validFrom = dataContract.getString("valid_from");
+                LocalDate validFromDate = LocalDate.parse(validFrom);
+
+                if (currentDate.isBefore(validFromDate)) {
+                    throw new CustomExceptionsUtils.InactiveDataContractException(
+                            "Data contract is not valid for the current time. "
+                                    + "Data contract is valid from: "
+                                    + validFrom);
+
+                } else if (dataContract.isNull("valid_to")) {
+                    String validTo = dataContract.getString("valid_to");
+                    LocalDate validToDate = LocalDate.parse(validTo);
+
+                    if (currentDate.isAfter(validToDate)) {
+                        throw new CustomExceptionsUtils.InactiveDataContractException(
+                                "Data contract is not valid for the current time. "
+                                        + "Data contract is valid from: "
+                                        + validFrom
+                                        + " to: "
+                                        + validTo);
+                    }
+                }
+            }
 
             switch (provider) {
                 case "dynamodb":
