@@ -19,7 +19,6 @@ package org.streamprocessor.core.transforms;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -43,8 +42,6 @@ public class SerializeMessageToRowFn
 
     TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
-    String unknownFieldLogger;
-    String format;
     String projectId;
     String dataContractsServiceUrl;
     float ratio;
@@ -87,8 +84,6 @@ public class SerializeMessageToRowFn
         String entity = pubsubMessage.getAttribute("entity").replace("-", "_").toLowerCase();
         String payload = new String(pubsubMessage.getPayload(), StandardCharsets.UTF_8);
         String endpoint = dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
-
-        Map<String, String> attributesMap = pubsubMessage.getAttributeMap();
 
         try {
             JSONObject dataContract = DataContractsCache.getDataContractFromCache(endpoint);

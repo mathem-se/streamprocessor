@@ -31,15 +31,9 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.GroupIntoBatches;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Values;
-import org.apache.beam.sdk.transforms.windowing.AfterWatermark;
-import org.apache.beam.sdk.transforms.windowing.FixedWindows;
-import org.apache.beam.sdk.transforms.windowing.Repeatedly;
-import org.apache.beam.sdk.transforms.windowing.Window;
-import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
@@ -47,13 +41,11 @@ import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.values.TypeDescriptors;
-import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.application.StreamProcessorOptions;
 import org.streamprocessor.core.coders.FailsafeElementCoder;
 import org.streamprocessor.core.coders.GenericRowCoder;
-import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
 import org.streamprocessor.core.transforms.DeIdentifyFn;
 import org.streamprocessor.core.transforms.ExtractCurrentElementFn;
@@ -272,47 +264,18 @@ public class DataContracts {
         }
 
         /*
-         * Transform tokenized rows to pubsub messages and fan out to multiple topics for streaming analytics
+         * Publish to a common backup topic if exists
          */
-        if (options.getEntityTopics() || options.getBackupTopic() != null) {
-            PCollection<KV<String, PubsubMessage>> pubsubMessages =
-                    tokenized
-                            .get(DEIDENTIFY_SUCCESS_TAG)
-                            .apply(
-                                    "Transform Rows to Pubsub Messages",
-                                    ParDo.of(new RowToPubsubMessageFn()));
-
-            /*
-             * Fan out to multiple topics for streaming analytics
-             */
-            if (options.getEntityTopics()) {
-                pubsubMessages
-                        .apply(
-                                "Fixed Windows",
-                                Window.<KV<String, PubsubMessage>>into(
-                                                FixedWindows.of(Duration.standardSeconds(5)))
-                                        .triggering(
-                                                Repeatedly.forever(
-                                                        AfterWatermark.pastEndOfWindow()))
-                                        .withAllowedLateness(Duration.standardMinutes(1))
-                                        .discardingFiredPanes())
-                        .apply(
-                                "Group messages by topic",
-                                GroupIntoBatches.<String, PubsubMessage>ofSize(1000L)
-                                        .withMaxBufferingDuration(Duration.standardSeconds(5)))
-                        .apply("Publish on topics", ParDo.of(new PublisherFn()));
-            }
-
-            /*
-             * Publish to a common backup topic if exists
-             */
-            if (options.getBackupTopic() != null) {
-                pubsubMessages
-                        .apply("Get the pubsub messages", Values.create())
-                        .apply(
-                                "Write to backup pubsub topic",
-                                PubsubIO.writeMessages().to(options.getBackupTopic()));
-            }
+        if (options.getBackupTopic() != null) {
+            tokenized
+                    .get(DEIDENTIFY_SUCCESS_TAG)
+                    .apply(
+                            "Transform Rows to Pubsub Messages",
+                            ParDo.of(new RowToPubsubMessageFn()))
+                    .apply("Get the pubsub messages", Values.create())
+                    .apply(
+                            "Write to backup pubsub topic",
+                            PubsubIO.writeMessages().to(options.getBackupTopic()));
         }
 
         /*
