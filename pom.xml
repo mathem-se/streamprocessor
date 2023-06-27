@@ -286,7 +286,13 @@
             <artifactId>caffeine</artifactId>
             <version>3.0.5</version>
         </dependency>
-
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.26</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <!-- Build Settings -->
@@ -795,7 +801,6 @@
 
     <modules>
         <module>core</module>
-        <module>pipelines/json-tokenize</module>
         <module>pipelines/data-contracts</module>
     </modules>
 

@@ -18,7 +18,7 @@ public class SalesforceHelper {
         // TODO: abstract this away to another service that tells you which fields to look
         // at
         if (salesforceStreamObject.has("detail")
-                && attributes.get("topic").toLowerCase().startsWith("salesforce")) {
+                && attributes.get("entity").toLowerCase().startsWith("salesforce")) {
             payloadObject = salesforceStreamObject.getJSONObject("detail");
         } else {
             // Not a salesforce detail event

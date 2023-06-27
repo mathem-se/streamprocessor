@@ -38,10 +38,9 @@ public final class CacheLoaderUtils implements Serializable {
     static final long serialVersionUID = 89422138932L;
     private static final Logger LOG = LoggerFactory.getLogger(CacheLoaderUtils.class);
 
-    public static JSONObject getDataContract(String endpoint) {
+    public static JSONObject getDataContract(String endpoint) throws Exception {
         try {
-            JSONObject dataContract = DataContractUtils.getDataContract(endpoint);
-            return dataContract;
+            return DataContractUtils.getDataContract(endpoint);
 
         } catch (Exception e) {
             LOG.error(
@@ -49,7 +48,7 @@ public final class CacheLoaderUtils implements Serializable {
                     e.getClass().getName(),
                     "CacheLoaderUtils.getDataContract()",
                     e.toString());
-            return null;
+            throw e;
         }
     }
 

@@ -29,21 +29,27 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
+import org.apache.beam.sdk.values.TupleTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.streamprocessor.core.utils.CustomExceptionsUtils;
+import org.streamprocessor.core.values.FailsafeElement;
 
-public class DeIdentifyFn extends DoFn<Row, Row> {
+public class DeIdentifyFn
+        extends DoFn<FailsafeElement<PubsubMessage, Row>, FailsafeElement<PubsubMessage, Row>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DeIdentifyFn.class);
     private static final Counter tokenCacheMissesCounter =
             Metrics.counter("DeIdentifyFn", "tokenCacheMisses");
     private static final Counter tokenCacheCallsCounter =
             Metrics.counter("DeIdentifyFn", "tokenCacheCalls");
+    private static final Counter failureCounter = Metrics.counter("DeIdentifyFn", "failures");
     private static Random random = new Random();
 
     static final long serialVersionUID = 234L;
@@ -56,12 +62,8 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
     private Firestore db;
     String firestoreProjectId;
 
-    private class MissingIdentifierException extends Exception {
-
-        private MissingIdentifierException(String errorMessage) {
-            super(errorMessage);
-        }
-    }
+    TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
+    TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
 
     public static Object getFieldToken(String tokenFullRef, Firestore db) {
         try {
@@ -171,8 +173,13 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
         }
     }
 
-    public DeIdentifyFn(String firestoreProjectId) {
+    public DeIdentifyFn(
+            String firestoreProjectId,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag) {
         this.firestoreProjectId = firestoreProjectId;
+        this.successTag = successTag;
+        this.failureTag = failureTag;
     }
 
     @Setup
@@ -194,7 +201,18 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
     }
 
     @ProcessElement
-    public void processElement(@Element Row row, OutputReceiver<Row> out) throws Exception {
+    public void processElement(
+            @Element FailsafeElement<PubsubMessage, Row> received, MultiOutputReceiver out)
+            throws Exception {
+        FailsafeElement<PubsubMessage, Row> outputElement;
+        Row currentElement = null;
+        Row row = received.getCurrentElement();
+
+        // For logging purposes
+        PubsubMessage originalPubsubMessage = received.getOriginalElement();
+        String entity = originalPubsubMessage.getAttribute("entity");
+        String uuid = originalPubsubMessage.getAttribute("uuid");
+
         try {
             org.apache.beam.sdk.values.Row.FieldValueBuilder rowBuilder = Row.fromRow(row);
             Schema beamSchema = row.getSchema();
@@ -225,7 +243,8 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
                                 field.getOptions()
                                         .getValue("referenced_federated_identifier", String.class);
                     } else {
-                        throw new MissingIdentifierException("Federated identifier missing");
+                        throw new CustomExceptionsUtils.MissingIdentifierException(
+                                "Federated identifier missing");
                     }
                     String federatedIdentity = federatedEntityIds.get(federatedEntityRef);
                     if (federatedIdentity != null) {
@@ -301,14 +320,31 @@ public class DeIdentifyFn extends DoFn<Row, Row> {
                     }
                 }
             }
-            out.output(rowBuilder.build());
+            currentElement = rowBuilder.build();
+
+            outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
+
+            out.get(successTag).output(outputElement);
+
         } catch (Exception e) {
+            failureCounter.inc();
+
+            outputElement =
+                    new FailsafeElement<>(received.getOriginalElement(), currentElement)
+                            .setPipelineStep("DeIdentifyFn.processElement()")
+                            .setExceptionType(e.getClass().getName())
+                            .setExceptionDetails(e.toString())
+                            .setEventTimestamp(Instant.now().toString());
+
             LOG.error(
-                    "exception[{}] step[{}] details[{}]",
-                    e.getClass().getName(),
-                    "DeIdentifyFn.processElement()",
-                    e.toString());
-            throw e;
+                    "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
+                    outputElement.getExceptionType(),
+                    outputElement.getPipelineStep(),
+                    outputElement.getExceptionDetails(),
+                    entity,
+                    uuid);
+
+            out.get(failureTag).output(outputElement);
         }
     }
 

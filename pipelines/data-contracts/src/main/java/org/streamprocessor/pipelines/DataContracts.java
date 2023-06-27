@@ -18,44 +18,42 @@ package org.streamprocessor.pipelines;
 
 import java.util.Arrays;
 import java.util.List;
-import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.CoderRegistry;
+import org.apache.beam.sdk.coders.NullableCoder;
+import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Description;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.options.Validation;
-import org.apache.beam.sdk.transforms.GroupIntoBatches;
+import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Values;
-import org.apache.beam.sdk.transforms.windowing.AfterWatermark;
-import org.apache.beam.sdk.transforms.windowing.FixedWindows;
-import org.apache.beam.sdk.transforms.windowing.Repeatedly;
-import org.apache.beam.sdk.transforms.windowing.Window;
-import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.values.TypeDescriptors;
-import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.streamprocessor.core.application.StreamProcessorOptions;
+import org.streamprocessor.core.coders.FailsafeElementCoder;
 import org.streamprocessor.core.coders.GenericRowCoder;
-import org.streamprocessor.core.io.PublisherFn;
 import org.streamprocessor.core.io.SchemaDestinations;
 import org.streamprocessor.core.transforms.DeIdentifyFn;
+import org.streamprocessor.core.transforms.ExtractCurrentElementFn;
+import org.streamprocessor.core.transforms.FailSafeElementToPubsubMessageFn;
 import org.streamprocessor.core.transforms.RowToPubsubMessageFn;
 import org.streamprocessor.core.transforms.SerializeMessageToRowFn;
 import org.streamprocessor.core.transforms.TransformMessageFn;
+import org.streamprocessor.core.values.FailsafeElement;
 
 /**
  * Streamer pipeline
@@ -75,80 +73,33 @@ public class DataContracts {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataContracts.class);
 
-    static final TupleTag<Row> SERIALIZED_SUCCESS_TAG =
-            new TupleTag<Row>("Serialized success") {
+    static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
+            TRANSFORM_MESSAGE_SUCCESS_TAG =
+                    new TupleTag<>("Transform message success") {
+                        static final long serialVersionUID = 7062806547763956169L;
+                    };
+    static final TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>>
+            TRANSFORM_MESSAGE_FAILURE_TAG =
+                    new TupleTag<>("Transform message failure") {
+                        static final long serialVersionUID = 7391614518888199305L;
+                    };
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> SERIALIZED_SUCCESS_TAG =
+            new TupleTag<>("Serialized success") {
                 static final long serialVersionUID = 894723987432L;
             };
-
-    static final TupleTag<PubsubMessage> SERIALIZED_DEADLETTER_TAG =
-            new TupleTag<PubsubMessage>("Serialized deadletter") {
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> SERIALIZED_FAILURE_TAG =
+            new TupleTag<>("Serialized failure") {
                 static final long serialVersionUID = 89472335422L;
             };
 
-    static final TupleTag<Row> DEIDENTIFY_SUCCESS_TAG =
-            new TupleTag<Row>("deidentify success") {
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> DEIDENTIFY_SUCCESS_TAG =
+            new TupleTag<>("De-identify success") {
                 static final long serialVersionUID = 89472335672L;
             };
-
-    static final TupleTag<Row> DEIDENTIFY_TOKENS_TAG =
-            new TupleTag<Row>("deidentify tokens") {
-                static final long serialVersionUID = 89472335673L;
-            };
-
-    static final TupleTag<Row> DEIDENTIFY_FAILURE_TAG =
-            new TupleTag<Row>("deidentify failure") {
+    static final TupleTag<FailsafeElement<PubsubMessage, Row>> DEIDENTIFY_FAILURE_TAG =
+            new TupleTag<>("De-identify failure") {
                 static final long serialVersionUID = 89472335674L;
             };
-
-    static final TupleTag<PubsubMessage> JSON_MESSAGE_TAG =
-            new TupleTag<PubsubMessage>("jsonMessage") {
-                static final long serialVersionUID = 89472334422L;
-            };
-
-    /**
-     * Provides the custom execution options passed by the executor at the command-line.
-     *
-     * <p>Inherits standard configuration options.
-     */
-    public interface Options extends DataflowPipelineOptions {
-        @Description("Pubsub Input Subscription")
-        @Validation.Required
-        String getInputSubscription();
-
-        void setInputSubscription(String value);
-
-        @Description("Firestore Project Id, if other than the project where Dataflow job runs")
-        String getFirestoreProjectId();
-
-        void setFirestoreProjectId(String value);
-
-        @Description("Pubsub topic for backup of tokenized data")
-        String getBackupTopic();
-
-        void setBackupTopic(String value);
-
-        @Description("Pubsub topic for deadletter output")
-        String getDeadLetterTopic();
-
-        void setDeadLetterTopic(String value);
-
-        @Description("Publish to entity topics")
-        @Default.Boolean(false)
-        boolean getEntityTopics();
-
-        void setEntityTopics(boolean value);
-
-        @Description("Schema check sample ratio")
-        @Default.Float(0.01f)
-        float getSchemaCheckRatio();
-
-        void setSchemaCheckRatio(float value);
-
-        @Description("Data contracts base api url")
-        String getDataContractsServiceUrl();
-
-        void setDataContractsServiceUrl(String value);
-    }
 
     /**
      * Main entry point. Runs a pipeline which reads data from pubsub and writes to BigQuery and
@@ -158,7 +109,10 @@ public class DataContracts {
      */
     public static void main(String[] args) {
 
-        Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
+        StreamProcessorOptions options =
+                PipelineOptionsFactory.fromArgs(args)
+                        .withValidation()
+                        .as(StreamProcessorOptions.class);
 
         List<String> serviceOptions = Arrays.asList("use_runner_v2");
         options.setDataflowServiceOptions(serviceOptions);
@@ -175,58 +129,79 @@ public class DataContracts {
          * Create a coder that can seriealize rows with different schemas
          */
         CoderRegistry coderRegistry = pipeline.getCoderRegistry();
-        GenericRowCoder coder = new GenericRowCoder();
-        coderRegistry.registerCoderForClass(Row.class, coder);
 
-        /*
-         * Read Pub/Sub messages with Json payload and serialize to Beam Rows
-         */
-        PCollectionTuple serialized =
+        FailsafeElementCoder<PubsubMessage, PubsubMessage> pubsubFailsafeElementCoder =
+                FailsafeElementCoder.of(
+                        PubsubMessageWithAttributesCoder.of(),
+                        NullableCoder.of(PubsubMessageWithAttributesCoder.of()));
+
+        FailsafeElementCoder<PubsubMessage, Row> rowFailsafeElementCoder =
+                FailsafeElementCoder.of(
+                        PubsubMessageWithAttributesCoder.of(),
+                        NullableCoder.of(SerializableCoder.of(Row.class)));
+
+        GenericRowCoder rowCoder = new GenericRowCoder();
+
+        coderRegistry.registerCoderForClass(FailsafeElement.class, pubsubFailsafeElementCoder);
+        coderRegistry.registerCoderForClass(FailsafeElement.class, rowFailsafeElementCoder);
+        coderRegistry.registerCoderForClass(Row.class, rowCoder);
+
+        PCollection<PubsubMessage> pubsubMessagesCollection =
                 pipeline.apply(
-                                "Read Json pubsub messages",
-                                PubsubIO.readMessagesWithAttributes()
-                                        .fromSubscription(options.getInputSubscription()))
-                        .apply(
-                                "Transform message stream change events",
-                                ParDo.of(
+                        "Read Json pubsub messages",
+                        PubsubIO.readMessagesWithAttributes()
+                                .fromSubscription(options.getInputSubscription()));
+
+        PCollectionTuple enrichedMessages =
+                pubsubMessagesCollection.apply(
+                        "Transform message stream change events",
+                        ParDo.of(
                                         new TransformMessageFn(
-                                                options.getDataContractsServiceUrl())))
+                                                options.getDataContractsServiceUrl(),
+                                                TRANSFORM_MESSAGE_SUCCESS_TAG,
+                                                TRANSFORM_MESSAGE_FAILURE_TAG))
+                                .withOutputTags(
+                                        TRANSFORM_MESSAGE_SUCCESS_TAG,
+                                        TupleTagList.of(TRANSFORM_MESSAGE_FAILURE_TAG)));
+
+        enrichedMessages.get(TRANSFORM_MESSAGE_SUCCESS_TAG).setCoder(pubsubFailsafeElementCoder);
+        enrichedMessages.get(TRANSFORM_MESSAGE_FAILURE_TAG).setCoder(pubsubFailsafeElementCoder);
+
+        PCollectionTuple serialized =
+                enrichedMessages
+                        .get(TRANSFORM_MESSAGE_SUCCESS_TAG)
                         .apply(
                                 "Serialize to Rows",
                                 ParDo.of(
                                                 new SerializeMessageToRowFn(
                                                         SERIALIZED_SUCCESS_TAG,
-                                                        SERIALIZED_DEADLETTER_TAG,
+                                                        SERIALIZED_FAILURE_TAG,
                                                         options.getProject(),
                                                         options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
-                                                TupleTagList.of(SERIALIZED_DEADLETTER_TAG)));
+                                                TupleTagList.of(SERIALIZED_FAILURE_TAG)));
 
-        /*
-         * Publish deadletter to pubsub topic if exists
-         */
-        if (options.getDeadLetterTopic() != null) {
-            serialized
-                    .get(SERIALIZED_DEADLETTER_TAG)
-                    .apply(
-                            "Write to deadLetter pubsub topic",
-                            PubsubIO.writeMessages().to(options.getDeadLetterTopic()));
-        }
+        serialized.get(SERIALIZED_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
+        serialized.get(SERIALIZED_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
-        PCollection<Row> tokenized =
+        PCollectionTuple tokenized =
                 serialized
                         .get(SERIALIZED_SUCCESS_TAG)
-                        .setCoder(coder)
                         .apply(
                                 "De-identify Rows",
-                                ParDo.of(new DeIdentifyFn(options.getFirestoreProjectId())))
-                        .setCoder(coder);
+                                ParDo.of(
+                                                new DeIdentifyFn(
+                                                        options.getFirestoreProjectId(),
+                                                        DEIDENTIFY_SUCCESS_TAG,
+                                                        DEIDENTIFY_FAILURE_TAG))
+                                        .withOutputTags(
+                                                DEIDENTIFY_SUCCESS_TAG,
+                                                TupleTagList.of(DEIDENTIFY_FAILURE_TAG)));
 
-        // PCollection<Row> failures = deIdentified.get(DEIDENTIFY_FAILURE_TAG).setCoder(coder);
-        // PCollection<Row> tokens = deIdentified.get(DEIDENTIFY_TOKENS_TAG).setCoder(coder);
-        // PCollection<Row> tokenized = deIdentified.get(DEIDENTIFY_SUCCESS_TAG).setCoder(coder);
+        tokenized.get(DEIDENTIFY_SUCCESS_TAG).setCoder(rowFailsafeElementCoder);
+        tokenized.get(DEIDENTIFY_FAILURE_TAG).setCoder(rowFailsafeElementCoder);
 
         /*
          * If a BigQuery Dataset is configured, dynamically create table if not exists and name it
@@ -236,8 +211,14 @@ public class DataContracts {
         if (options.getDataContractsServiceUrl() != null) {
             String projectId = options.getProject();
 
+            PCollection<Row> extractRowElement =
+                    tokenized
+                            .get(DEIDENTIFY_SUCCESS_TAG)
+                            .apply("Extract Row element", ParDo.of(new ExtractCurrentElementFn<>()))
+                            .setCoder(rowCoder);
+
             WriteResult result =
-                    tokenized.apply(
+                    extractRowElement.apply(
                             "Write de-identified Rows to BigQuery",
                             BigQueryIO.<Row>write()
                                     .withFormatFunction(r -> BigQueryUtils.toTableRow((Row) r))
@@ -276,52 +257,55 @@ public class DataContracts {
                                                 LOG.error(
                                                         "exception[FailedInsertsException] step[{}]"
                                                                 + " details[{}]",
-                                                        "Dynamodb.main()",
+                                                        "DataContracts.main()",
                                                         message);
                                                 return "";
                                             }));
         }
 
         /*
-         * Transform tokenized rows to pubsub messages and fan out to multiple topics for streaming analytics
+         * Publish to a common backup topic if exists
          */
-        if (options.getEntityTopics() || options.getBackupTopic() != null) {
-            PCollection<KV<String, PubsubMessage>> pubsubMessages =
-                    tokenized.apply(
+        if (options.getBackupTopic() != null) {
+            tokenized
+                    .get(DEIDENTIFY_SUCCESS_TAG)
+                    .apply(
                             "Transform Rows to Pubsub Messages",
-                            ParDo.of(new RowToPubsubMessageFn()));
+                            ParDo.of(new RowToPubsubMessageFn()))
+                    .apply("Get the pubsub messages", Values.create())
+                    .apply(
+                            "Write to backup pubsub topic",
+                            PubsubIO.writeMessages().to(options.getBackupTopic()));
+        }
 
-            /*
-             * Fan out to multiple topics for streaming analytics
-             */
-            if (options.getEntityTopics()) {
-                pubsubMessages
-                        .apply(
-                                "Fixed Windows",
-                                Window.<KV<String, PubsubMessage>>into(
-                                                FixedWindows.of(Duration.standardSeconds(5)))
-                                        .triggering(
-                                                Repeatedly.forever(
-                                                        AfterWatermark.pastEndOfWindow()))
-                                        .withAllowedLateness(Duration.standardMinutes(1))
-                                        .discardingFiredPanes())
-                        .apply(
-                                "Group messages by topic",
-                                GroupIntoBatches.<String, PubsubMessage>ofSize(1000L)
-                                        .withMaxBufferingDuration(Duration.standardSeconds(5)))
-                        .apply("Publish on topics", ParDo.of(new PublisherFn()));
-            }
+        /*
+         * Write failed elements out to dead letter topic if dead letter topic is set
+         */
+        if (options.getDeadLetterTopic() != null) {
+            // Failed elements of type PubsubMessage
+            PCollection<PubsubMessage> failedPubsubElements =
+                    enrichedMessages
+                            .get(TRANSFORM_MESSAGE_FAILURE_TAG)
+                            .apply(
+                                    "Failed Pubsub elements",
+                                    ParDo.of(
+                                            new FailSafeElementToPubsubMessageFn<PubsubMessage>()));
 
-            /*
-             * Publish to a common backup topic if exists
-             */
-            if (options.getBackupTopic() != null) {
-                pubsubMessages
-                        .apply("Get the pubsub messages", Values.create())
-                        .apply(
-                                "Write to backup pubsub topic",
-                                PubsubIO.writeMessages().to(options.getBackupTopic()));
-            }
+            // Failed elements of type Row
+            PCollection<PubsubMessage> failedRowElements =
+                    PCollectionList.of(serialized.get(SERIALIZED_FAILURE_TAG))
+                            .and(tokenized.get(DEIDENTIFY_FAILURE_TAG))
+                            .apply("Collect failed Row elements", Flatten.pCollections())
+                            .apply(
+                                    "Failed Row elements",
+                                    ParDo.of(new FailSafeElementToPubsubMessageFn<Row>()));
+
+            PCollectionList.of(failedPubsubElements)
+                    .and(failedRowElements)
+                    .apply("Failure collector", Flatten.pCollections())
+                    .apply(
+                            "Write to dead-letter pubsub topic",
+                            PubsubIO.writeMessages().to(options.getDeadLetterTopic()));
         }
 
         pipeline.run();

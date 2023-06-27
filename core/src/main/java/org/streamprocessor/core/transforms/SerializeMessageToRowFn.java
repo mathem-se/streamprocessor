@@ -18,78 +18,78 @@ package org.streamprocessor.core.transforms;
 
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.time.Instant;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.caches.SchemaCache;
 import org.streamprocessor.core.utils.BqUtils;
+import org.streamprocessor.core.utils.CustomExceptionsUtils;
+import org.streamprocessor.core.values.FailsafeElement;
 
-public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
+public class SerializeMessageToRowFn
+        extends DoFn<
+                FailsafeElement<PubsubMessage, PubsubMessage>,
+                FailsafeElement<PubsubMessage, Row>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerializeMessageToRowFn.class);
 
-    TupleTag<Row> successTag;
-    TupleTag<PubsubMessage> deadLetterTag;
-    String unknownFieldLogger;
-    String format;
+    private static final Counter failureCounter =
+            Metrics.counter("SerializeMessageToRowFn", "failures");
+
+    TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
+    TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
     String projectId;
     String dataContractsServiceUrl;
     float ratio;
 
-    public static <T> T getValueOrDefault(T value, T defaultValue) {
-        return value == null ? defaultValue : value;
-    }
-
-    private class NoSchemaException extends Exception {
-
-        private NoSchemaException(String errorMessage) {
-            super(errorMessage);
-        }
-    }
-
     public SerializeMessageToRowFn(
-            TupleTag<Row> successTag,
-            TupleTag<PubsubMessage> deadLetterTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
             String projectId,
             String dataContractsServiceUrl,
             float ratio) {
         this.successTag = successTag;
-        this.deadLetterTag = deadLetterTag;
+        this.failureTag = failureTag;
         this.projectId = projectId;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = ratio;
     }
 
     public SerializeMessageToRowFn(
-            TupleTag<Row> successTag,
-            TupleTag<PubsubMessage> deadLetterTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
             String projectId,
             String dataContractsServiceUrl) {
         this.successTag = successTag;
-        this.deadLetterTag = deadLetterTag;
+        this.failureTag = failureTag;
         this.projectId = projectId;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = 0.001f;
     }
 
     @ProcessElement
-    public void processElement(@Element PubsubMessage received, MultiOutputReceiver out)
+    public void processElement(
+            @Element FailsafeElement<PubsubMessage, PubsubMessage> received,
+            MultiOutputReceiver out)
             throws Exception {
-        String entity = received.getAttribute("entity").replace("-", "_").toLowerCase();
-        String payload = new String(received.getPayload(), StandardCharsets.UTF_8);
-        String endpoint = dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
-        @Nullable Map<String, String> attributesMap = received.getAttributeMap();
+        PubsubMessage pubsubMessage = received.getCurrentElement();
+        FailsafeElement<PubsubMessage, Row> outputElement;
+        Row currentElement = null;
+
+        String entity = pubsubMessage.getAttribute("entity").replace("-", "_").toLowerCase();
+        String uuid = pubsubMessage.getAttribute("uuid");
+        String payload = new String(pubsubMessage.getPayload(), StandardCharsets.UTF_8);
+        String endpoint = dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
         try {
             JSONObject dataContract = DataContractsCache.getDataContractFromCache(endpoint);
@@ -106,42 +106,42 @@ public class SerializeMessageToRowFn extends DoFn<PubsubMessage, Row> {
 
             Schema schema = SchemaCache.getSchemaFromCache(linkedResource);
             if (schema.getFieldCount() == 0) {
-                throw new NoSchemaException("Schema for " + linkedResource + " doesn't exist");
+                throw new CustomExceptionsUtils.NoSchemaException(
+                        "Schema for " + linkedResource + " doesn't exist");
             }
 
-            JSONObject json = new JSONObject(payload);
+            JSONObject payloadJson = new JSONObject(payload);
 
-            if (json.isNull("event_timestamp")) {
-                json.put("event_timestamp", DateTime.now().withZone(DateTimeZone.UTC).toString());
-            }
-            JSONObject attributes = new JSONObject(received.getAttributeMap());
-            json.put("_metadata", attributes);
-            TableRow tr = BqUtils.convertJsonToTableRow(json.toString());
+            JSONObject attributesJson = new JSONObject(pubsubMessage.getAttributeMap());
+            payloadJson.put("_metadata", attributesJson);
 
-            Row row = BqUtils.toBeamRow(schema, tr);
-            out.get(successTag).output(row);
-        } catch (NoSchemaException e) {
-            LOG.warn(
-                    "exception[{}] step[{}] details[{}] entity[{}]",
-                    "NoSchemaException",
-                    "SerializeMessageToRowFn.processElement()",
-                    e.toString(),
-                    entity);
+            TableRow tr = BqUtils.convertJsonToTableRow(payloadJson.toString());
+
+            currentElement = BqUtils.toBeamRow(schema, tr);
+
+            outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
+
+            out.get(successTag).output(outputElement);
+
         } catch (Exception e) {
+            failureCounter.inc();
+
+            outputElement =
+                    new FailsafeElement<>(received.getOriginalElement(), currentElement)
+                            .setPipelineStep("SerializeMessageToRowFn.processElement()")
+                            .setExceptionType(e.getClass().getName())
+                            .setExceptionDetails(e.toString())
+                            .setEventTimestamp(Instant.now().toString());
+
             LOG.error(
-                    "exception[{}] step[{}] details[{}] entity[{}]",
-                    e.getClass().getName(),
-                    "SerializeMessageToRowFn.processElement()",
-                    e.toString(),
-                    entity);
-            // TODO:
-            // instead, pass the following to deadletter: original_payload, status, error_message
-            // can't put in unmodifiable map
-            // attributesMap.put("error_reason", StringUtils.left(e.toString(), 1024));
-            out.get(deadLetterTag)
-                    .output(
-                            new PubsubMessage(
-                                    payload.getBytes(StandardCharsets.UTF_8), attributesMap));
+                    "exception[{}] step[{}] details[{}] entity[{}] uud[{}]",
+                    outputElement.getExceptionType(),
+                    outputElement.getPipelineStep(),
+                    outputElement.getExceptionDetails(),
+                    entity,
+                    uuid);
+
+            out.get(failureTag).output(outputElement);
         }
     }
 }
