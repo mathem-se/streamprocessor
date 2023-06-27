@@ -32,4 +32,11 @@ public class CustomExceptionsUtils {
             super(errorMessage);
         }
     }
+
+    public static class InactiveDataContractException extends Exception {
+
+        public InactiveDataContractException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
 }
