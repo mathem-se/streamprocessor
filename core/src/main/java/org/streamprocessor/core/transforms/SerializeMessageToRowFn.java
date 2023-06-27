@@ -20,6 +20,8 @@ import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
@@ -39,6 +41,9 @@ public class SerializeMessageToRowFn
                 FailsafeElement<PubsubMessage, Row>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerializeMessageToRowFn.class);
+
+    private static final Counter failureCounter =
+            Metrics.counter("SerializeMessageToRowFn", "failures");
 
     TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
@@ -82,6 +87,7 @@ public class SerializeMessageToRowFn
         Row currentElement = null;
 
         String entity = pubsubMessage.getAttribute("entity").replace("-", "_").toLowerCase();
+        String uuid = pubsubMessage.getAttribute("uuid");
         String payload = new String(pubsubMessage.getPayload(), StandardCharsets.UTF_8);
         String endpoint = dataContractsServiceUrl.replaceAll("/$", "") + "/" + "contract/" + entity;
 
@@ -118,6 +124,8 @@ public class SerializeMessageToRowFn
             out.get(successTag).output(outputElement);
 
         } catch (Exception e) {
+            failureCounter.inc();
+
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("SerializeMessageToRowFn.processElement()")
@@ -126,11 +134,12 @@ public class SerializeMessageToRowFn
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
-                    "exception[{}] step[{}] details[{}] entity[{}]",
+                    "exception[{}] step[{}] details[{}] entity[{}] uud[{}]",
                     outputElement.getExceptionType(),
                     outputElement.getPipelineStep(),
                     outputElement.getExceptionDetails(),
-                    entity);
+                    entity,
+                    uuid);
 
             out.get(failureTag).output(outputElement);
         }

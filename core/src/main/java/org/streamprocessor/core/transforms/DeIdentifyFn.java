@@ -49,6 +49,7 @@ public class DeIdentifyFn
             Metrics.counter("DeIdentifyFn", "tokenCacheMisses");
     private static final Counter tokenCacheCallsCounter =
             Metrics.counter("DeIdentifyFn", "tokenCacheCalls");
+    private static final Counter failureCounter = Metrics.counter("DeIdentifyFn", "failures");
     private static Random random = new Random();
 
     static final long serialVersionUID = 234L;
@@ -207,6 +208,11 @@ public class DeIdentifyFn
         Row currentElement = null;
         Row row = received.getCurrentElement();
 
+        // For logging purposes
+        PubsubMessage originalPubsubMessage = received.getOriginalElement();
+        String entity = originalPubsubMessage.getAttribute("entity");
+        String uuid = originalPubsubMessage.getAttribute("uuid");
+
         try {
             org.apache.beam.sdk.values.Row.FieldValueBuilder rowBuilder = Row.fromRow(row);
             Schema beamSchema = row.getSchema();
@@ -321,6 +327,8 @@ public class DeIdentifyFn
             out.get(successTag).output(outputElement);
 
         } catch (Exception e) {
+            failureCounter.inc();
+
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
                             .setPipelineStep("DeIdentifyFn.processElement()")
@@ -329,10 +337,12 @@ public class DeIdentifyFn
                             .setEventTimestamp(Instant.now().toString());
 
             LOG.error(
-                    "exception[{}] step[{}] details[{}]",
+                    "exception[{}] step[{}] details[{}] entity[{}] uuid[{}]",
                     outputElement.getExceptionType(),
                     outputElement.getPipelineStep(),
-                    outputElement.getExceptionDetails());
+                    outputElement.getExceptionDetails(),
+                    entity,
+                    uuid);
 
             out.get(failureTag).output(outputElement);
         }

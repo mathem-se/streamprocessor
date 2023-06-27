@@ -64,7 +64,7 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
             STRING_CODER.encode(value.getPipelineStep(), outStream);
             STRING_CODER.encode(value.getExceptionType(), outStream);
             STRING_CODER.encode(value.getExceptionDetails(), outStream);
-            STRING_CODER.encode(value.getEventTimestamp(), outStream);
+            STRING_CODER.encode(value.getFailureTimestamp(), outStream);
 
         } catch (IOException e) {
             LOG.error(

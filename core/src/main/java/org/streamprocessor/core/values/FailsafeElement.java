@@ -2,23 +2,26 @@ package org.streamprocessor.core.values;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.io.bigquery.FailureFields;
 
 @Getter
 public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FailsafeElement.class);
+
     private final OriginalT originalElement;
     @Nullable private final CurrentT currentElement;
     private String pipelineStep;
     private String exceptionType;
     private String exceptionDetails;
-    private String eventTimestamp;
+    private String failureTimestamp;
 
     public FailsafeElement(OriginalT originalElement, @Nullable CurrentT currentElement) {
         this.originalElement = originalElement;
@@ -45,8 +48,8 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
         return this;
     }
 
-    public FailsafeElement<OriginalT, CurrentT> setEventTimestamp(String eventTimestamp) {
-        this.eventTimestamp = eventTimestamp;
+    public FailsafeElement<OriginalT, CurrentT> setEventTimestamp(String failureTimestamp) {
+        this.failureTimestamp = failureTimestamp;
         return this;
     }
 
@@ -65,30 +68,17 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
         String originalPayload =
                 new String(((PubsubMessage) originalElement).getPayload(), StandardCharsets.UTF_8);
 
-        String originalEntity = originalAttributes.get("entity");
-
-        /*
-         * TODO: Decide what should be included in the deadletter attributes.
-         * Setting entity of the failed message as original entity for now.
-         */
-        Map<String, String> attributes =
-                new HashMap<>() {
-                    {
-                        put("timestamp", Instant.now().toString());
-                        put("event_timestamp", eventTimestamp);
-                        put("original_entity", originalEntity);
-                    }
-                };
-
         JSONObject payload =
                 new JSONObject()
-                        .put(FailureFields.ORIGINAL_ATTRIBUTE.getValue(), originalAttributes)
                         .put(FailureFields.ORIGINAL_PAYLOAD.getValue(), originalPayload)
                         .put(FailureFields.PIPELINE_STEP.getValue(), pipelineStep)
                         .put(FailureFields.EXCEPTION_TYPE.getValue(), exceptionType)
                         .put(FailureFields.EXCEPTION_DETAILS.getValue(), exceptionDetails)
-                        .put(FailureFields.EVENT_TIMESTAMP.getValue(), eventTimestamp);
+                        .put(FailureFields.FAILURE_TIMESTAMP.getValue(), failureTimestamp);
 
-        return new PubsubMessage(payload.toString().getBytes(StandardCharsets.UTF_8), attributes);
+        LOG.info("Created dead-letter message, uuid[{}]", originalAttributes.get("uuid"));
+
+        return new PubsubMessage(
+                payload.toString().getBytes(StandardCharsets.UTF_8), originalAttributes);
     }
 }
