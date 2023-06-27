@@ -75,7 +75,7 @@ public class TransformMessageFn
                             .getJSONObject("source")
                             .getString("provider");
 
-            LocalDate currentDate = LocalDate.now(ZoneId.of("Europe/Stockholm"));
+            LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
