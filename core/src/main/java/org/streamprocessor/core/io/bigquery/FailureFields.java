@@ -11,7 +11,7 @@ public enum FailureFields {
     ORIGINAL_PAYLOAD("original_payload"),
     EXCEPTION_TYPE("exception_type"),
     EXCEPTION_DETAILS("exception_details"),
-    EVENT_TIMESTAMP("event_timestamp");
+    FAILURE_TIMESTAMP("failure_timestamp");
 
     private final String value;
 }

@@ -7,6 +7,8 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.TupleTag;
 import org.json.JSONObject;
@@ -22,6 +24,8 @@ import org.streamprocessor.core.values.FailsafeElement;
 public class TransformMessageFn
         extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
+
+    private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
 
     String dataContractsServiceUrl;
@@ -127,6 +131,8 @@ public class TransformMessageFn
 
             out.get(successTag).output(outputElement);
         } catch (Exception e) {
+            failureCounter.inc();
+
             outputElement =
                     new FailsafeElement<>(received, currentElement)
                             .setPipelineStep("TransformMessageFn.processElement()")
