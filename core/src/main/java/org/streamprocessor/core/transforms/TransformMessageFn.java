@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -51,8 +53,8 @@ public class TransformMessageFn
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
             JSONObject streamObject = new JSONObject(receivedPayload);
-
             HashMap<String, String> attributes = new HashMap<String, String>();
+
             attributes.putAll(received.getAttributeMap());
             attributes.put(
                     "processing_timestamp",
@@ -76,6 +78,41 @@ public class TransformMessageFn
                             .getString("provider");
 
             LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
+
+
+            HashMap<String, String> newAttributes = new HashMap<String, String>();
+
+            for (Map.Entry<String, String> set : received.getAttributeMap().entrySet()) {
+                String setKey = set.getKey();
+                String setValue = set.getValue();
+
+                if (setKey.startsWith("trace_")) {
+                    JSONObject traceObject = new JSONObject(setValue);
+                    HashMap<String, String> traceMap = new HashMap<String, String>();
+                    if (traceObject.getString("timestamp") != null) {
+                        traceMap.put("timestamp", traceObject.getString("timestamp"));
+                    }
+                    if (traceObject.getString("id") != null) {
+                        traceMap.put("id", traceObject.getString("id"));
+                    }
+                    if (traceObject.getString("service") != null) {
+                        traceMap.put("service", traceObject.getString("service"));
+                    }
+                    if (traceObject.getString("version") != null) {
+                        traceMap.put("version", traceObject.getString("version"));
+                    }
+
+                    newAttributes.put(setKey, new JSONObject(traceMap).toString());
+                }
+            }
+            newAttributes.put("entity", dataContract.getString("entity"));
+            newAttributes.put("data_contracts_schema_version", dataContract.getString("version"));
+            newAttributes.put("provider", provider);
+
+            String backfill = received.getAttribute("backfill");
+            if (backfill != null) {
+                newAttributes.put("backfill", received.getAttribute("backfill"));
+            }
 
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
@@ -107,16 +144,16 @@ public class TransformMessageFn
 
             switch (provider) {
                 case "dynamodb":
-                    currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
+                    currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes, newAttributes);
                     break;
                 case "salesforce":
-                    currentElement = SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
+                    currentElement = SalesforceHelper.enrichPubsubMessage(streamObject, attributes, newAttributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":
                 case "pi":
                     currentElement =
-                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
+                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes, newAttributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(

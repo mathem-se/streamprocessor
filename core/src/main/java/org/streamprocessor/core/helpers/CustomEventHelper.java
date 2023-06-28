@@ -9,8 +9,14 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 public class CustomEventHelper {
 
     public static PubsubMessage enrichPubsubMessage(
-            JSONObject customEventStreamObject, HashMap<String, String> attributes)
+            JSONObject customEventStreamObject, HashMap<String, String> attributes, HashMap<String, String> newAttributes)
             throws Exception {
+
+        // TODO need to set in newAttributes:
+        //          event_id
+        //          operation (INSERT, REMOVE, MODIFY)
+        //          extract_method
+        //          event_timestamp
 
         // add event_time to payload root for streaming analytics use cases
         if (customEventStreamObject.isNull("event_timestamp")) {
