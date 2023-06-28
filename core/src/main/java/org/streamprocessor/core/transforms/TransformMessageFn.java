@@ -7,7 +7,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -79,7 +78,6 @@ public class TransformMessageFn
 
             LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
-
             HashMap<String, String> newAttributes = new HashMap<String, String>();
 
             for (Map.Entry<String, String> set : received.getAttributeMap().entrySet()) {
@@ -144,16 +142,21 @@ public class TransformMessageFn
 
             switch (provider) {
                 case "dynamodb":
-                    currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes, newAttributes);
+                    currentElement =
+                            DynamodbHelper.enrichPubsubMessage(
+                                    streamObject, attributes, newAttributes);
                     break;
                 case "salesforce":
-                    currentElement = SalesforceHelper.enrichPubsubMessage(streamObject, attributes, newAttributes);
+                    currentElement =
+                            SalesforceHelper.enrichPubsubMessage(
+                                    streamObject, attributes, newAttributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":
                 case "pi":
                     currentElement =
-                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes, newAttributes);
+                            CustomEventHelper.enrichPubsubMessage(
+                                    streamObject, attributes, newAttributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(

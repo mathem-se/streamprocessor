@@ -9,7 +9,9 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 public class CustomEventHelper {
 
     public static PubsubMessage enrichPubsubMessage(
-            JSONObject customEventStreamObject, HashMap<String, String> attributes, HashMap<String, String> newAttributes)
+            JSONObject customEventStreamObject,
+            HashMap<String, String> attributes,
+            HashMap<String, String> newAttributes)
             throws Exception {
 
         // TODO need to set in newAttributes:

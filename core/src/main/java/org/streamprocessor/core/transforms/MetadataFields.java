@@ -3,7 +3,6 @@ package org.streamprocessor.core.transforms;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-
 public class MetadataFields {
 
     @AllArgsConstructor
@@ -32,5 +31,4 @@ public class MetadataFields {
         REMOVE("remove");
         private final String value;
     }
-
 }
