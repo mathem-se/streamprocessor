@@ -24,15 +24,12 @@ import com.google.cloud.datacatalog.v1beta1.ColumnSchema;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.beam.sdk.annotations.Experimental;
-import org.apache.beam.sdk.annotations.Experimental.Kind;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.Schema.Field;
 import org.apache.beam.sdk.schemas.Schema.FieldType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Strings;
 
-@Experimental(Kind.SCHEMAS)
 @SuppressWarnings({
     "rawtypes", // TODO(https://issues.apache.org/jira/browse/BEAM-10556)
     "nullness", // TODO(https://issues.apache.org/jira/browse/BEAM-10402)
