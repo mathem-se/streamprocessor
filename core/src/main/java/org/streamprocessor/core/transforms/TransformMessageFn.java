@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -79,7 +80,7 @@ public class TransformMessageFn
             LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
             HashMap<String, String> newAttributes = new HashMap<String, String>();
-
+            ArrayList<String> traceList = new ArrayList<String>();
             for (Map.Entry<String, String> set : received.getAttributeMap().entrySet()) {
                 String setKey = set.getKey();
                 String setValue = set.getValue();
@@ -87,25 +88,27 @@ public class TransformMessageFn
                 if (setKey.startsWith("trace_")) {
                     JSONObject traceObject = new JSONObject(setValue);
                     HashMap<String, String> traceMap = new HashMap<String, String>();
-                    if (traceObject.getString("timestamp") != null) {
+                    if (traceObject.has("timestamp")) {
                         traceMap.put("timestamp", traceObject.getString("timestamp"));
                     }
-                    if (traceObject.getString("id") != null) {
+                    if (traceObject.has("id")) {
                         traceMap.put("id", traceObject.getString("id"));
                     }
-                    if (traceObject.getString("service") != null) {
+                    if (traceObject.has("service")) {
                         traceMap.put("service", traceObject.getString("service"));
                     }
-                    if (traceObject.getString("version") != null) {
-                        traceMap.put("version", traceObject.getString("version"));
+                    if (traceObject.has("version")) {
+                        traceMap.put("service_version", traceObject.getString("version"));
                     }
-
-                    newAttributes.put(setKey, new JSONObject(traceMap).toString());
+                    traceList.add(new JSONObject(traceMap).toString());
                 }
             }
             newAttributes.put("entity", dataContract.getString("entity"));
             newAttributes.put("data_contracts_schema_version", dataContract.getString("version"));
             newAttributes.put("provider", provider);
+            if (traceList.size() > 0) {
+                newAttributes.put("trace", traceList.toString());
+            }
 
             String backfill = received.getAttribute("backfill");
             if (backfill != null) {

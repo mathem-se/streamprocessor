@@ -52,7 +52,7 @@ public final class CacheLoaderUtils implements Serializable {
         }
     }
 
-    public static Schema getSchema(String linkedResource) {
+    public static Schema getSchema(String linkedResource) throws Exception {
         try (DataCatalogClient dataCatalogClient = DataCatalogClient.create()) {
             // Get data catalog schema
             LookupEntryRequest request =
@@ -126,14 +126,14 @@ public final class CacheLoaderUtils implements Serializable {
                     "PermissionDeniedException",
                     "CacheLoaderUtils.getSchema()",
                     e.toString());
-            return Schema.builder().build();
+            throw e;
         } catch (Exception e) {
             LOG.error(
                     "exception[{}] step[{}] details[{}]",
                     e.getClass().getName(),
                     "CacheLoaderUtils.getSchema()",
                     e.toString());
-            return Schema.builder().build();
+            throw e;
         }
     }
 }

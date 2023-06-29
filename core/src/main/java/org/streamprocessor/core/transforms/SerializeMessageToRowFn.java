@@ -26,6 +26,7 @@ import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +114,8 @@ public class SerializeMessageToRowFn
             JSONObject payloadJson = new JSONObject(payload);
 
             JSONObject attributesJson = new JSONObject(pubsubMessage.getAttributeMap());
+            attributesJson.put("trace", new JSONArray(attributesJson.getString("trace")));
+
             payloadJson.put("_metadata", attributesJson);
 
             TableRow tr = BqUtils.convertJsonToTableRow(payloadJson.toString());
