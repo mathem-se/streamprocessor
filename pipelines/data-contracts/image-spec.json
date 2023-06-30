@@ -13,7 +13,7 @@
                 "label": "Streamprocessor version.",
                 "helpText": "Streamprocessor version running, example v1.2.3",
                 "isOptional": false,
-                "regexes": ["[-_/a-zA-Z0-9]+"]
+                "regexes": ["[-_/.a-zA-Z0-9]+"]
             },
             {
                 "name": "inputSubscription",
