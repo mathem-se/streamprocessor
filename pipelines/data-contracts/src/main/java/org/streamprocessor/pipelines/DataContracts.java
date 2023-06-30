@@ -157,6 +157,7 @@ public class DataContracts {
                         "Transform message stream change events",
                         ParDo.of(
                                         new TransformMessageFn(
+                                                options.getVersion(),
                                                 options.getDataContractsServiceUrl(),
                                                 TRANSFORM_MESSAGE_SUCCESS_TAG,
                                                 TRANSFORM_MESSAGE_FAILURE_TAG))

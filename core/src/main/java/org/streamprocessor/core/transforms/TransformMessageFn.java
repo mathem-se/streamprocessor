@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -30,14 +31,17 @@ public class TransformMessageFn
     private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
 
+    String version;
     String dataContractsServiceUrl;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag;
 
     public TransformMessageFn(
+            String version,
             String dataContractsServiceUrl,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag) {
+        this.version = version;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.successTag = successTag;
         this.failureTag = failureTag;
@@ -103,6 +107,14 @@ public class TransformMessageFn
                     traceList.add(new JSONObject(traceMap).toString());
                 }
             }
+
+            HashMap<String, String> traceMap = new HashMap<String, String>();
+            traceMap.put("timestamp", Instant.now().toString());
+            traceMap.put("id", UUID.randomUUID().toString());
+            traceMap.put("service", "streamprocessor-data-contracts");
+            traceMap.put("version", version);
+            traceList.add(new JSONObject(traceMap).toString());
+
             newAttributes.put("entity", dataContract.getString("entity"));
             newAttributes.put("data_contracts_schema_version", dataContract.getString("version"));
             newAttributes.put("provider", provider);
