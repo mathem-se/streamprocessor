@@ -12,7 +12,7 @@ public class DynamodbHelper {
     public static final String OLD_IMAGE = "OldImage";
     public static final String NEW_IMAGE = "NewImage";
     public static final String PUBLISHED = "Published";
-    public static final String TIMESTAMP = "TIMESTAMP";
+    public static final String TIMESTAMP = "timestamp";
     public static final String EVENT_ID = "EventId";
 
     public static PubsubMessage enrichPubsubMessage(
