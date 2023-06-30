@@ -17,7 +17,6 @@ public class MetadataFields {
     @Getter
     public enum ExtractMethod {
         EXTRACT_METHOD("extract_method"),
-        SNAPSHOT("snapshot"),
         CUSTOM_EVENT("custom_event"),
         CDC("cdc");
         private final String value;

@@ -28,16 +28,8 @@ public class DynamodbHelper {
         //          extract_method                      DONE
         //          event_timestamp                     DONE
 
-        if (dynamodbStreamObject.isNull(OLD_IMAGE)) {
-
-            newAttributes.put(
-                    MetadataFields.ExtractMethod.EXTRACT_METHOD.getValue(),
-                    MetadataFields.ExtractMethod.SNAPSHOT.getValue());
-            newAttributes.put(
-                    MetadataFields.Operation.OPERATION.getValue(),
-                    MetadataFields.Operation.INSERT.getValue());
-        }
-        if (dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty()
+        if (dynamodbStreamObject.isNull(OLD_IMAGE)
+                && dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty()
                 && dynamodbStreamObject.has(NEW_IMAGE)) {
 
             newAttributes.put(
