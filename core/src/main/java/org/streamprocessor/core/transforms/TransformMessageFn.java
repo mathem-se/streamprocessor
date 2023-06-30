@@ -98,7 +98,7 @@ public class TransformMessageFn
                         traceMap.put("service", traceObject.getString("service"));
                     }
                     if (traceObject.has("version")) {
-                        traceMap.put("service_version", traceObject.getString("version"));
+                        traceMap.put("version", traceObject.getString("version"));
                     }
                     traceList.add(new JSONObject(traceMap).toString());
                 }
