@@ -92,6 +92,6 @@ public class SalesforceHelper {
         }
 
         return new PubsubMessage(
-                payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
+                payloadObject.toString().getBytes(StandardCharsets.UTF_8), newAttributes);
     }
 }

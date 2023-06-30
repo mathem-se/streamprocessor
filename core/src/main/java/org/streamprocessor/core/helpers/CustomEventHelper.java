@@ -56,6 +56,6 @@ public class CustomEventHelper {
         }
 
         return new PubsubMessage(
-                customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
+                customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), newAttributes);
     }
 }
