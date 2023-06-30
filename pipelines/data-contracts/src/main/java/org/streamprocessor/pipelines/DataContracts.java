@@ -120,7 +120,7 @@ public class DataContracts {
         options.setStreaming(true);
         options.setEnableStreamingEngine(true);
         LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads());
-        LOG.info("DiskSize: " + options.getDiskSizeGb());
+        LOG.info("Disksize: " + options.getDiskSizeGb());
         // validateOptions(options);  // to-do create a validation function...
 
         Pipeline pipeline = Pipeline.create(options);
