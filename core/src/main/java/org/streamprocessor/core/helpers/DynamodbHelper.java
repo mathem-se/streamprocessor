@@ -28,8 +28,8 @@ public class DynamodbHelper {
         //          extract_method                      DONE
         //          event_timestamp                     DONE
 
-        if (dynamodbStreamObject.isNull(OLD_IMAGE)
-                && dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty()
+        if ((dynamodbStreamObject.isNull(OLD_IMAGE)
+                        || dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(NEW_IMAGE)) {
 
             newAttributes.put(
