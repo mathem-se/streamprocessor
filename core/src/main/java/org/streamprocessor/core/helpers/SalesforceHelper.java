@@ -41,22 +41,15 @@ public class SalesforceHelper {
         }
 
         newAttributes.put(
-                MetadataFields.ExtractMethod.EXTRACT_METHOD.getValue(),
-                MetadataFields.ExtractMethod.CDC.getValue());
+                MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
 
         String changeType = payloadObject.getString(CHANGE_TYPE);
         if (changeType.equals(CREATE)) {
-            newAttributes.put(
-                    MetadataFields.Operation.OPERATION.getValue(),
-                    MetadataFields.Operation.INSERT.getValue());
+            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
         } else if (changeType.equals(UPDATE)) {
-            newAttributes.put(
-                    MetadataFields.Operation.OPERATION.getValue(),
-                    MetadataFields.Operation.MODIFY.getValue());
+            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.MODIFY.getValue());
         } else if (changeType.equals(DELETE)) {
-            newAttributes.put(
-                    MetadataFields.Operation.OPERATION.getValue(),
-                    MetadataFields.Operation.REMOVE.getValue());
+            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.REMOVE.getValue());
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `ChangeType__c` found in message");
@@ -64,11 +57,9 @@ public class SalesforceHelper {
 
         if (!salesforceStreamObject.isNull(TIME)) {
             payloadObject.put(
-                    MetadataFields.Event.EVENT_TIMESTAMP.getValue(),
-                    salesforceStreamObject.getString(TIME));
+                    MetadataFields.EVENT_TIMESTAMP, salesforceStreamObject.getString(TIME));
         } else if (attributes.containsKey(TIMESTAMP) && !attributes.get(TIMESTAMP).isEmpty()) {
-            payloadObject.put(
-                    MetadataFields.Event.EVENT_TIMESTAMP.getValue(), attributes.get(TIMESTAMP));
+            payloadObject.put(MetadataFields.EVENT_TIMESTAMP, attributes.get(TIMESTAMP));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `time` or `timestamp` found in message");
@@ -76,10 +67,9 @@ public class SalesforceHelper {
 
         // Add meta-data from salesforce stream event as attributes
         if (!salesforceStreamObject.isNull(ID)) {
-            newAttributes.put(
-                    MetadataFields.Event.EVENT_ID.getValue(), salesforceStreamObject.getString(ID));
-        } else if (!attributes.containsKey(MetadataFields.Event.EVENT_ID.getValue())) {
-            newAttributes.put(MetadataFields.Event.EVENT_ID.getValue(), attributes.get(UUID));
+            newAttributes.put(MetadataFields.EVENT_ID, salesforceStreamObject.getString(ID));
+        } else if (!attributes.containsKey(MetadataFields.EVENT_ID)) {
+            newAttributes.put(MetadataFields.EVENT_ID, attributes.get(UUID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `id` or `uuid` found in message.");

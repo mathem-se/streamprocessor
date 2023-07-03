@@ -17,19 +17,17 @@ public class CustomEventHelper {
             HashMap<String, String> attributes,
             HashMap<String, String> newAttributes)
             throws Exception {
-        newAttributes.put(
-                MetadataFields.Operation.OPERATION.getValue(),
-                MetadataFields.Operation.INSERT.getValue());
+        newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
 
         newAttributes.put(
-                MetadataFields.ExtractMethod.EXTRACT_METHOD.getValue(),
+                MetadataFields.EXTRACT_METHOD,
                 MetadataFields.ExtractMethod.CUSTOM_EVENT.getValue());
 
         // add event_time to payload root for streaming analytics use cases
-        if (customEventStreamObject.isNull(MetadataFields.Event.EVENT_TIMESTAMP.getValue())) {
+        if (customEventStreamObject.isNull(MetadataFields.EVENT_TIMESTAMP)) {
             if (attributes.containsKey(TIMESTAMP)) {
                 customEventStreamObject.put(
-                        MetadataFields.Event.EVENT_TIMESTAMP.getValue(), attributes.get(TIMESTAMP));
+                        MetadataFields.EVENT_TIMESTAMP, attributes.get(TIMESTAMP));
             } else {
                 throw new CustomExceptionsUtils.MissingMetadataException(
                         "No `event_timestamp` found in message");
@@ -37,12 +35,12 @@ public class CustomEventHelper {
         }
 
         // Add meta-data from custom events as attributes
-        if (!customEventStreamObject.isNull(MetadataFields.Event.EVENT_ID.getValue())) {
+        if (!customEventStreamObject.isNull(MetadataFields.EVENT_ID)) {
             newAttributes.put(
-                    MetadataFields.Event.EVENT_ID.getValue(),
-                    customEventStreamObject.getString(MetadataFields.Event.EVENT_ID.getValue()));
+                    MetadataFields.EVENT_ID,
+                    customEventStreamObject.getString(MetadataFields.EVENT_ID));
         } else if (attributes.containsKey(UUID)) {
-            newAttributes.put(MetadataFields.Event.EVENT_ID.getValue(), attributes.get(UUID));
+            newAttributes.put(MetadataFields.EVENT_ID, attributes.get(UUID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `event_id` or `uuid` found in message.");
