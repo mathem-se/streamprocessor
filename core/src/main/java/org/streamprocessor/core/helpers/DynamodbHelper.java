@@ -16,30 +16,28 @@ public class DynamodbHelper {
     public static final String EVENT_ID = "EventId";
 
     public static PubsubMessage enrichPubsubMessage(
-            JSONObject dynamodbStreamObject,
-            HashMap<String, String> attributes,
-            HashMap<String, String> newAttributes)
-            throws Exception {
+            JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
         JSONObject payloadObject;
 
+        JSONObject metadata = new JSONObject(dynamodbStreamObject.get("_metadata"));
         if ((dynamodbStreamObject.isNull(OLD_IMAGE)
                         || dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(NEW_IMAGE)) {
-            newAttributes.put(
+            metadata.put(
                     MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
-            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
+            metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
             payloadObject = dynamodbStreamObject.getJSONObject(NEW_IMAGE);
         } else if ((dynamodbStreamObject.isNull(NEW_IMAGE)
                         || dynamodbStreamObject.getJSONObject(NEW_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(OLD_IMAGE)) {
-            newAttributes.put(
+            metadata.put(
                     MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
-            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.REMOVE.getValue());
+            metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.REMOVE.getValue());
             payloadObject = dynamodbStreamObject.getJSONObject(OLD_IMAGE);
         } else if (dynamodbStreamObject.has(NEW_IMAGE) && dynamodbStreamObject.has(OLD_IMAGE)) {
-            newAttributes.put(
+            metadata.put(
                     MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
-            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.MODIFY.getValue());
+            metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.MODIFY.getValue());
             payloadObject = dynamodbStreamObject.getJSONObject(NEW_IMAGE);
         } else {
             throw new CustomExceptionsUtils.MalformedEventException(
@@ -63,13 +61,13 @@ public class DynamodbHelper {
 
         // Add meta-data from dynamoDB stream event as attributes
         if (!dynamodbStreamObject.isNull(EVENT_ID)) {
-            newAttributes.put(MetadataFields.EVENT_ID, dynamodbStreamObject.getString(EVENT_ID));
+            metadata.put(MetadataFields.EVENT_ID, dynamodbStreamObject.getString(EVENT_ID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `EventId` found in message.");
         }
-
+        payloadObject.put("_metadata", metadata);
         return new PubsubMessage(
-                payloadObject.toString().getBytes(StandardCharsets.UTF_8), newAttributes);
+                payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }
 }

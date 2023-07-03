@@ -22,12 +22,11 @@ public class SalesforceHelper {
     public static final String UUID = "uuid";
 
     public static PubsubMessage enrichPubsubMessage(
-            JSONObject salesforceStreamObject,
-            HashMap<String, String> attributes,
-            HashMap<String, String> newAttributes)
+            JSONObject salesforceStreamObject, HashMap<String, String> attributes)
             throws Exception {
         JSONObject payloadObject;
 
+        JSONObject metadata = new JSONObject(salesforceStreamObject.get("_metadata"));
         // salesforce events passed through Appflow
         // have their payload nested within the `detail` field
         // other fields just contain metadata from Appflow
@@ -40,16 +39,15 @@ public class SalesforceHelper {
                     "No `detail` element found in message. Not a Saleseforce event?");
         }
 
-        newAttributes.put(
-                MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
+        metadata.put(MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
 
         String changeType = payloadObject.getString(CHANGE_TYPE);
         if (changeType.equals(CREATE)) {
-            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
+            metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
         } else if (changeType.equals(UPDATE)) {
-            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.MODIFY.getValue());
+            metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.MODIFY.getValue());
         } else if (changeType.equals(DELETE)) {
-            newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.REMOVE.getValue());
+            metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.REMOVE.getValue());
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `ChangeType__c` found in message");
@@ -67,15 +65,17 @@ public class SalesforceHelper {
 
         // Add meta-data from salesforce stream event as attributes
         if (!salesforceStreamObject.isNull(ID)) {
-            newAttributes.put(MetadataFields.EVENT_ID, salesforceStreamObject.getString(ID));
+            metadata.put(MetadataFields.EVENT_ID, salesforceStreamObject.getString(ID));
         } else if (!attributes.containsKey(MetadataFields.EVENT_ID)) {
-            newAttributes.put(MetadataFields.EVENT_ID, attributes.get(UUID));
+            metadata.put(MetadataFields.EVENT_ID, attributes.get(UUID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `id` or `uuid` found in message.");
         }
 
+        payloadObject.put("_metadata", metadata);
+
         return new PubsubMessage(
-                payloadObject.toString().getBytes(StandardCharsets.UTF_8), newAttributes);
+                payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }
 }

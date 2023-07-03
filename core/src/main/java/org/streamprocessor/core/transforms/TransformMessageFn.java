@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,6 +13,7 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.TupleTag;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,12 +61,12 @@ public class TransformMessageFn
         try {
             String receivedPayload = new String(received.getPayload(), StandardCharsets.UTF_8);
             JSONObject streamObject = new JSONObject(receivedPayload);
+
             HashMap<String, String> attributes = new HashMap<String, String>();
 
+            HashMap<String, String> metadata = new HashMap<String, String>();
+
             attributes.putAll(received.getAttributeMap());
-            attributes.put(
-                    "processing_timestamp",
-                    Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
 
             // use topic attribute as entity attribute if entity is missing
             if (received.getAttribute("entity") == null && received.getAttribute("topic") != null) {
@@ -87,31 +87,30 @@ public class TransformMessageFn
 
             LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
-            HashMap<String, String> newAttributes = new HashMap<String, String>();
             if (received.getAttribute("gcp_backfill") != null) {
-                newAttributes.put("gcp_backfill", received.getAttribute("gcp_backfill"));
+                metadata.put("gcp_backfill", received.getAttribute("gcp_backfill"));
             }
-            ArrayList<String> traceList = new ArrayList<String>();
+            ArrayList<JSONObject> traceList = new ArrayList<JSONObject>();
             for (Map.Entry<String, String> set : received.getAttributeMap().entrySet()) {
                 String setKey = set.getKey();
                 String setValue = set.getValue();
 
                 if (setKey.startsWith("trace_")) {
                     JSONObject traceObject = new JSONObject(setValue);
-                    HashMap<String, String> traceMap = new HashMap<String, String>();
-                    if (traceObject.has("timestamp")) {
-                        traceMap.put("timestamp", traceObject.getString("timestamp"));
-                    }
-                    if (traceObject.has("id")) {
-                        traceMap.put("id", traceObject.getString("id"));
-                    }
-                    if (traceObject.has("service")) {
-                        traceMap.put("service", traceObject.getString("service"));
-                    }
-                    if (traceObject.has("version")) {
-                        traceMap.put("version", traceObject.getString("version"));
-                    }
-                    traceList.add(new JSONObject(traceMap).toString());
+                    // HashMap<String, String> traceMap = new HashMap<String, String>();
+                    // if (traceObject.has("timestamp")) {
+                    //     traceMap.put("timestamp", traceObject.getString("timestamp"));
+                    // }
+                    // if (traceObject.has("id")) {
+                    //     traceMap.put("id", traceObject.getString("id"));
+                    // }
+                    // if (traceObject.has("service")) {
+                    //     traceMap.put("service", traceObject.getString("service"));
+                    // }
+                    // if (traceObject.has("version")) {
+                    //     traceMap.put("version", traceObject.getString("version"));
+                    // }
+                    traceList.add(traceObject);
                 }
             }
 
@@ -120,18 +119,17 @@ public class TransformMessageFn
             traceMap.put("id", UUID.randomUUID().toString());
             traceMap.put("service", name);
             traceMap.put("version", version);
-            traceList.add(new JSONObject(traceMap).toString());
+            traceList.add(new JSONObject(traceMap));
 
-            newAttributes.put("entity", dataContract.getString("entity"));
-            newAttributes.put("data_contracts_schema_version", dataContract.getString("version"));
-            newAttributes.put("provider", provider);
-            if (traceList.size() > 0) {
-                newAttributes.put("trace", traceList.toString());
-            }
+            metadata.put("entity", dataContract.getString("entity"));
+            metadata.put("data_contracts_schema_version", dataContract.getString("version"));
+            metadata.put("provider", provider);
+
+            // metadata.put("trace", new JSONArray(traceList)));
 
             String backfill = received.getAttribute("backfill");
             if (backfill != null) {
-                newAttributes.put("backfill", received.getAttribute("backfill"));
+                metadata.put("backfill", received.getAttribute("backfill"));
             }
 
             if (dataContract.isNull("valid_from")) {
@@ -160,24 +158,22 @@ public class TransformMessageFn
                     }
                 }
             }
+            JSONObject metadataJson = new JSONObject(metadata);
+            metadataJson.put("trace", new JSONArray(traceList));
+            streamObject.put("_metadata", metadataJson);
 
             switch (provider) {
                 case "dynamodb":
-                    currentElement =
-                            DynamodbHelper.enrichPubsubMessage(
-                                    streamObject, attributes, newAttributes);
+                    currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "salesforce":
-                    currentElement =
-                            SalesforceHelper.enrichPubsubMessage(
-                                    streamObject, attributes, newAttributes);
+                    currentElement = SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":
                 case "pi":
                     currentElement =
-                            CustomEventHelper.enrichPubsubMessage(
-                                    streamObject, attributes, newAttributes);
+                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(

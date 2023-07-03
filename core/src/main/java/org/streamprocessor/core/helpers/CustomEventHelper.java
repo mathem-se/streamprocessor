@@ -13,13 +13,13 @@ public class CustomEventHelper {
     public static final String UUID = "uuid";
 
     public static PubsubMessage enrichPubsubMessage(
-            JSONObject customEventStreamObject,
-            HashMap<String, String> attributes,
-            HashMap<String, String> newAttributes)
+            JSONObject customEventStreamObject, HashMap<String, String> attributes)
             throws Exception {
-        newAttributes.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
 
-        newAttributes.put(
+        JSONObject metadata = new JSONObject(customEventStreamObject.get("_metadata"));
+        metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
+
+        metadata.put(
                 MetadataFields.EXTRACT_METHOD,
                 MetadataFields.ExtractMethod.CUSTOM_EVENT.getValue());
 
@@ -36,17 +36,17 @@ public class CustomEventHelper {
 
         // Add meta-data from custom events as attributes
         if (!customEventStreamObject.isNull(MetadataFields.EVENT_ID)) {
-            newAttributes.put(
+            metadata.put(
                     MetadataFields.EVENT_ID,
                     customEventStreamObject.getString(MetadataFields.EVENT_ID));
         } else if (attributes.containsKey(UUID)) {
-            newAttributes.put(MetadataFields.EVENT_ID, attributes.get(UUID));
+            metadata.put(MetadataFields.EVENT_ID, attributes.get(UUID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     "No `event_id` or `uuid` found in message.");
         }
-
+        customEventStreamObject.put("_metadata", metadata);
         return new PubsubMessage(
-                customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), newAttributes);
+                customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }
 }
