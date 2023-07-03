@@ -88,6 +88,9 @@ public class TransformMessageFn
             LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
             HashMap<String, String> newAttributes = new HashMap<String, String>();
+            if (received.getAttribute("gcp-backfill") != null) {
+                newAttributes.put("gcp-backfill", received.getAttribute("gcp-backfill"));
+            }
             ArrayList<String> traceList = new ArrayList<String>();
             for (Map.Entry<String, String> set : received.getAttributeMap().entrySet()) {
                 String setKey = set.getKey();
