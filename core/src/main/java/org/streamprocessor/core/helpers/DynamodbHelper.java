@@ -22,16 +22,9 @@ public class DynamodbHelper {
             throws Exception {
         JSONObject payloadObject;
 
-        // TODO need to set in newAttributes:
-        //          event_id                            DONE
-        //          operation (INSERT, REMOVE, MODIFY)  DONE
-        //          extract_method                      DONE
-        //          event_timestamp                     DONE
-
         if ((dynamodbStreamObject.isNull(OLD_IMAGE)
                         || dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(NEW_IMAGE)) {
-
             newAttributes.put(
                     MetadataFields.ExtractMethod.EXTRACT_METHOD.getValue(),
                     MetadataFields.ExtractMethod.CDC.getValue());
@@ -39,11 +32,9 @@ public class DynamodbHelper {
                     MetadataFields.Operation.OPERATION.getValue(),
                     MetadataFields.Operation.INSERT.getValue());
             payloadObject = dynamodbStreamObject.getJSONObject(NEW_IMAGE);
-
         } else if ((dynamodbStreamObject.isNull(NEW_IMAGE)
                         || dynamodbStreamObject.getJSONObject(NEW_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(OLD_IMAGE)) {
-
             newAttributes.put(
                     MetadataFields.ExtractMethod.EXTRACT_METHOD.getValue(),
                     MetadataFields.ExtractMethod.CDC.getValue());
@@ -51,9 +42,7 @@ public class DynamodbHelper {
                     MetadataFields.Operation.OPERATION.getValue(),
                     MetadataFields.Operation.REMOVE.getValue());
             payloadObject = dynamodbStreamObject.getJSONObject(OLD_IMAGE);
-
         } else if (dynamodbStreamObject.has(NEW_IMAGE) && dynamodbStreamObject.has(OLD_IMAGE)) {
-
             newAttributes.put(
                     MetadataFields.ExtractMethod.EXTRACT_METHOD.getValue(),
                     MetadataFields.ExtractMethod.CDC.getValue());
@@ -61,7 +50,6 @@ public class DynamodbHelper {
                     MetadataFields.Operation.OPERATION.getValue(),
                     MetadataFields.Operation.MODIFY.getValue());
             payloadObject = dynamodbStreamObject.getJSONObject(NEW_IMAGE);
-
         } else {
             throw new CustomExceptionsUtils.MalformedEventException(
                     "No NewImage or OldImage found in message. Maybe the provider is not configured"

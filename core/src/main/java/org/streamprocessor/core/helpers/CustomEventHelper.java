@@ -17,13 +17,6 @@ public class CustomEventHelper {
             HashMap<String, String> attributes,
             HashMap<String, String> newAttributes)
             throws Exception {
-
-        // TODO need to set in newAttributes:
-        //          event_id                                DONE
-        //          operation (INSERT, REMOVE, MODIFY)
-        //          extract_method
-        //          event_timestamp
-
         newAttributes.put(
                 MetadataFields.Operation.OPERATION.getValue(),
                 MetadataFields.Operation.INSERT.getValue());

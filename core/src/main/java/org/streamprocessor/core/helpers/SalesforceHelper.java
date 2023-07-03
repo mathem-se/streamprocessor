@@ -28,12 +28,6 @@ public class SalesforceHelper {
             throws Exception {
         JSONObject payloadObject;
 
-        // TODO need to set in newAttributes:
-        //          event_id                            DONE
-        //          operation (INSERT, REMOVE, MODIFY)  DONE
-        //          extract_method                      DONE
-        //          event_timestamp                     DONE
-
         // salesforce events passed through Appflow
         // have their payload nested within the `detail` field
         // other fields just contain metadata from Appflow
