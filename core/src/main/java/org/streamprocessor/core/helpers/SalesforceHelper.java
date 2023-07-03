@@ -45,15 +45,15 @@ public class SalesforceHelper {
                 MetadataFields.ExtractMethod.CDC.getValue());
 
         String changeType = payloadObject.getString(CHANGE_TYPE);
-        if (changeType == CREATE) {
+        if (changeType.equals(CREATE)) {
             newAttributes.put(
                     MetadataFields.Operation.OPERATION.getValue(),
                     MetadataFields.Operation.INSERT.getValue());
-        } else if (changeType == UPDATE) {
+        } else if (changeType.equals(UPDATE)) {
             newAttributes.put(
                     MetadataFields.Operation.OPERATION.getValue(),
                     MetadataFields.Operation.MODIFY.getValue());
-        } else if (changeType == DELETE) {
+        } else if (changeType.equals(DELETE)) {
             newAttributes.put(
                     MetadataFields.Operation.OPERATION.getValue(),
                     MetadataFields.Operation.REMOVE.getValue());
