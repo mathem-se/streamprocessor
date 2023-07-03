@@ -26,21 +26,25 @@ import org.streamprocessor.core.values.FailsafeElement;
 
 public class TransformMessageFn
         extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
+
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
 
     private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
 
+    String name;
     String version;
     String dataContractsServiceUrl;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag;
 
     public TransformMessageFn(
+            String name,
             String version,
             String dataContractsServiceUrl,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag) {
+        this.name = name;
         this.version = version;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.successTag = successTag;
@@ -111,7 +115,7 @@ public class TransformMessageFn
             HashMap<String, String> traceMap = new HashMap<String, String>();
             traceMap.put("timestamp", Instant.now().toString());
             traceMap.put("id", UUID.randomUUID().toString());
-            traceMap.put("service", "streamprocessor-data-contracts");
+            traceMap.put("service", name);
             traceMap.put("version", version);
             traceList.add(new JSONObject(traceMap).toString());
 
@@ -139,7 +143,6 @@ public class TransformMessageFn
                             "Data contract is not valid for the current time. "
                                     + "Data contract is valid from: "
                                     + validFrom);
-
                 } else if (!dataContract.isNull("valid_to")) {
                     String validTo = dataContract.getString("valid_to");
                     LocalDate validToDate = LocalDate.parse(validTo);

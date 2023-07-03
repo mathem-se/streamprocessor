@@ -38,6 +38,11 @@ public interface StreamProcessorOptions extends DataflowPipelineOptions {
 
     void setSchemaCheckRatio(float value);
 
+    @Description("Streamprocessor name")
+    String getName();
+
+    void setName(String value);
+
     @Description("Streamprocessor version")
     String getVersion();
 

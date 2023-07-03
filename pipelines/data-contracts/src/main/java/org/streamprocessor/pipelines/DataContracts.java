@@ -108,7 +108,6 @@ public class DataContracts {
      * @param args the command line arguments to the pipeline
      */
     public static void main(String[] args) {
-
         StreamProcessorOptions options =
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
@@ -157,6 +156,7 @@ public class DataContracts {
                         "Transform message stream change events",
                         ParDo.of(
                                         new TransformMessageFn(
+                                                options.getName(),
                                                 options.getVersion(),
                                                 options.getDataContractsServiceUrl(),
                                                 TRANSFORM_MESSAGE_SUCCESS_TAG,
