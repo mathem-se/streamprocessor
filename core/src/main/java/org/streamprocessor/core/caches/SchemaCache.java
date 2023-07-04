@@ -19,7 +19,7 @@ public class SchemaCache {
                     .refreshAfterWrite(5, TimeUnit.MINUTES)
                     .build(SchemaCache::loadSchemaToCache);
 
-    private static Schema loadSchemaToCache(String ref) {
+    private static Schema loadSchemaToCache(String ref) throws Exception {
         schemaCacheMissesCounter.inc();
         return CacheLoaderUtils.getSchema(ref);
     }

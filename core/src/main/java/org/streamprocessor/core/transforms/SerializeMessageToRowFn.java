@@ -47,6 +47,7 @@ public class SerializeMessageToRowFn
 
     TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag;
+    String jobName;
     String projectId;
     String dataContractsServiceUrl;
     float ratio;
@@ -54,11 +55,13 @@ public class SerializeMessageToRowFn
     public SerializeMessageToRowFn(
             TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
+            String jobName,
             String projectId,
             String dataContractsServiceUrl,
             float ratio) {
         this.successTag = successTag;
         this.failureTag = failureTag;
+        this.jobName = jobName;
         this.projectId = projectId;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = ratio;
@@ -67,10 +70,12 @@ public class SerializeMessageToRowFn
     public SerializeMessageToRowFn(
             TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
+            String jobName,
             String projectId,
             String dataContractsServiceUrl) {
         this.successTag = successTag;
         this.failureTag = failureTag;
+        this.jobName = jobName;
         this.projectId = projectId;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = 0.001f;
@@ -112,9 +117,6 @@ public class SerializeMessageToRowFn
 
             JSONObject payloadJson = new JSONObject(payload);
 
-            JSONObject attributesJson = new JSONObject(pubsubMessage.getAttributeMap());
-            payloadJson.put("_metadata", attributesJson);
-
             TableRow tr = BqUtils.convertJsonToTableRow(payloadJson.toString());
 
             currentElement = BqUtils.toBeamRow(schema, tr);
@@ -128,6 +130,7 @@ public class SerializeMessageToRowFn
 
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
+                            .setJobName(jobName)
                             .setPipelineStep("SerializeMessageToRowFn.processElement()")
                             .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e.toString())

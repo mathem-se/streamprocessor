@@ -4,13 +4,16 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.TupleTag;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,19 +26,27 @@ import org.streamprocessor.core.values.FailsafeElement;
 
 public class TransformMessageFn
         extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
-    private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
 
+    private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
     private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
 
+    private static final String METADATA = "_metadata";
+
+    String jobName;
+    String version;
     String dataContractsServiceUrl;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag;
 
     public TransformMessageFn(
+            String jobName,
+            String version,
             String dataContractsServiceUrl,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag) {
+        this.jobName = jobName;
+        this.version = version;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.successTag = successTag;
         this.failureTag = failureTag;
@@ -53,10 +64,8 @@ public class TransformMessageFn
             JSONObject streamObject = new JSONObject(receivedPayload);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
+            HashMap<String, String> metadata = new HashMap<String, String>();
             attributes.putAll(received.getAttributeMap());
-            attributes.put(
-                    "processing_timestamp",
-                    Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
 
             // use topic attribute as entity attribute if entity is missing
             if (received.getAttribute("entity") == null && received.getAttribute("topic") != null) {
@@ -77,6 +86,36 @@ public class TransformMessageFn
 
             LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
+            if (received.getAttribute("gcp_backfill") != null) {
+                metadata.put("gcp_backfill", received.getAttribute("gcp_backfill"));
+            }
+            ArrayList<JSONObject> traceList = new ArrayList<JSONObject>();
+            for (Map.Entry<String, String> set : received.getAttributeMap().entrySet()) {
+                String setKey = set.getKey();
+                String setValue = set.getValue();
+
+                if (setKey.startsWith("trace_")) {
+                    JSONObject traceObject = new JSONObject(setValue);
+                    traceList.add(traceObject);
+                }
+            }
+
+            HashMap<String, String> traceMap = new HashMap<String, String>();
+            traceMap.put("timestamp", Instant.now().toString());
+            traceMap.put("id", UUID.randomUUID().toString());
+            traceMap.put("service", "streamprocessor-" + jobName);
+            traceMap.put("version", version);
+            traceList.add(new JSONObject(traceMap));
+
+            metadata.put("entity", dataContract.getString("entity"));
+            metadata.put("data_contracts_schema_version", dataContract.getString("version"));
+            metadata.put("provider", provider);
+
+            String backfill = received.getAttribute("backfill");
+            if (backfill != null) {
+                metadata.put("backfill", received.getAttribute("backfill"));
+            }
+
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
                         "No `valid_from` found in data contract");
@@ -86,9 +125,10 @@ public class TransformMessageFn
 
                 if (currentDate.isBefore(validFromDate)) {
                     throw new CustomExceptionsUtils.InactiveDataContractException(
-                            "Data contract is not valid for the current time. "
-                                    + "Data contract is valid from: "
-                                    + validFrom);
+                            String.format(
+                                    "Data contract is not valid for the current time. Data contract"
+                                            + " is valid from: %s",
+                                    validFrom));
 
                 } else if (!dataContract.isNull("valid_to")) {
                     String validTo = dataContract.getString("valid_to");
@@ -96,14 +136,16 @@ public class TransformMessageFn
 
                     if (currentDate.isAfter(validToDate)) {
                         throw new CustomExceptionsUtils.InactiveDataContractException(
-                                "Data contract is not valid for the current time. "
-                                        + "Data contract is valid from: "
-                                        + validFrom
-                                        + " to: "
-                                        + validTo);
+                                String.format(
+                                        "Data contract is not valid for the current time. Data"
+                                                + " contract is valid from: %s to %s",
+                                        validFrom, validTo));
                     }
                 }
             }
+            JSONObject metadataJson = new JSONObject(metadata);
+            metadataJson.put("trace", new JSONArray(traceList));
+            streamObject.put(METADATA, metadataJson);
 
             switch (provider) {
                 case "dynamodb":
@@ -120,11 +162,10 @@ public class TransformMessageFn
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(
-                            "Provider: "
-                                    + provider
-                                    + ".\n"
-                                    + "Either the provider is not supported or the data contract is"
-                                    + " not valid.");
+                            String.format(
+                                    "Provider %s. Either the provider is not supported or the data"
+                                            + " contract is not valid.",
+                                    provider));
             }
 
             outputElement = new FailsafeElement<>(received, currentElement);
@@ -135,6 +176,7 @@ public class TransformMessageFn
 
             outputElement =
                     new FailsafeElement<>(received, currentElement)
+                            .setJobName(jobName)
                             .setPipelineStep("TransformMessageFn.processElement()")
                             .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e.toString())

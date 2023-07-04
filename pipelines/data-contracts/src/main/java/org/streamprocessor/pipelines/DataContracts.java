@@ -108,7 +108,6 @@ public class DataContracts {
      * @param args the command line arguments to the pipeline
      */
     public static void main(String[] args) {
-
         StreamProcessorOptions options =
                 PipelineOptionsFactory.fromArgs(args)
                         .withValidation()
@@ -119,6 +118,7 @@ public class DataContracts {
         // options.setNumberOfWorkerHarnessThreads(10);
         options.setStreaming(true);
         options.setEnableStreamingEngine(true);
+
         LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads());
         LOG.info("Disksize: " + options.getDiskSizeGb());
         // validateOptions(options);  // to-do create a validation function...
@@ -157,6 +157,8 @@ public class DataContracts {
                         "Transform message stream change events",
                         ParDo.of(
                                         new TransformMessageFn(
+                                                options.getJobName(),
+                                                options.getVersion(),
                                                 options.getDataContractsServiceUrl(),
                                                 TRANSFORM_MESSAGE_SUCCESS_TAG,
                                                 TRANSFORM_MESSAGE_FAILURE_TAG))
@@ -176,6 +178,7 @@ public class DataContracts {
                                                 new SerializeMessageToRowFn(
                                                         SERIALIZED_SUCCESS_TAG,
                                                         SERIALIZED_FAILURE_TAG,
+                                                        options.getJobName(),
                                                         options.getProject(),
                                                         options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio()))
@@ -193,6 +196,7 @@ public class DataContracts {
                                 "De-identify Rows",
                                 ParDo.of(
                                                 new DeIdentifyFn(
+                                                        options.getJobName(),
                                                         options.getFirestoreProjectId(),
                                                         DEIDENTIFY_SUCCESS_TAG,
                                                         DEIDENTIFY_FAILURE_TAG))

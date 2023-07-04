@@ -61,6 +61,7 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
         try {
             originalElementCoder.encode(value.getOriginalElement(), outStream);
             currentElementCoder.encode(value.getCurrentElement(), outStream);
+            STRING_CODER.encode(value.getJobName(), outStream);
             STRING_CODER.encode(value.getPipelineStep(), outStream);
             STRING_CODER.encode(value.getExceptionType(), outStream);
             STRING_CODER.encode(value.getExceptionDetails(), outStream);
@@ -87,12 +88,14 @@ public class FailsafeElementCoder<OriginalT, CurrentT>
         try {
             OriginalT originalElement = originalElementCoder.decode(inStream);
             CurrentT currentElement = currentElementCoder.decode(inStream);
+            String jobName = STRING_CODER.decode(inStream);
             String pipelineStep = STRING_CODER.decode(inStream);
             String exception = STRING_CODER.decode(inStream);
             String exceptionDetails = STRING_CODER.decode(inStream);
             String eventTimestamp = STRING_CODER.decode(inStream);
 
             return FailsafeElement.of(originalElement, currentElement)
+                    .setJobName(jobName)
                     .setPipelineStep(pipelineStep)
                     .setExceptionType(exception)
                     .setExceptionDetails(exceptionDetails)

@@ -60,6 +60,7 @@ public class DeIdentifyFn
                     .build();
 
     private Firestore db;
+    String jobName;
     String firestoreProjectId;
 
     TupleTag<FailsafeElement<PubsubMessage, Row>> successTag;
@@ -174,9 +175,11 @@ public class DeIdentifyFn
     }
 
     public DeIdentifyFn(
+            String jobName,
             String firestoreProjectId,
             TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag) {
+        this.jobName = jobName;
         this.firestoreProjectId = firestoreProjectId;
         this.successTag = successTag;
         this.failureTag = failureTag;
@@ -331,6 +334,7 @@ public class DeIdentifyFn
 
             outputElement =
                     new FailsafeElement<>(received.getOriginalElement(), currentElement)
+                            .setJobName(jobName)
                             .setPipelineStep("DeIdentifyFn.processElement()")
                             .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e.toString())
