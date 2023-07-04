@@ -9,7 +9,7 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class DynamodbHelper {
 
-    public static final String _METADATA = "_metadata";
+    public static final String METADATA = "_metadata";
     public static final String OLD_IMAGE = "OldImage";
     public static final String NEW_IMAGE = "NewImage";
     public static final String PUBLISHED = "Published";
@@ -20,7 +20,7 @@ public class DynamodbHelper {
             JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
         JSONObject payloadObject;
 
-        JSONObject metadata = dynamodbStreamObject.getJSONObject(_METADATA);
+        JSONObject metadata = dynamodbStreamObject.getJSONObject(METADATA);
         if ((dynamodbStreamObject.isNull(OLD_IMAGE)
                         || dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(NEW_IMAGE)) {
@@ -69,7 +69,7 @@ public class DynamodbHelper {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     String.format("No `%s` found in message.", EVENT_ID));
         }
-        payloadObject.put(_METADATA, metadata);
+        payloadObject.put(METADATA, metadata);
         return new PubsubMessage(
                 payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }

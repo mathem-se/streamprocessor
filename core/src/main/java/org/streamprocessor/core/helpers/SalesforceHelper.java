@@ -9,7 +9,7 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class SalesforceHelper {
 
-    public static final String _METADATA = "_metadata";
+    public static final String METADATA = "_metadata";
     public static final String DETAIL = "detail";
     public static final String ENTITY = "entity";
     public static final String SALESFORCE = "salesforce";
@@ -27,7 +27,7 @@ public class SalesforceHelper {
             throws Exception {
         JSONObject payloadObject;
 
-        JSONObject metadata = salesforceStreamObject.getJSONObject(_METADATA);
+        JSONObject metadata = salesforceStreamObject.getJSONObject(METADATA);
         // salesforce events passed through Appflow
         // have their payload nested within the `detail` field
         // other fields just contain metadata from Appflow
@@ -76,7 +76,7 @@ public class SalesforceHelper {
                     String.format("No `%s` or `%s` found in message.", ID, UUID));
         }
 
-        payloadObject.put(_METADATA, metadata);
+        payloadObject.put(METADATA, metadata);
 
         return new PubsubMessage(
                 payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);

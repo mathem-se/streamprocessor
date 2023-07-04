@@ -31,7 +31,7 @@ public class TransformMessageFn
     private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
 
-    private static final String _METADATA = "_metadata";
+    private static final String METADATA = "_metadata";
 
     String jobName;
     String version;
@@ -145,7 +145,7 @@ public class TransformMessageFn
             }
             JSONObject metadataJson = new JSONObject(metadata);
             metadataJson.put("trace", new JSONArray(traceList));
-            streamObject.put(_METADATA, metadataJson);
+            streamObject.put(METADATA, metadataJson);
 
             switch (provider) {
                 case "dynamodb":
