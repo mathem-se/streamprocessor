@@ -19,7 +19,7 @@ public class DynamodbHelper {
             JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
         JSONObject payloadObject;
 
-        JSONObject metadata = new JSONObject(dynamodbStreamObject.get("_metadata"));
+        JSONObject metadata = dynamodbStreamObject.getJSONObject("_metadata");
         if ((dynamodbStreamObject.isNull(OLD_IMAGE)
                         || dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(NEW_IMAGE)) {

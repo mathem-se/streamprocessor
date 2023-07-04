@@ -97,19 +97,6 @@ public class TransformMessageFn
 
                 if (setKey.startsWith("trace_")) {
                     JSONObject traceObject = new JSONObject(setValue);
-                    // HashMap<String, String> traceMap = new HashMap<String, String>();
-                    // if (traceObject.has("timestamp")) {
-                    //     traceMap.put("timestamp", traceObject.getString("timestamp"));
-                    // }
-                    // if (traceObject.has("id")) {
-                    //     traceMap.put("id", traceObject.getString("id"));
-                    // }
-                    // if (traceObject.has("service")) {
-                    //     traceMap.put("service", traceObject.getString("service"));
-                    // }
-                    // if (traceObject.has("version")) {
-                    //     traceMap.put("version", traceObject.getString("version"));
-                    // }
                     traceList.add(traceObject);
                 }
             }

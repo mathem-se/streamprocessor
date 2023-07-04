@@ -16,7 +16,7 @@ public class CustomEventHelper {
             JSONObject customEventStreamObject, HashMap<String, String> attributes)
             throws Exception {
 
-        JSONObject metadata = new JSONObject(customEventStreamObject.get("_metadata"));
+        JSONObject metadata = customEventStreamObject.getJSONObject("_metadata");
         metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
 
         metadata.put(

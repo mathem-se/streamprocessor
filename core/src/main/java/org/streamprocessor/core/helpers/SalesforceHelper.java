@@ -26,7 +26,7 @@ public class SalesforceHelper {
             throws Exception {
         JSONObject payloadObject;
 
-        JSONObject metadata = new JSONObject(salesforceStreamObject.get("_metadata"));
+        JSONObject metadata = salesforceStreamObject.getJSONObject("_metadata");
         // salesforce events passed through Appflow
         // have their payload nested within the `detail` field
         // other fields just contain metadata from Appflow
