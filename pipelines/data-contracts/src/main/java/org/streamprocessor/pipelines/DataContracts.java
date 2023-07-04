@@ -120,8 +120,6 @@ public class DataContracts {
         options.setEnableStreamingEngine(true);
 
         LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads());
-        LOG.info("jobName: " + options.getJobName());
-        LOG.info("appName: " + options.getAppName());
         LOG.info("Disksize: " + options.getDiskSizeGb());
         // validateOptions(options);  // to-do create a validation function...
 
