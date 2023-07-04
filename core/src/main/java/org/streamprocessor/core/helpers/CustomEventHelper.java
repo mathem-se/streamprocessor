@@ -9,6 +9,7 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class CustomEventHelper {
 
+    public static final String _METADATA = "_metadata";
     public static final String TIMESTAMP = "timestamp";
     public static final String UUID = "uuid";
 
@@ -16,7 +17,7 @@ public class CustomEventHelper {
             JSONObject customEventStreamObject, HashMap<String, String> attributes)
             throws Exception {
 
-        JSONObject metadata = customEventStreamObject.getJSONObject("_metadata");
+        JSONObject metadata = customEventStreamObject.getJSONObject(_METADATA);
         metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
 
         metadata.put(
@@ -30,7 +31,7 @@ public class CustomEventHelper {
                         MetadataFields.EVENT_TIMESTAMP, attributes.get(TIMESTAMP));
             } else {
                 throw new CustomExceptionsUtils.MissingMetadataException(
-                        "No `event_timestamp` found in message");
+                        String.format("No `%s` found in message", MetadataFields.EVENT_TIMESTAMP));
             }
         }
 
@@ -43,9 +44,10 @@ public class CustomEventHelper {
             metadata.put(MetadataFields.EVENT_ID, attributes.get(UUID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
-                    "No `event_id` or `uuid` found in message.");
+                    String.format(
+                            "No `%s` or `%s` found in message.", MetadataFields.EVENT_ID, UUID));
         }
-        customEventStreamObject.put("_metadata", metadata);
+        customEventStreamObject.put(_METADATA, metadata);
         return new PubsubMessage(
                 customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }

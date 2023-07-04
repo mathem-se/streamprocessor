@@ -28,9 +28,10 @@ public class TransformMessageFn
         extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransformMessageFn.class);
-
     private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
+
+    private static final String _METADATA = "_metadata";
 
     String jobName;
     String version;
@@ -63,9 +64,7 @@ public class TransformMessageFn
             JSONObject streamObject = new JSONObject(receivedPayload);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
-
             HashMap<String, String> metadata = new HashMap<String, String>();
-
             attributes.putAll(received.getAttributeMap());
 
             // use topic attribute as entity attribute if entity is missing
@@ -126,26 +125,27 @@ public class TransformMessageFn
 
                 if (currentDate.isBefore(validFromDate)) {
                     throw new CustomExceptionsUtils.InactiveDataContractException(
-                            "Data contract is not valid for the current time. "
-                                    + "Data contract is valid from: "
-                                    + validFrom);
+                            String.format(
+                                    "Data contract is not valid for the current time. Data contract"
+                                            + " is valid from: %s",
+                                    validFrom));
+
                 } else if (!dataContract.isNull("valid_to")) {
                     String validTo = dataContract.getString("valid_to");
                     LocalDate validToDate = LocalDate.parse(validTo);
 
                     if (currentDate.isAfter(validToDate)) {
                         throw new CustomExceptionsUtils.InactiveDataContractException(
-                                "Data contract is not valid for the current time. "
-                                        + "Data contract is valid from: "
-                                        + validFrom
-                                        + " to: "
-                                        + validTo);
+                                String.format(
+                                        "Data contract is not valid for the current time. Data"
+                                                + " contract is valid from: %s to %s",
+                                        validFrom, validTo));
                     }
                 }
             }
             JSONObject metadataJson = new JSONObject(metadata);
             metadataJson.put("trace", new JSONArray(traceList));
-            streamObject.put("_metadata", metadataJson);
+            streamObject.put(_METADATA, metadataJson);
 
             switch (provider) {
                 case "dynamodb":
@@ -162,11 +162,10 @@ public class TransformMessageFn
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(
-                            "Provider: "
-                                    + provider
-                                    + ".\n"
-                                    + "Either the provider is not supported or the data contract is"
-                                    + " not valid.");
+                            String.format(
+                                    "Provider %s. Either the provider is not supported or the data"
+                                            + " contract is not valid.",
+                                    provider));
             }
 
             outputElement = new FailsafeElement<>(received, currentElement);

@@ -9,6 +9,7 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 
 public class DynamodbHelper {
 
+    public static final String _METADATA = "_metadata";
     public static final String OLD_IMAGE = "OldImage";
     public static final String NEW_IMAGE = "NewImage";
     public static final String PUBLISHED = "Published";
@@ -19,7 +20,7 @@ public class DynamodbHelper {
             JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
         JSONObject payloadObject;
 
-        JSONObject metadata = dynamodbStreamObject.getJSONObject("_metadata");
+        JSONObject metadata = dynamodbStreamObject.getJSONObject(_METADATA);
         if ((dynamodbStreamObject.isNull(OLD_IMAGE)
                         || dynamodbStreamObject.getJSONObject(OLD_IMAGE).isEmpty())
                 && dynamodbStreamObject.has(NEW_IMAGE)) {
@@ -41,8 +42,10 @@ public class DynamodbHelper {
             payloadObject = dynamodbStreamObject.getJSONObject(NEW_IMAGE);
         } else {
             throw new CustomExceptionsUtils.MalformedEventException(
-                    "No NewImage or OldImage found in message. Maybe the provider is not configured"
-                            + " correctly?");
+                    String.format(
+                            "No `%s` or `%s` found in message. Maybe the provider is not configured"
+                                    + " correctly?",
+                            NEW_IMAGE, OLD_IMAGE));
         }
 
         // add event_time to payload root for streaming analytics use cases
@@ -55,7 +58,7 @@ public class DynamodbHelper {
                 payloadObject.put(MetadataFields.EVENT_TIMESTAMP, attributes.get(TIMESTAMP));
             } else {
                 throw new CustomExceptionsUtils.MissingMetadataException(
-                        "No `event_timestamp` found in message");
+                        String.format("No `%s` found in message", MetadataFields.EVENT_TIMESTAMP));
             }
         }
 
@@ -64,9 +67,9 @@ public class DynamodbHelper {
             metadata.put(MetadataFields.EVENT_ID, dynamodbStreamObject.getString(EVENT_ID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
-                    "No `EventId` found in message.");
+                    String.format("No `%s` found in message.", EVENT_ID));
         }
-        payloadObject.put("_metadata", metadata);
+        payloadObject.put(_METADATA, metadata);
         return new PubsubMessage(
                 payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
     }
