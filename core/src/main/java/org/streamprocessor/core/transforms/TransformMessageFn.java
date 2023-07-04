@@ -112,8 +112,6 @@ public class TransformMessageFn
             metadata.put("data_contracts_schema_version", dataContract.getString("version"));
             metadata.put("provider", provider);
 
-            // metadata.put("trace", new JSONArray(traceList)));
-
             String backfill = received.getAttribute("backfill");
             if (backfill != null) {
                 metadata.put("backfill", received.getAttribute("backfill"));
