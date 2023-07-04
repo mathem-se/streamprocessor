@@ -85,8 +85,7 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	cd streamprocessor/pipelines/<PIPELINE>
 	mvn -Pdataflow-runner -e compile exec:java \
 	-Dexec.mainClass=org.streamprocessor.pipelines.<PIPELINE> \
-	-Dexec.args="--name=<NAME>
-	--version=<VERSION> \
+	-Dexec.args="--version=<VERSION> \
 	--dataContractsServiceUrl=<DATA_CONTRACT_BASE_URL> \
 	--project=<GCP_PROJECT> \
 	--schemaCheckRatio=<SCHEMA_CHECK_RATIO> \
@@ -102,7 +101,6 @@ Make sure you are logged in to gcloud and then assume a GCP service account to b
 	```
 where
 - `<PIPELINE>` is the name of the main class for the pipeline you want to run e.g Dynamodb
-- `<NAME>` is name of the streamprocessor pipeline you are running, call it what you want
 - `<VERSION>` is version of streamprocessor you are using (if local, use `local`)
 - `<DATA_CONTRACT_BASE_URL>` is the base url for the data contract api
 - `<GCP_PROJECT>` is the name of the GCP project

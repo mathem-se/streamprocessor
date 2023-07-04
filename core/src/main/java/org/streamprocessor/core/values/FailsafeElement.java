@@ -18,6 +18,7 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
 
     private final OriginalT originalElement;
     @Nullable private final CurrentT currentElement;
+    private String jobName;
     private String pipelineStep;
     private String exceptionType;
     private String exceptionDetails;
@@ -31,6 +32,11 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
     public static <OriginalT, CurrentT> FailsafeElement<OriginalT, CurrentT> of(
             OriginalT originalElement, CurrentT currentElement) {
         return new FailsafeElement<>(originalElement, currentElement);
+    }
+
+    public FailsafeElement<OriginalT, CurrentT> setJobName(String jobName) {
+        this.jobName = jobName;
+        return this;
     }
 
     public FailsafeElement<OriginalT, CurrentT> setPipelineStep(String pipelineStep) {
@@ -71,6 +77,7 @@ public class FailsafeElement<OriginalT, CurrentT> implements Serializable {
         JSONObject payload =
                 new JSONObject()
                         .put(FailureFields.ORIGINAL_PAYLOAD.getValue(), originalPayload)
+                        .put(FailureFields.JOB_NAME.getValue(), jobName)
                         .put(FailureFields.PIPELINE_STEP.getValue(), pipelineStep)
                         .put(FailureFields.EXCEPTION_TYPE.getValue(), exceptionType)
                         .put(FailureFields.EXCEPTION_DETAILS.getValue(), exceptionDetails)

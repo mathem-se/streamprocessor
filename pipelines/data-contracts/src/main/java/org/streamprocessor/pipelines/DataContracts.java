@@ -118,7 +118,10 @@ public class DataContracts {
         // options.setNumberOfWorkerHarnessThreads(10);
         options.setStreaming(true);
         options.setEnableStreamingEngine(true);
+
         LOG.info("NumberOfWorkerHarnessThreads: " + options.getNumberOfWorkerHarnessThreads());
+        LOG.info("jobName: " + options.getJobName());
+        LOG.info("appName: " + options.getAppName());
         LOG.info("Disksize: " + options.getDiskSizeGb());
         // validateOptions(options);  // to-do create a validation function...
 
@@ -156,7 +159,7 @@ public class DataContracts {
                         "Transform message stream change events",
                         ParDo.of(
                                         new TransformMessageFn(
-                                                options.getName(),
+                                                options.getJobName(),
                                                 options.getVersion(),
                                                 options.getDataContractsServiceUrl(),
                                                 TRANSFORM_MESSAGE_SUCCESS_TAG,
@@ -177,6 +180,7 @@ public class DataContracts {
                                                 new SerializeMessageToRowFn(
                                                         SERIALIZED_SUCCESS_TAG,
                                                         SERIALIZED_FAILURE_TAG,
+                                                        options.getJobName(),
                                                         options.getProject(),
                                                         options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio()))
@@ -194,6 +198,7 @@ public class DataContracts {
                                 "De-identify Rows",
                                 ParDo.of(
                                                 new DeIdentifyFn(
+                                                        options.getJobName(),
                                                         options.getFirestoreProjectId(),
                                                         DEIDENTIFY_SUCCESS_TAG,
                                                         DEIDENTIFY_FAILURE_TAG))

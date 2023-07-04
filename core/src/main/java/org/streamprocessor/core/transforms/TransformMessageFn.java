@@ -32,19 +32,19 @@ public class TransformMessageFn
     private static final Counter failureCounter = Metrics.counter("TransformMessageFn", "failures");
     static final long serialVersionUID = 238L;
 
-    String name;
+    String jobName;
     String version;
     String dataContractsServiceUrl;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag;
     TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag;
 
     public TransformMessageFn(
-            String name,
+            String jobName,
             String version,
             String dataContractsServiceUrl,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> successTag,
             TupleTag<FailsafeElement<PubsubMessage, PubsubMessage>> failureTag) {
-        this.name = name;
+        this.jobName = jobName;
         this.version = version;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.successTag = successTag;
@@ -104,7 +104,7 @@ public class TransformMessageFn
             HashMap<String, String> traceMap = new HashMap<String, String>();
             traceMap.put("timestamp", Instant.now().toString());
             traceMap.put("id", UUID.randomUUID().toString());
-            traceMap.put("service", name);
+            traceMap.put("service", "streamprocessor-" + jobName);
             traceMap.put("version", version);
             traceList.add(new JSONObject(traceMap));
 
@@ -179,6 +179,7 @@ public class TransformMessageFn
 
             outputElement =
                     new FailsafeElement<>(received, currentElement)
+                            .setJobName(jobName)
                             .setPipelineStep("TransformMessageFn.processElement()")
                             .setExceptionType(e.getClass().getName())
                             .setExceptionDetails(e.toString())

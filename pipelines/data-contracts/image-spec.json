@@ -9,15 +9,6 @@
         "description": "An Apache Beam streaming pipeline that reads DynamoDB streams JSON encoded messages from PubSub, serialize them according to schema, de-identify sensitive data and then writes them into a BigQuery table, output pubsub and a backup pubsub.",
         "parameters": [
             {
-                "name": "name",
-                "label": "Pipeline name.",
-                "helpText": "Pipeline name, example: data-contracts-streamprocessor",
-                "isOptional": false,
-                "regexes": [
-                    "[-_/.a-zA-Z0-9]+"
-                ]
-            },
-            {
                 "name": "version",
                 "label": "Streamprocessor version.",
                 "helpText": "Streamprocessor version running, example v1.2.3",
