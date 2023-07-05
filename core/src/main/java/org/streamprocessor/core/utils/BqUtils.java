@@ -641,4 +641,8 @@ public class BqUtils {
 
         return row;
     }
+
+    public static DateTime convertStringToDatetime(String timestampString) {
+        return (DateTime) JSON_VALUE_PARSERS.get(TypeName.DATETIME).apply(timestampString);
+    }
 }

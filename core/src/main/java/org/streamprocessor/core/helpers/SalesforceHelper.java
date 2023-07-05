@@ -22,7 +22,7 @@ public class SalesforceHelper {
     public static final String ID = "id";
     public static final String UUID = "uuid";
 
-    public static PubsubMessage enrichPubsubMessage(
+    public static JSONObject enrichPubsubMessage(
             JSONObject salesforceStreamObject, HashMap<String, String> attributes)
             throws Exception {
         JSONObject payloadObject;
@@ -78,7 +78,6 @@ public class SalesforceHelper {
 
         payloadObject.put(METADATA, metadata);
 
-        return new PubsubMessage(
-                payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
+        return payloadObject;
     }
 }
