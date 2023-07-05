@@ -2,8 +2,6 @@ package org.streamprocessor.core.transforms;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +9,6 @@ import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.schemas.Schema.TypeName;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.TupleTag;
 import org.joda.time.DateTime;
@@ -27,7 +24,6 @@ import org.streamprocessor.core.helpers.SalesforceHelper;
 import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
 import org.streamprocessor.core.values.FailsafeElement;
-import org.streamprocessor.core.transforms.MetadataFields;
 
 public class TransformMessageFn
         extends DoFn<PubsubMessage, FailsafeElement<PubsubMessage, PubsubMessage>> {
@@ -126,10 +122,12 @@ public class TransformMessageFn
 
             switch (provider) {
                 case "dynamodb":
-                    transformedPayload = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
+                    transformedPayload =
+                            DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "salesforce":
-                    transformedPayload = SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
+                    transformedPayload =
+                            SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":
@@ -144,7 +142,8 @@ public class TransformMessageFn
                                             + " contract is not valid.",
                                     provider));
             }
-            LocalDate currentDate = LocalDate.now();
+            String eventTimestamp = transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString();
+            DateTime eventDate = BqUtils.convertStringToDatetime(transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString());
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
                         "No `valid_from` found in data contract");
@@ -152,30 +151,31 @@ public class TransformMessageFn
                 String validFrom = dataContract.getString("valid_from");
                 LocalDate validFromDate = LocalDate.parse(validFrom);
 
-                DateTime eventDate = BqUtils.convertStringToDatetime(MetadataFields.EVENT_TIMESTAMP);
                 if (eventDate.toLocalDate().isBefore(validFromDate)) {
                     throw new CustomExceptionsUtils.InactiveDataContractException(
                             String.format(
                                     "Data contract is not valid for the current time. Data contract"
-                                            + " is valid from: %s",
-                                    validFrom));
+                                            + " is valid from: %s eventDate is %s, eventTimestamp is %s",
+                                    validFrom, eventTimestamp));
 
                 } else if (!dataContract.isNull("valid_to")) {
                     String validTo = dataContract.getString("valid_to");
                     LocalDate validToDate = LocalDate.parse(validTo);
 
-                    if (currentDate.isAfter(validToDate)) {
+                    if (eventDate.toLocalDate().isAfter(validToDate)) {
                         throw new CustomExceptionsUtils.InactiveDataContractException(
                                 String.format(
                                         "Data contract is not valid for the current time. Data"
-                                                + " contract is valid from: %s to %s",
-                                        validFrom, validTo));
+                                                + " contract is valid from: %s to %s eventTimestamp is %s.",
+                                        validFrom, validTo, eventTimestamp));
                     }
                 }
             }
 
-            currentElement = new PubsubMessage(
-                transformedPayload.toString().getBytes(StandardCharsets.UTF_8), attributes);
+            currentElement =
+                    new PubsubMessage(
+                            transformedPayload.toString().getBytes(StandardCharsets.UTF_8),
+                            attributes);
 
             outputElement = new FailsafeElement<>(received, currentElement);
 

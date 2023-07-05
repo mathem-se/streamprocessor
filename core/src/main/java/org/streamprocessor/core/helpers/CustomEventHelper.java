@@ -1,8 +1,6 @@
 package org.streamprocessor.core.helpers;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
 import org.streamprocessor.core.transforms.MetadataFields;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
