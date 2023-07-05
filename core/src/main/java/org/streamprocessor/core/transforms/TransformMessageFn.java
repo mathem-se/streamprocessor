@@ -144,9 +144,8 @@ public class TransformMessageFn
             }
             String eventTimestamp =
                     transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString();
-            DateTime eventDate =
-                    BqUtils.convertStringToDatetime(
-                            transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString());
+            DateTime eventDateTime =
+                    BqUtils.convertStringToDatetime(eventTimestamp);
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
                         "No `valid_from` found in data contract");
@@ -154,7 +153,7 @@ public class TransformMessageFn
                 String validFrom = dataContract.getString("valid_from");
                 LocalDate validFromDate = LocalDate.parse(validFrom);
 
-                if (eventDate.toLocalDate().isBefore(validFromDate)) {
+                if (eventDateTime.toLocalDate().isBefore(validFromDate)) {
                     throw new CustomExceptionsUtils.InactiveDataContractException(
                             String.format(
                                     "Data contract is not valid for the current time. Data contract"
@@ -166,7 +165,7 @@ public class TransformMessageFn
                     String validTo = dataContract.getString("valid_to");
                     LocalDate validToDate = LocalDate.parse(validTo);
 
-                    if (eventDate.toLocalDate().isAfter(validToDate)) {
+                    if (eventDateTime.toLocalDate().isAfter(validToDate)) {
                         throw new CustomExceptionsUtils.InactiveDataContractException(
                                 String.format(
                                         "Data contract is not valid for the current time. Data"
