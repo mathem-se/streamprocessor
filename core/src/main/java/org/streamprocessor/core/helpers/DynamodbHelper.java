@@ -1,8 +1,6 @@
 package org.streamprocessor.core.helpers;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
 import org.streamprocessor.core.transforms.MetadataFields;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
@@ -17,7 +15,7 @@ public class DynamodbHelper {
     public static final String EVENT_ID = "EventId";
     public static final String UUID = "uuid";
 
-    public static PubsubMessage enrichPubsubMessage(
+    public static JSONObject enrichPubsubMessage(
             JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
         JSONObject payloadObject;
 
@@ -73,7 +71,6 @@ public class DynamodbHelper {
                     String.format("No `%s` found in message.", EVENT_ID));
         }
         payloadObject.put(METADATA, metadata);
-        return new PubsubMessage(
-                payloadObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
+        return payloadObject;
     }
 }

@@ -1,8 +1,6 @@
 package org.streamprocessor.core.helpers;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
 import org.streamprocessor.core.transforms.MetadataFields;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
@@ -13,7 +11,7 @@ public class CustomEventHelper {
     public static final String TIMESTAMP = "timestamp";
     public static final String UUID = "uuid";
 
-    public static PubsubMessage enrichPubsubMessage(
+    public static JSONObject enrichPubsubMessage(
             JSONObject customEventStreamObject, HashMap<String, String> attributes)
             throws Exception {
 
@@ -48,7 +46,6 @@ public class CustomEventHelper {
                             "No `%s` or `%s` found in message.", MetadataFields.EVENT_ID, UUID));
         }
         customEventStreamObject.put(METADATA, metadata);
-        return new PubsubMessage(
-                customEventStreamObject.toString().getBytes(StandardCharsets.UTF_8), attributes);
+        return customEventStreamObject;
     }
 }

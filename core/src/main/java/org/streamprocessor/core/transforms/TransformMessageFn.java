@@ -2,8 +2,6 @@ package org.streamprocessor.core.transforms;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +11,8 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.TupleTag;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -21,6 +21,7 @@ import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
 import org.streamprocessor.core.helpers.SalesforceHelper;
+import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
 import org.streamprocessor.core.values.FailsafeElement;
 
@@ -56,6 +57,7 @@ public class TransformMessageFn
     public void processElement(@Element PubsubMessage received, MultiOutputReceiver out) {
         String uuid = null;
         String entity = null;
+        JSONObject transformedPayload = null;
         PubsubMessage currentElement = null;
         FailsafeElement<PubsubMessage, PubsubMessage> outputElement;
 
@@ -83,8 +85,6 @@ public class TransformMessageFn
                             .getJSONObject("endpoints")
                             .getJSONObject("source")
                             .getString("provider");
-
-            LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
 
             if (received.getAttribute("gcp_backfill") != null) {
                 metadata.put("gcp_backfill", received.getAttribute("gcp_backfill"));
@@ -116,48 +116,23 @@ public class TransformMessageFn
                 metadata.put("backfill", received.getAttribute("backfill"));
             }
 
-            if (dataContract.isNull("valid_from")) {
-                throw new CustomExceptionsUtils.MissingMetadataException(
-                        "No `valid_from` found in data contract");
-            } else {
-                String validFrom = dataContract.getString("valid_from");
-                LocalDate validFromDate = LocalDate.parse(validFrom);
-
-                if (currentDate.isBefore(validFromDate)) {
-                    throw new CustomExceptionsUtils.InactiveDataContractException(
-                            String.format(
-                                    "Data contract is not valid for the current time. Data contract"
-                                            + " is valid from: %s",
-                                    validFrom));
-
-                } else if (!dataContract.isNull("valid_to")) {
-                    String validTo = dataContract.getString("valid_to");
-                    LocalDate validToDate = LocalDate.parse(validTo);
-
-                    if (currentDate.isAfter(validToDate)) {
-                        throw new CustomExceptionsUtils.InactiveDataContractException(
-                                String.format(
-                                        "Data contract is not valid for the current time. Data"
-                                                + " contract is valid from: %s to %s",
-                                        validFrom, validTo));
-                    }
-                }
-            }
             JSONObject metadataJson = new JSONObject(metadata);
             metadataJson.put("trace", new JSONArray(traceList));
             streamObject.put(METADATA, metadataJson);
 
             switch (provider) {
                 case "dynamodb":
-                    currentElement = DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
+                    transformedPayload =
+                            DynamodbHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "salesforce":
-                    currentElement = SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
+                    transformedPayload =
+                            SalesforceHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "custom_event":
                 case "marketing_cloud":
                 case "pi":
-                    currentElement =
+                    transformedPayload =
                             CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
@@ -167,6 +142,43 @@ public class TransformMessageFn
                                             + " contract is not valid.",
                                     provider));
             }
+            String eventTimestamp =
+                    transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString();
+            DateTime eventDateTime = BqUtils.convertStringToDatetime(eventTimestamp);
+            if (dataContract.isNull("valid_from")) {
+                throw new CustomExceptionsUtils.MissingMetadataException(
+                        "No `valid_from` found in data contract");
+            } else {
+                String validFrom = dataContract.getString("valid_from");
+                LocalDate validFromDate = LocalDate.parse(validFrom);
+
+                if (eventDateTime.toLocalDate().isBefore(validFromDate)) {
+                    throw new CustomExceptionsUtils.InactiveDataContractException(
+                            String.format(
+                                    "Data contract is not valid for the current time. Data contract"
+                                        + " is valid from: %s eventDate is %s, eventTimestamp is"
+                                        + " %s",
+                                    validFrom, eventTimestamp));
+
+                } else if (!dataContract.isNull("valid_to")) {
+                    String validTo = dataContract.getString("valid_to");
+                    LocalDate validToDate = LocalDate.parse(validTo);
+
+                    if (eventDateTime.toLocalDate().isAfter(validToDate)) {
+                        throw new CustomExceptionsUtils.InactiveDataContractException(
+                                String.format(
+                                        "Data contract is not valid for the current time. Data"
+                                            + " contract is valid from: %s to %s eventTimestamp is"
+                                            + " %s.",
+                                        validFrom, validTo, eventTimestamp));
+                    }
+                }
+            }
+
+            currentElement =
+                    new PubsubMessage(
+                            transformedPayload.toString().getBytes(StandardCharsets.UTF_8),
+                            attributes);
 
             outputElement = new FailsafeElement<>(received, currentElement);
 
