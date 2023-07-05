@@ -142,8 +142,11 @@ public class TransformMessageFn
                                             + " contract is not valid.",
                                     provider));
             }
-            String eventTimestamp = transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString();
-            DateTime eventDate = BqUtils.convertStringToDatetime(transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString());
+            String eventTimestamp =
+                    transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString();
+            DateTime eventDate =
+                    BqUtils.convertStringToDatetime(
+                            transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString());
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
                         "No `valid_from` found in data contract");
@@ -155,7 +158,8 @@ public class TransformMessageFn
                     throw new CustomExceptionsUtils.InactiveDataContractException(
                             String.format(
                                     "Data contract is not valid for the current time. Data contract"
-                                            + " is valid from: %s eventDate is %s, eventTimestamp is %s",
+                                        + " is valid from: %s eventDate is %s, eventTimestamp is"
+                                        + " %s",
                                     validFrom, eventTimestamp));
 
                 } else if (!dataContract.isNull("valid_to")) {
@@ -166,7 +170,8 @@ public class TransformMessageFn
                         throw new CustomExceptionsUtils.InactiveDataContractException(
                                 String.format(
                                         "Data contract is not valid for the current time. Data"
-                                                + " contract is valid from: %s to %s eventTimestamp is %s.",
+                                            + " contract is valid from: %s to %s eventTimestamp is"
+                                            + " %s.",
                                         validFrom, validTo, eventTimestamp));
                     }
                 }
