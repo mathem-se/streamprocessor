@@ -15,6 +15,7 @@ public class DynamodbHelper {
     public static final String PUBLISHED = "Published";
     public static final String TIMESTAMP = "timestamp";
     public static final String EVENT_ID = "EventId";
+    public static final String UUID = "uuid";
 
     public static PubsubMessage enrichPubsubMessage(
             JSONObject dynamodbStreamObject, HashMap<String, String> attributes) throws Exception {
@@ -65,6 +66,8 @@ public class DynamodbHelper {
         // Add meta-data from dynamoDB stream event as attributes
         if (!dynamodbStreamObject.isNull(EVENT_ID)) {
             metadata.put(MetadataFields.EVENT_ID, dynamodbStreamObject.getString(EVENT_ID));
+        } else if (attributes.containsKey(UUID)) {
+            metadata.put(MetadataFields.EVENT_ID, attributes.get(UUID));
         } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     String.format("No `%s` found in message.", EVENT_ID));
