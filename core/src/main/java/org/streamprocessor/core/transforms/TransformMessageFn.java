@@ -158,7 +158,7 @@ public class TransformMessageFn
                                     "Data contract is not valid for the current time. Data contract"
                                         + " is valid from: %s eventDate is %s, eventTimestamp is"
                                         + " %s",
-                                    validFrom, eventTimestamp));
+                                    validFrom, eventDateTime, eventTimestamp));
 
                 } else if (!dataContract.isNull("valid_to")) {
                     String validTo = dataContract.getString("valid_to");
