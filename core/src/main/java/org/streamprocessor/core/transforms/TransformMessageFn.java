@@ -144,7 +144,7 @@ public class TransformMessageFn
             }
             String eventTimestamp =
                     transformedPayload.get(MetadataFields.EVENT_TIMESTAMP).toString();
-            DateTime eventDateTime = BqUtils.convertStringToDatetime(eventTimestamp);
+            DateTime eventDateTime = BqUtils.convertStringToDatetime(entity, eventTimestamp);
             if (dataContract.isNull("valid_from")) {
                 throw new CustomExceptionsUtils.MissingMetadataException(
                         "No `valid_from` found in data contract");
