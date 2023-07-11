@@ -323,7 +323,7 @@ public class BqUtils {
      * Get the corresponding BigQuery {@link StandardSQLTypeName} for supported Beam {@link
      * FieldType}.
      */
-    static StandardSQLTypeName toStandardSQLTypeName(FieldType fieldType) {
+    static StandardSQLTypeName toStandardSQLTypeName(String entity, FieldType fieldType) {
         StandardSQLTypeName ret;
         if (fieldType.getTypeName().isLogicalType()) {
             Schema.LogicalType<?, ?> logicalType =
@@ -331,65 +331,73 @@ public class BqUtils {
             ret = BEAM_TO_BIGQUERY_LOGICAL_MAPPING.get(logicalType.getIdentifier());
             if (ret == null) {
                 throw new IllegalArgumentException(
-                        "Cannot convert Beam logical type: "
-                                + logicalType.getIdentifier()
-                                + " to BigQuery type.");
+                        String.format(
+                                "entity[%s]: Cannot convert Beam logical type: `%s` to BigQuery"
+                                        + " type.",
+                                entity, logicalType.getIdentifier()));
             }
         } else {
             ret = BEAM_TO_BIGQUERY_TYPE_MAPPING.get(fieldType.getTypeName());
             if (ret == null) {
                 throw new IllegalArgumentException(
-                        "Cannot convert Beam type: "
-                                + fieldType.getTypeName()
-                                + " to BigQuery type.");
+                        String.format(
+                                "entity[%s]: Cannot convert Beam type: `%s` to BigQuery type.",
+                                entity, fieldType.getTypeName()));
             }
         }
         return ret;
     }
 
-    private static final SerializableFunction<Row, TableRow> ROW_TO_TABLE_ROW =
-            new ToTableRow<>(SerializableFunctions.identity());
+    // private static final SerializableFunction<Row, TableRow> ROW_TO_TABLE_ROW =
+    //         new ToTableRow<>(entity, SerializableFunctions.identity());
 
     /** Convert a Beam {@link Row} to a BigQuery {@link TableRow}. */
-    public static SerializableFunction<Row, TableRow> toTableRow() {
-        return ROW_TO_TABLE_ROW;
+    public static SerializableFunction<Row, TableRow> toTableRow(String entity) {
+        return new ToTableRow<>(entity, SerializableFunctions.identity());
     }
 
     /** Convert a Beam schema type to a BigQuery {@link TableRow}. */
     public static <T> SerializableFunction<T, TableRow> toTableRow(
-            SerializableFunction<T, Row> toRow) {
-        return new ToTableRow<>(toRow);
+            String entity, SerializableFunction<T, Row> toRow) {
+        return new ToTableRow<>(entity, toRow);
     }
 
     /** Convert a Beam {@link Row} to a BigQuery {@link TableRow}. */
     private static class ToTableRow<T> implements SerializableFunction<T, TableRow> {
+        private final String entity;
         private final SerializableFunction<T, Row> toRow;
 
-        ToTableRow(SerializableFunction<T, Row> toRow) {
+        ToTableRow(String entity, SerializableFunction<T, Row> toRow) {
+            this.entity = entity;
             this.toRow = toRow;
         }
 
         @Override
         public TableRow apply(T input) {
-            return toTableRow(toRow.apply(input));
+            return toTableRow(entity, toRow.apply(input));
         }
     }
 
     /** Convert a BigQuery TableRow to a Beam Row. */
-    public static TableRow toTableRow(Row row) {
+    public static TableRow toTableRow(String entity, Row row) {
         TableRow output = new TableRow();
         for (int i = 0; i < row.getFieldCount(); i++) {
             Object value = row.getValue(i);
             Field schemaField = row.getSchema().getField(i);
-            output = output.set(schemaField.getName(), fromBeamField(schemaField.getType(), value));
+            output =
+                    output.set(
+                            schemaField.getName(),
+                            fromBeamField(entity, schemaField.getType(), value));
         }
         return output;
     }
 
-    private static @Nullable Object fromBeamField(FieldType fieldType, Object fieldValue) {
+    private static @Nullable Object fromBeamField(
+            String entity, FieldType fieldType, Object fieldValue) {
         if (fieldValue == null) {
             if (!fieldType.getNullable()) {
-                throw new IllegalArgumentException("Field is not nullable.");
+                throw new IllegalArgumentException(
+                        String.format("entity[%s]: Field is not nullable.", entity));
             }
             return null;
         }
@@ -401,7 +409,7 @@ public class BqUtils {
                 Iterable<?> items = (Iterable<?>) fieldValue;
                 List<Object> convertedItems = Lists.newArrayListWithCapacity(Iterables.size(items));
                 for (Object item : items) {
-                    convertedItems.add(fromBeamField(elementType, item));
+                    convertedItems.add(fromBeamField(entity, elementType, item));
                 }
                 return convertedItems;
 
@@ -415,15 +423,16 @@ public class BqUtils {
                             new TableRow()
                                     .set(
                                             BIGQUERY_MAP_KEY_FIELD_NAME,
-                                            fromBeamField(keyElementType, pair.getKey()))
+                                            fromBeamField(entity, keyElementType, pair.getKey()))
                                     .set(
                                             BIGQUERY_MAP_VALUE_FIELD_NAME,
-                                            fromBeamField(valueElementType, pair.getValue())));
+                                            fromBeamField(
+                                                    entity, valueElementType, pair.getValue())));
                 }
                 return convertedItems;
 
             case ROW:
-                return toTableRow((Row) fieldValue);
+                return toTableRow(entity, (Row) fieldValue);
 
             case DATETIME:
                 return ((Instant) fieldValue)
@@ -497,50 +506,38 @@ public class BqUtils {
      * <p>Only supports basic types and arrays. Doesn't support date types or structs.
      */
     @Experimental(Kind.SCHEMAS)
-    public static Row toBeamRow(Schema rowSchema, TableRow jsonBqRow) {
-        // TODO deprecate toBeamRow(Schema, TableSchema, TableRow) function in favour of this
-        // function.
-        // This function attempts to convert TableRows without  having access to the
-        // corresponding TableSchema because:
-        // 1. TableSchema contains redundant information already available in the Schema object.
-        // 2. TableSchema objects are not serializable and are therefore harder to propagate through
-        // a
-        // pipeline.
+    public static Row toBeamRow(String entity, Schema rowSchema, TableRow jsonBqRow) {
         return rowSchema.getFields().stream()
-                .map(field -> toBeamRowFieldValue(field, jsonBqRow.get(field.getName())))
+                .map(field -> toBeamRowFieldValue(entity, field, jsonBqRow.get(field.getName())))
                 .collect(toRow(rowSchema));
     }
 
-    private static Object toBeamRowFieldValue(Field field, Object bqValue) {
+    private static Object toBeamRowFieldValue(String entity, Field field, Object bqValue) {
 
         if (bqValue == null) {
             if (field.getType().getNullable()) {
                 return null;
             } else {
                 throw new IllegalArgumentException(
-                        "Received null value for non-nullable field \"" + field.getName() + "\"");
+                        String.format(
+                                "entity[%s]: Received null value for non-nullable field `%s`",
+                                entity, field.getName()));
             }
         }
         try {
-            return toBeamValue(field.getType(), bqValue);
+            return toBeamValue(entity, field.getType(), bqValue);
         } catch (Exception e) {
             throw new UnsupportedOperationException(
-                    "Could not convert field "
-                            + "`"
-                            + field.getName()
-                            + "`"
-                            + " of type "
-                            + "`"
-                            + field.getType()
-                            + "`"
-                            + " with value "
-                            + bqValue
-                            + "\nOriginal exception:"
-                            + e.toString());
+                    String.format(
+                            "entity[%s]: Could not convert field `%s` of type `%s` with value"
+                                    + " `%s`\n"
+                                    + "Original exception: %s",
+                            entity, field.getName(), field.getType(), bqValue, e.toString()));
         }
     }
 
-    private static @Nullable Object toBeamValue(FieldType fieldType, Object jsonBQValue) {
+    private static @Nullable Object toBeamValue(
+            String entity, FieldType fieldType, Object jsonBQValue) {
         try {
             if (jsonBQValue instanceof String
                     || jsonBQValue instanceof Number
@@ -561,14 +558,19 @@ public class BqUtils {
                 FieldType ft = fieldType.getCollectionElementType();
                 return ((List<Object>) jsonBQValue)
                         .stream()
-                                .map(v -> toBeamValue(fieldType.getCollectionElementType(), v))
+                                .map(
+                                        v ->
+                                                toBeamValue(
+                                                        entity,
+                                                        fieldType.getCollectionElementType(),
+                                                        v))
                                 .collect(toList());
             }
 
             if (jsonBQValue instanceof Map && !(fieldType.getTypeName().isMapType())) {
                 TableRow tr = new TableRow();
                 tr.putAll((Map<String, Object>) jsonBQValue);
-                return toBeamRow(fieldType.getRowSchema(), tr);
+                return toBeamRow(entity, fieldType.getRowSchema(), tr);
             }
 
             if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
@@ -581,6 +583,7 @@ public class BqUtils {
                                                             Map.Entry::getKey,
                                                             e -> {
                                                                 return toBeamValue(
+                                                                        entity,
                                                                         fieldType.getMapValueType(),
                                                                         e.getValue());
                                                             }));
@@ -598,6 +601,7 @@ public class BqUtils {
                                                                         (Map<String, Object>)
                                                                                 e.getValue());
                                                                 return toBeamRow(
+                                                                        entity,
                                                                         fieldType
                                                                                 .getMapValueType()
                                                                                 .getRowSchema(),
@@ -608,27 +612,19 @@ public class BqUtils {
             }
         } catch (Exception e) {
             LOG.error(
-                    "Failed to convert value "
-                            + "`"
-                            + jsonBQValue.toString()
-                            + "`"
-                            + " of type "
-                            + "`"
-                            + fieldType.getTypeName().toString()
-                            + "`"
-                            + " to Beam value");
+                    String.format(
+                            "entity[%s]: Failed to convert value `%s` of type `%s` to Beam value",
+                            entity, jsonBQValue.toString(), fieldType.getTypeName().toString()));
             throw e;
         }
 
         throw new UnsupportedOperationException(
-                "Converting BigQuery type '"
-                        + jsonBQValue.getClass()
-                        + "' to '"
-                        + fieldType
-                        + "' is not supported");
+                String.format(
+                        "entity[%s]: Converting BigQuery type `%s` to `%s` is not supported",
+                        entity, jsonBQValue.getClass(), fieldType));
     }
 
-    public static TableRow convertJsonToTableRow(String json) {
+    public static TableRow convertJsonToTableRow(String entity, String json) {
         TableRow row;
         // Parse the JSON into a {@link TableRow} object.
         try (InputStream inputStream =
@@ -636,13 +632,17 @@ public class BqUtils {
             row = TableRowJsonCoder.of().decode(inputStream, Context.OUTER);
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to serialize json to table row: " + json, e);
+            throw new RuntimeException(
+                    String.format(
+                            "entity[%s]: Failed to serialize json to table row: `%s`\n"
+                                    + "Original exception: %s",
+                            entity, json, e));
         }
 
         return row;
     }
 
-    public static DateTime convertStringToDatetime(String timestamp) {
+    public static DateTime convertStringToDatetime(String entity, String timestamp) {
         return (DateTime) JSON_VALUE_PARSERS.get(TypeName.DATETIME).apply(timestamp);
     }
 }

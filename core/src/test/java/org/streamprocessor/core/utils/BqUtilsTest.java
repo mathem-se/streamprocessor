@@ -180,7 +180,7 @@ public class BqUtilsTest {
                     .build();
 
     private static final TableRow BQ_FLAT_ROW =
-            BqUtils.convertJsonToTableRow(JSON_FLAT_ROW.toString());
+            BqUtils.convertJsonToTableRow("foo", JSON_FLAT_ROW.toString());
 
     private static final TableRow BQ_ROW_ROW = new TableRow().set("row", BQ_FLAT_ROW);
 
@@ -237,46 +237,47 @@ public class BqUtilsTest {
     private static final JSONObject ARRAY_JSON =
             new JSONObject().put("ids", new JSONArray().put(123L).put(124L));
     private static final TableRow BQ_ARRAY_ROW =
-            BqUtils.convertJsonToTableRow(ARRAY_JSON.toString());
+            BqUtils.convertJsonToTableRow("foo", ARRAY_JSON.toString());
 
     private static final JSONObject MAP_JSON =
             new JSONObject().put("map", new JSONObject().put("test", 123.456));
 
-    private static final TableRow BQ_MAP_ROW = BqUtils.convertJsonToTableRow(MAP_JSON.toString());
+    private static final TableRow BQ_MAP_ROW =
+            BqUtils.convertJsonToTableRow("foo", MAP_JSON.toString());
 
     @Test
     public void testToBeamRow_flat() {
-        Row beamRow = BqUtils.toBeamRow(FLAT_TYPE, BQ_FLAT_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_FLAT_ROW);
         assertEquals(FLAT_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_null() {
-        Row beamRow = BqUtils.toBeamRow(FLAT_TYPE, BQ_NULL_FLAT_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_NULL_FLAT_ROW);
         assertEquals(NULL_FLAT_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_enum() {
-        Row beamRow = BqUtils.toBeamRow(ENUM_STRING_TYPE, BQ_ENUM_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", ENUM_STRING_TYPE, BQ_ENUM_ROW);
         assertEquals(ENUM_STRING_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_row() {
-        Row beamRow = BqUtils.toBeamRow(ROW_TYPE, BQ_ROW_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", ROW_TYPE, BQ_ROW_ROW);
         assertEquals(ROW_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_array() {
-        Row beamRow = BqUtils.toBeamRow(ARRAY_TYPE, BQ_ARRAY_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", ARRAY_TYPE, BQ_ARRAY_ROW);
         assertEquals(ARRAY_ROW, beamRow);
     }
 
     @Test
     public void testToTableRow_map() {
-        Row beamRow = BqUtils.toBeamRow(MAP_MAP_TYPE, BQ_MAP_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", MAP_MAP_TYPE, BQ_MAP_ROW);
         assertEquals(MAP_ROW, beamRow);
     }
 }

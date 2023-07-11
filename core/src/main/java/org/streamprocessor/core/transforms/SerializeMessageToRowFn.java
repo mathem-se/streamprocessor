@@ -117,9 +117,9 @@ public class SerializeMessageToRowFn
 
             JSONObject payloadJson = new JSONObject(payload);
 
-            TableRow tr = BqUtils.convertJsonToTableRow(payloadJson.toString());
+            TableRow tr = BqUtils.convertJsonToTableRow(entity, payloadJson.toString());
 
-            currentElement = BqUtils.toBeamRow(schema, tr);
+            currentElement = BqUtils.toBeamRow(entity, schema, tr);
 
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
