@@ -548,7 +548,7 @@ public class BqUtils {
                 } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
                     return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
                 } else if (fieldType.isLogicalType(SqlTypes.DATE.getIdentifier())) {
-                    return LocalDate.parse(jsonBQString);
+                    return LocalDate.parse(jsonBQString.substring(0, 10));
                 } else if (fieldType.isLogicalType(SqlTypes.TIME.getIdentifier())) {
                     return LocalTime.parse(jsonBQString);
                 }
