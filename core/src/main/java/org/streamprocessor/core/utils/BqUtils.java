@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -539,6 +540,9 @@ public class BqUtils {
     private static @Nullable Object toBeamValue(
             String entity, FieldType fieldType, Object jsonBQValue) {
         try {
+            if (jsonBQValue == null) {
+                return null;
+            }
             if (jsonBQValue instanceof String
                     || jsonBQValue instanceof Number
                     || jsonBQValue instanceof Boolean) {
@@ -575,18 +579,13 @@ public class BqUtils {
 
             if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
                 if (fieldType.getMapValueType().getRowSchema() == null) {
-                    Map<String, Object> k =
-                            ((Map<String, Object>) jsonBQValue)
-                                    .entrySet().stream()
-                                            .collect(
-                                                    Collectors.toMap(
-                                                            Map.Entry::getKey,
-                                                            e -> {
-                                                                return toBeamValue(
-                                                                        entity,
-                                                                        fieldType.getMapValueType(),
-                                                                        e.getValue());
-                                                            }));
+                    Map<String, Object> k = new HashMap<>();
+                    for (Map.Entry<String, Object> entry :
+                            ((Map<String, Object>) jsonBQValue).entrySet()) {
+                        k.put(
+                                entry.getKey(),
+                                toBeamValue(entity, fieldType.getMapValueType(), entry.getValue()));
+                    }
                     return k;
                 } else {
                     Map<String, Object> k =

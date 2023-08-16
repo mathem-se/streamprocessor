@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.logicaltypes.EnumerationType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
@@ -179,6 +181,14 @@ public class BqUtilsTest {
                     .addMapField("map", Schema.FieldType.STRING, Schema.FieldType.DOUBLE)
                     .build();
 
+    private static final Schema MAP_MAP_TYPE_NULL_VALUE =
+            Schema.builder()
+                    .addMapField(
+                            "map",
+                            Schema.FieldType.STRING,
+                            Schema.FieldType.STRING.withNullable(true))
+                    .build();
+
     private static final TableRow BQ_FLAT_ROW =
             BqUtils.convertJsonToTableRow("foo", JSON_FLAT_ROW.toString());
 
@@ -242,8 +252,14 @@ public class BqUtilsTest {
     private static final JSONObject MAP_JSON =
             new JSONObject().put("map", new JSONObject().put("test", 123.456));
 
+    private static final JSONObject MAP_JSON_NULL_VALUE =
+            new JSONObject().put("map", new JSONObject().put("test", JSONObject.NULL));
+
     private static final TableRow BQ_MAP_ROW =
             BqUtils.convertJsonToTableRow("foo", MAP_JSON.toString());
+
+    private static final TableRow BQ_MAP_ROW_NULL_VALUE =
+            BqUtils.convertJsonToTableRow("foo", MAP_JSON_NULL_VALUE.toString());
 
     @Test
     public void testToBeamRow_flat() {
@@ -279,5 +295,14 @@ public class BqUtilsTest {
     public void testToTableRow_map() {
         Row beamRow = BqUtils.toBeamRow("foo", MAP_MAP_TYPE, BQ_MAP_ROW);
         assertEquals(MAP_ROW, beamRow);
+    }
+
+    @Test
+    public void testToTableRow_mapNullValue() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("test", null);
+        Row mapNullValue = Row.withSchema(MAP_MAP_TYPE_NULL_VALUE).addValues(map).build();
+        Row beamRow = BqUtils.toBeamRow("foo", MAP_MAP_TYPE_NULL_VALUE, BQ_MAP_ROW_NULL_VALUE);
+        assertEquals(mapNullValue, beamRow);
     }
 }
