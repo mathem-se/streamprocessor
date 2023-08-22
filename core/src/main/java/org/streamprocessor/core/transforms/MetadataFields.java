@@ -13,6 +13,7 @@ public class MetadataFields {
     @AllArgsConstructor
     @Getter
     public enum ExtractMethod {
+        CLOUD_STORAGE_IMPORT("cloud_storage_import"),
         CUSTOM_EVENT("custom_event"),
         CDC("cdc");
         private final String value;
