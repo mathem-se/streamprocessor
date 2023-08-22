@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.logicaltypes.EnumerationType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
@@ -174,9 +176,17 @@ public class BqUtilsTest {
     private static final Schema ROW_TYPE =
             Schema.builder().addNullableField("row", Schema.FieldType.row(FLAT_TYPE)).build();
 
-    private static final Schema MAP_MAP_TYPE =
+    private static final Schema MAP_TYPE =
             Schema.builder()
                     .addMapField("map", Schema.FieldType.STRING, Schema.FieldType.DOUBLE)
+                    .build();
+
+    private static final Schema MAP_TYPE_NULL_VALUE =
+            Schema.builder()
+                    .addMapField(
+                            "map",
+                            Schema.FieldType.STRING,
+                            Schema.FieldType.STRING.withNullable(true))
                     .build();
 
     private static final TableRow BQ_FLAT_ROW =
@@ -230,7 +240,7 @@ public class BqUtilsTest {
             Row.withSchema(ARRAY_TYPE).addValues((Object) Arrays.asList(123L, 124L)).build();
 
     private static final Row MAP_ROW =
-            Row.withSchema(MAP_MAP_TYPE).addValues(ImmutableMap.of("test", 123.456)).build();
+            Row.withSchema(MAP_TYPE).addValues(ImmutableMap.of("test", 123.456)).build();
 
     private static final Row ROW_ROW = Row.withSchema(ROW_TYPE).addValues(FLAT_ROW).build();
 
@@ -242,8 +252,14 @@ public class BqUtilsTest {
     private static final JSONObject MAP_JSON =
             new JSONObject().put("map", new JSONObject().put("test", 123.456));
 
+    private static final JSONObject MAP_JSON_NULL_VALUE =
+            new JSONObject().put("map", new JSONObject().put("test", JSONObject.NULL));
+
     private static final TableRow BQ_MAP_ROW =
             BqUtils.convertJsonToTableRow("foo", MAP_JSON.toString());
+
+    private static final TableRow BQ_MAP_ROW_NULL_VALUE =
+            BqUtils.convertJsonToTableRow("foo", MAP_JSON_NULL_VALUE.toString());
 
     @Test
     public void testToBeamRow_flat() {
@@ -277,7 +293,16 @@ public class BqUtilsTest {
 
     @Test
     public void testToTableRow_map() {
-        Row beamRow = BqUtils.toBeamRow("foo", MAP_MAP_TYPE, BQ_MAP_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE, BQ_MAP_ROW);
         assertEquals(MAP_ROW, beamRow);
+    }
+
+    @Test
+    public void testToTableRow_mapNullValue() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("test", null);
+        Row mapNullValue = Row.withSchema(MAP_TYPE_NULL_VALUE).addValues(map).build();
+        Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE_NULL_VALUE, BQ_MAP_ROW_NULL_VALUE);
+        assertEquals(mapNullValue, beamRow);
     }
 }
