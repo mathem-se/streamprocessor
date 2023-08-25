@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.beam.sdk.values.Row.toRow;
 
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -134,6 +135,7 @@ public class BqUtils {
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER_WITHOUT_T;
     private static final DateTimeFormatter DATETIME_PARSER;
+    private static final DateTimeFormatter DATETIME_PARSER_NO_MS;
 
     static {
         DateTimeFormatter dateTimePart =
@@ -217,6 +219,12 @@ public class BqUtils {
                         .toFormatter()
                         .withZoneUTC();
 
+        DATETIME_PARSER_NO_MS =
+                new DateTimeFormatterBuilder()
+                        .append(dateTimePart)
+                        .toFormatter()
+                        .withZone(DateTimeZone.forID("Europe/Stockholm"));
+
         BIGQUERY_TIMESTAMP_PARSER =
                 new DateTimeFormatterBuilder()
                         .append(dateTimePart)
@@ -294,6 +302,10 @@ public class BqUtils {
                                             .toDateTime(DateTimeZone.UTC);
                                 } else if (str.contains("+")) {
                                     return OFFS_TIMESTAMP_PARSER_WITHOUT_T
+                                            .parseDateTime(str)
+                                            .toDateTime(DateTimeZone.UTC);
+                                } else if (str.contains(" ")) {
+                                    return DATETIME_PARSER_NO_MS
                                             .parseDateTime(str)
                                             .toDateTime(DateTimeZone.UTC);
                                 } else {
@@ -528,6 +540,9 @@ public class BqUtils {
         try {
             return toBeamValue(entity, field.getType(), bqValue);
         } catch (Exception e) {
+            if (field.getType().getNullable()) {
+                return null;
+            }
             throw new UnsupportedOperationException(
                     String.format(
                             "entity[%s]: Could not convert field `%s` of type `%s` with value"
@@ -537,7 +552,8 @@ public class BqUtils {
         }
     }
 
-    private static @Nullable Object toBeamValue(
+    @VisibleForTesting
+    protected static @Nullable Object toBeamValue(
             String entity, FieldType fieldType, Object jsonBQValue) {
         try {
             if (jsonBQValue == null) {

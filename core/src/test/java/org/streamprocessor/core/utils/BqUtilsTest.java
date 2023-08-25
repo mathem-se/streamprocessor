@@ -30,6 +30,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.schemas.Schema;
+import org.apache.beam.sdk.schemas.Schema.FieldType;
 import org.apache.beam.sdk.schemas.logicaltypes.EnumerationType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
 import org.apache.beam.sdk.values.Row;
@@ -265,6 +266,19 @@ public class BqUtilsTest {
     public void testToBeamRow_flat() {
         Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_FLAT_ROW);
         assertEquals(FLAT_ROW, beamRow);
+    }
+
+    @Test
+    public void testToBeamValue() {
+        FieldType fieldType = Schema.FieldType.DATETIME;
+        Object jsonBQValueWinterTime = "2020-11-02 12:34:56";
+        Object expectedWinterTime = DateTime.parse("2020-11-02T11:34:56Z");
+        Object parsedWinterTime = BqUtils.toBeamValue("entity", fieldType, jsonBQValueWinterTime);
+        assertEquals(expectedWinterTime, parsedWinterTime);
+        Object jsonBQValue = "2020-08-02 12:34:56";
+        Object expected = DateTime.parse("2020-08-02T10:34:56Z");
+        Object actual = BqUtils.toBeamValue("entity", fieldType, jsonBQValue);
+        assertEquals(expected, actual);
     }
 
     @Test
