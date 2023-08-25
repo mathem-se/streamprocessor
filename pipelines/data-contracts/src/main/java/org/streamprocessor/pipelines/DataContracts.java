@@ -124,7 +124,6 @@ public class DataContracts {
         // validateOptions(options);  // to-do create a validation function...
 
         Pipeline pipeline = Pipeline.create(options);
-
         /*
          * Create a coder that can seriealize rows with different schemas
          */

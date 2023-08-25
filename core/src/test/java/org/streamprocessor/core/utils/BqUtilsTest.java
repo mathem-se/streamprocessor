@@ -271,14 +271,20 @@ public class BqUtilsTest {
     @Test
     public void testToBeamValue() {
         FieldType fieldType = Schema.FieldType.DATETIME;
-        Object jsonBQValueWinterTime = "2020-11-02 12:34:56";
+        Object timestampWinterTime = "2020-11-02 12:34:56";
         Object expectedWinterTime = DateTime.parse("2020-11-02T11:34:56Z");
-        Object parsedWinterTime = BqUtils.toBeamValue("entity", fieldType, jsonBQValueWinterTime);
+        Object parsedWinterTime = BqUtils.toBeamValue("entity", fieldType, timestampWinterTime);
         assertEquals(expectedWinterTime, parsedWinterTime);
-        Object jsonBQValue = "2020-08-02 12:34:56";
-        Object expected = DateTime.parse("2020-08-02T10:34:56Z");
-        Object actual = BqUtils.toBeamValue("entity", fieldType, jsonBQValue);
-        assertEquals(expected, actual);
+
+        Object timestampSummerTime = "2020-08-02 12:34:56";
+        Object expectedTimestampSummertime = DateTime.parse("2020-08-02T10:34:56Z");
+        Object parsedSummerTime = BqUtils.toBeamValue("entity", fieldType, timestampSummerTime);
+        assertEquals(expectedTimestampSummertime, parsedSummerTime);
+
+        Object timestampZero = "0001-01-01 00:00:00";
+        Object expectedZero = DateTime.parse("0001-01-01T00:00:00Z");
+        Object parsedZero = BqUtils.toBeamValue("entity", fieldType, timestampZero);
+        assertEquals(expectedZero, parsedZero);
     }
 
     @Test
