@@ -135,7 +135,7 @@ public class BqUtils {
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER_WITHOUT_T;
     private static final DateTimeFormatter DATETIME_PARSER;
-    private static final DateTimeFormatter DATETIME_PARSER_NO_MS;
+    private static final DateTimeFormatter DATETIME_LOCAL_TIME_PARSER;
 
     static {
         DateTimeFormatter dateTimePart =
@@ -219,7 +219,7 @@ public class BqUtils {
                         .toFormatter()
                         .withZoneUTC();
 
-        DATETIME_PARSER_NO_MS =
+        DATETIME_LOCAL_TIME_PARSER =
                 new DateTimeFormatterBuilder()
                         .append(dateTimePart)
                         .toFormatter()
@@ -267,7 +267,7 @@ public class BqUtils {
                         .parseDateTime("0001-01-01T00:00:00")
                         .toDateTime(DateTimeZone.UTC);
             }
-            return DATETIME_PARSER_NO_MS.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+            return DATETIME_LOCAL_TIME_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
         } else {
             return new DateTime(
                     (long) (Double.parseDouble(str) * 1000), ISOChronology.getInstanceUTC());
@@ -537,6 +537,9 @@ public class BqUtils {
         try {
             return toBeamValue(entity, field.getType(), bqValue, relaxedStrictness);
         } catch (Exception e) {
+            if (relaxedStrictness && field.getType().getNullable()) {
+                return null;
+            }
             throw new UnsupportedOperationException(
                     String.format(
                             "entity[%s]: Could not convert field `%s` of type `%s` with value"
