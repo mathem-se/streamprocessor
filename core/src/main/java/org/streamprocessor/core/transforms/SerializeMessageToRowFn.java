@@ -19,7 +19,6 @@ package org.streamprocessor.core.transforms;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import org.joda.time.LocalDate;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -28,6 +27,7 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,17 +124,16 @@ public class SerializeMessageToRowFn
             Boolean relaxedStrictness = false;
             if (dataContract.has("relaxed_strictness_until")) {
                 String relaxedStrictnessUntil = dataContract.getString("relaxed_strictness_until");
-                LocalDate validUntilDate = LocalDate.parse(relaxedStrictnessUntil);
+                LocalDate relaxedStrictnessUntilDate = LocalDate.parse(relaxedStrictnessUntil);
 
-                String eventTimestamp =
-                    payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
+                String eventTimestamp = payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
                 DateTime eventDateTime = BqUtils.convertStringToDatetime(entity, eventTimestamp);
-                
-                if (eventDateTime.toLocalDate().isBefore(validUntilDate)) {
-                        relaxedStrictness = true;
+
+                if (eventDateTime.toLocalDate().isBefore(relaxedStrictnessUntilDate)) {
+                    relaxedStrictness = true;
                 }
-                }
-                
+            }
+
             currentElement = BqUtils.toBeamRow(entity, schema, tr, relaxedStrictness);
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
