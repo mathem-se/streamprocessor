@@ -51,6 +51,7 @@ public class SerializeMessageToRowFn
     String projectId;
     String dataContractsServiceUrl;
     float ratio;
+    Boolean relaxedStrictness;
 
     public SerializeMessageToRowFn(
             TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
@@ -58,13 +59,15 @@ public class SerializeMessageToRowFn
             String jobName,
             String projectId,
             String dataContractsServiceUrl,
-            float ratio) {
+            float ratio,
+            Boolean relaxedStrictness) {
         this.successTag = successTag;
         this.failureTag = failureTag;
         this.jobName = jobName;
         this.projectId = projectId;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = ratio;
+        this.relaxedStrictness = relaxedStrictness;
     }
 
     public SerializeMessageToRowFn(
