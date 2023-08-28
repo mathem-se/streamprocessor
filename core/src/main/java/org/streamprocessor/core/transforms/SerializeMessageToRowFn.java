@@ -72,7 +72,8 @@ public class SerializeMessageToRowFn
             TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
             String jobName,
             String projectId,
-            String dataContractsServiceUrl) {
+            String dataContractsServiceUrl,
+            Boolean relaxedStrictness) {
         this.successTag = successTag;
         this.failureTag = failureTag;
         this.jobName = jobName;
@@ -119,7 +120,7 @@ public class SerializeMessageToRowFn
 
             TableRow tr = BqUtils.convertJsonToTableRow(entity, payloadJson.toString());
 
-            currentElement = BqUtils.toBeamRow(entity, schema, tr);
+            currentElement = BqUtils.toBeamRow(entity, schema, tr, true);
 
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 

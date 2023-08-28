@@ -1,5 +1,6 @@
 package org.streamprocessor.core.application;
 
+import org.apache.arrow.flatbuf.Bool;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
@@ -47,4 +48,9 @@ public interface StreamProcessorOptions extends DataflowPipelineOptions {
     String getDataContractsServiceUrl();
 
     void setDataContractsServiceUrl(String value);
+
+    @Description("Relaxed strictness for data types")
+    String getRelaxedStrictness();
+
+    void setRelaxedStrictness(Boolean value);
 }

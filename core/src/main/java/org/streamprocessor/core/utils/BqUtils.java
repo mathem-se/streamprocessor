@@ -663,6 +663,6 @@ public class BqUtils {
     }
 
     public static DateTime convertStringToDatetime(String entity, String timestamp) {
-        return (DateTime) JSON_VALUE_PARSERS.get(TypeName.DATETIME).apply(timestamp);
+        return convertToDatetime(timestamp, false);
     }
 }
