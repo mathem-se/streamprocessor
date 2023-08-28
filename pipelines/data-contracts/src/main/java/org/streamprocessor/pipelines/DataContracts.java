@@ -182,7 +182,7 @@ public class DataContracts {
                                                         options.getDataContractsServiceUrl(),
                                                         options.getSchemaCheckRatio(),
                                                         options.getIsBackfill(),
-                                                        options.getRelaxedStrictness())
+                                                        options.getRelaxedStrictness()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
                                                 TupleTagList.of(SERIALIZED_FAILURE_TAG)));
