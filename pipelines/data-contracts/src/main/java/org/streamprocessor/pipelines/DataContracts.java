@@ -180,8 +180,7 @@ public class DataContracts {
                                                         options.getJobName(),
                                                         options.getProject(),
                                                         options.getDataContractsServiceUrl(),
-                                                        options.getSchemaCheckRatio(),
-                                                        options.getRelaxedStrictness()))
+                                                        options.getSchemaCheckRatio()))
                                         .withOutputTags(
                                                 SERIALIZED_SUCCESS_TAG,
                                                 TupleTagList.of(SERIALIZED_FAILURE_TAG)));

@@ -90,15 +90,6 @@
                 ]
             },
             {
-                "name": "relaxedStrictness",
-                "label": "Relaxed strictness, incorret data type -> null and local datetimes converted to UTC timestamps",
-                "helpText": "true or false (default)",
-                "isOptional": true,
-                "regexes": [
-                    "true|false"
-                ]
-            },
-            {
                 "name": "numStorageWriteApiStreams",
                 "label": "Number of storage write streams",
                 "helpText": "Number of storage write streams. > 0",
