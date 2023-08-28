@@ -47,10 +47,3 @@ public interface StreamProcessorOptions extends DataflowPipelineOptions {
     String getDataContractsServiceUrl();
 
     void setDataContractsServiceUrl(String value);
-
-    @Description("Relaxed strictness for data types")
-    @Default.Boolean(false)
-    Boolean getRelaxedStrictness();
-
-    void setRelaxedStrictness(Boolean value);
-}

@@ -19,6 +19,7 @@ package org.streamprocessor.core.transforms;
 import com.google.api.services.bigquery.model.TableRow;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import org.joda.time.LocalDate;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -26,6 +27,7 @@ import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
+import org.joda.time.DateTime;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,6 @@ public class SerializeMessageToRowFn
     String projectId;
     String dataContractsServiceUrl;
     float ratio;
-    Boolean relaxedStrictness;
 
     public SerializeMessageToRowFn(
             TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
@@ -59,30 +60,13 @@ public class SerializeMessageToRowFn
             String jobName,
             String projectId,
             String dataContractsServiceUrl,
-            float ratio,
-            Boolean relaxedStrictness) {
+            float ratio) {
         this.successTag = successTag;
         this.failureTag = failureTag;
         this.jobName = jobName;
         this.projectId = projectId;
         this.dataContractsServiceUrl = dataContractsServiceUrl;
         this.ratio = ratio;
-        this.relaxedStrictness = relaxedStrictness;
-    }
-
-    public SerializeMessageToRowFn(
-            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
-            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
-            String jobName,
-            String projectId,
-            String dataContractsServiceUrl,
-            Boolean relaxedStrictness) {
-        this.successTag = successTag;
-        this.failureTag = failureTag;
-        this.jobName = jobName;
-        this.projectId = projectId;
-        this.dataContractsServiceUrl = dataContractsServiceUrl;
-        this.ratio = 0.001f;
     }
 
     @ProcessElement
@@ -123,8 +107,20 @@ public class SerializeMessageToRowFn
 
             TableRow tr = BqUtils.convertJsonToTableRow(entity, payloadJson.toString());
 
-            currentElement = BqUtils.toBeamRow(entity, schema, tr, true);
+            Boolean relaxedStrictness = false;
+            if (dataContract.has("relaxed_strictness_until")) {
+                String relaxedStrictnessUntil = dataContract.getString("relaxed_strictness_until");
+                LocalDate validUntilDate = LocalDate.parse(relaxedStrictnessUntil);
 
+                String eventTimestamp =
+                    payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
+                DateTime eventDateTime = BqUtils.convertStringToDatetime(entity, eventTimestamp);
+                
+                if (eventDateTime.toLocalDate().isBefore(validUntilDate)) {
+                        relaxedStrictness = true;
+                }
+                
+            currentElement = BqUtils.toBeamRow(entity, schema, tr, relaxedStrictness);
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
             out.get(successTag).output(outputElement);
