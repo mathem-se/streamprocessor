@@ -69,6 +69,20 @@ public class SerializeMessageToRowFn
         this.ratio = ratio;
     }
 
+    public SerializeMessageToRowFn(
+            TupleTag<FailsafeElement<PubsubMessage, Row>> successTag,
+            TupleTag<FailsafeElement<PubsubMessage, Row>> failureTag,
+            String jobName,
+            String projectId,
+            String dataContractsServiceUrl) {
+        this.successTag = successTag;
+        this.failureTag = failureTag;
+        this.jobName = jobName;
+        this.projectId = projectId;
+        this.dataContractsServiceUrl = dataContractsServiceUrl;
+        this.ratio = 0.001f;
+    }
+
     @ProcessElement
     public void processElement(
             @Element FailsafeElement<PubsubMessage, PubsubMessage> received,
@@ -118,6 +132,7 @@ public class SerializeMessageToRowFn
                 
                 if (eventDateTime.toLocalDate().isBefore(validUntilDate)) {
                         relaxedStrictness = true;
+                }
                 }
                 
             currentElement = BqUtils.toBeamRow(entity, schema, tr, relaxedStrictness);

@@ -47,3 +47,4 @@ public interface StreamProcessorOptions extends DataflowPipelineOptions {
     String getDataContractsServiceUrl();
 
     void setDataContractsServiceUrl(String value);
+}
