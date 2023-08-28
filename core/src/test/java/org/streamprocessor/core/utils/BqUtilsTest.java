@@ -273,12 +273,14 @@ public class BqUtilsTest {
         FieldType fieldType = Schema.FieldType.DATETIME;
         Object timestampWinterTime = "2020-11-02 12:34:56";
         Object expectedWinterTime = DateTime.parse("2020-11-02T11:34:56Z");
-        Object parsedWinterTime = BqUtils.toBeamValue("entity", fieldType, timestampWinterTime, true);
+        Object parsedWinterTime =
+                BqUtils.toBeamValue("entity", fieldType, timestampWinterTime, true);
         assertEquals(expectedWinterTime, parsedWinterTime);
 
         Object timestampSummerTime = "2020-08-02 12:34:56";
         Object expectedTimestampSummertime = DateTime.parse("2020-08-02T10:34:56Z");
-        Object parsedSummerTime = BqUtils.toBeamValue("entity", fieldType, timestampSummerTime, true);
+        Object parsedSummerTime =
+                BqUtils.toBeamValue("entity", fieldType, timestampSummerTime, true);
         assertEquals(expectedTimestampSummertime, parsedSummerTime);
 
         Object timestampZero = "0001-01-01 00:00:00";

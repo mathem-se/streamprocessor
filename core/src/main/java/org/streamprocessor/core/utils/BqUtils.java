@@ -537,9 +537,6 @@ public class BqUtils {
         try {
             return toBeamValue(entity, field.getType(), bqValue, relaxedStrictness);
         } catch (Exception e) {
-            if (field.getType().getNullable()) {
-                return null;
-            }
             throw new UnsupportedOperationException(
                     String.format(
                             "entity[%s]: Could not convert field `%s` of type `%s` with value"
@@ -631,6 +628,9 @@ public class BqUtils {
                 }
             }
         } catch (Exception e) {
+            if (relaxedStrictness && fieldType.getNullable()) {
+                return null;
+            }
             LOG.error(
                     String.format(
                             "entity[%s]: Failed to convert value `%s` of type `%s` to Beam value",
