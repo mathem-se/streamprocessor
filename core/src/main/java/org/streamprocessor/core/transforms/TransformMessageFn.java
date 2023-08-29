@@ -21,6 +21,7 @@ import org.streamprocessor.core.caches.DataContractsCache;
 import org.streamprocessor.core.helpers.CloudStorageImportHelper;
 import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
+import org.streamprocessor.core.helpers.GoogleSheetsImportHelper;
 import org.streamprocessor.core.helpers.SalesforceHelper;
 import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
@@ -139,6 +140,10 @@ public class TransformMessageFn
                 case "cloud_storage_import":
                     transformedPayload =
                             CloudStorageImportHelper.enrichPubsubMessage(streamObject, attributes);
+                    break;
+                case "google_sheets_import":
+                    transformedPayload =
+                            GoogleSheetsImportHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownPorviderException(

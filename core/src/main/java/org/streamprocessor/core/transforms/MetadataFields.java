@@ -13,6 +13,7 @@ public class MetadataFields {
     @AllArgsConstructor
     @Getter
     public enum ExtractMethod {
+        GOOGLE_SHEETS_IMPORT("google_sheets_import"),
         CLOUD_STORAGE_IMPORT("cloud_storage_import"),
         CUSTOM_EVENT("custom_event"),
         CDC("cdc");
