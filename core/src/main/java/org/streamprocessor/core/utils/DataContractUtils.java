@@ -55,13 +55,15 @@ public class DataContractUtils {
 
         int attempt = 0;
         int maxAttempts = 3;
-        while (maxAttempts >= attempt) {
+        String errorMessage = "";
+        while (maxAttempts > attempt) {
             attempt++;
             try {
                 HttpResponse response = makeGetRequest(baseUrl, endpointName);
                 return new JSONObject(response.parseAsString());
             } catch (HttpResponseException e) {
-                if (e.getStatusCode() == 404 && e.getMessage().contains("Topic not found")) {
+                errorMessage = e.getMessage();
+                if (e.getStatusCode() == 404 && errorMessage.contains("Topic not found")) {
                     throw new CustomExceptionsUtils.InvalidEntityException(
                             String.format("Entity [%s] don't exist.", topic));
                 }
@@ -69,14 +71,14 @@ public class DataContractUtils {
                 LOG.warn(
                         "Failed to get data contract: [{}]. Attempt [{}] of [{}]. Retrying..."
                                 + " error: [{}]",
+                        topic,
                         attempt,
                         maxAttempts,
-                        topic,
                         e.toString());
             }
         }
         throw new IOException(
                 String.format(
-                        "Failed to get data contract [%s] after [%d] attempts.", topic, attempt));
+                        "Failed to get data contract [%s] after %d attempts. Error: [%s]", topic, attempt, errorMessage));
     }
 }
