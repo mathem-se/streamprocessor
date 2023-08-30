@@ -14,8 +14,8 @@ public class CustomExceptionsUtils {
         }
     }
 
-    public static class UnknownPorviderException extends Exception {
-        public UnknownPorviderException(String errorMessage) {
+    public static class UnknownProviderException extends Exception {
+        public UnknownProviderException(String errorMessage) {
             super(errorMessage);
         }
     }
@@ -36,6 +36,13 @@ public class CustomExceptionsUtils {
     public static class InactiveDataContractException extends Exception {
 
         public InactiveDataContractException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
+
+    public static class InvalidEntityException extends Exception {
+
+        public InvalidEntityException(String errorMessage) {
             super(errorMessage);
         }
     }

@@ -146,7 +146,7 @@ public class TransformMessageFn
                             GoogleSheetsImportHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
-                    throw new CustomExceptionsUtils.UnknownPorviderException(
+                    throw new CustomExceptionsUtils.UnknownProviderException(
                             String.format(
                                     "Provider %s. Either the provider is not supported or the data"
                                             + " contract is not valid.",
