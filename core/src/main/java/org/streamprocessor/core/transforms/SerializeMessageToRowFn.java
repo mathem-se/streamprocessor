@@ -135,7 +135,6 @@ public class SerializeMessageToRowFn
                 }
             }
 
-            LOG.info("strictness[{}] entity[{}] eventTimestamp[{}]", relaxedStrictness, entity, eventTimestamp);
             currentElement = BqUtils.toBeamRow(entity, schema, tr, relaxedStrictness);
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
