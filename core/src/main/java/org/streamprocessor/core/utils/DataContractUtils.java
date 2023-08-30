@@ -54,7 +54,7 @@ public class DataContractUtils {
         String endpointName = "contract/" + topic;
 
         int attempt = 0;
-        int maxAttempts = 3;
+        int maxAttempts = 5;
         String errorMessage = "";
         while (maxAttempts > attempt) {
             attempt++;
