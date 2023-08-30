@@ -61,12 +61,12 @@ public class DataContractUtils {
                 HttpResponse response = makeGetRequest(baseUrl, endpointName);
                 return new JSONObject(response.parseAsString());
             } catch (HttpResponseException e) {
-                if (e.getStatusCode() == 404) {
+                if (e.getStatusCode() == 404 && e.getMessage().contains("Topic not found")) {
                     throw new CustomExceptionsUtils.InvalidEntityException(
                             String.format("Entity [%s] don't exist.", topic));
                 }
                 Thread.sleep(2000);
-                LOG.error(
+                LOG.warn(
                         "Failed to get data contract: [{}]. Attempt [{}] of [{}]. Retrying..."
                                 + " error: [{}]",
                         attempt,
