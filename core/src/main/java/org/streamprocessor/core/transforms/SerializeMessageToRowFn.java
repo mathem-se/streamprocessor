@@ -124,14 +124,20 @@ public class SerializeMessageToRowFn
             Boolean relaxedStrictness = false;
             String eventTimestamp = "";
             if (dataContract.has("relaxed_strictness_until")) {
-                String relaxedStrictnessUntil = dataContract.getString("relaxed_strictness_until");
-                LocalDate relaxedStrictnessUntilDate = LocalDate.parse(relaxedStrictnessUntil);
+                Object relaxedStrictnessUntilValue =
+                        dataContract.get("relaxed_strictness_until");
+                if (relaxedStrictnessUntilValue != null
+                        && !relaxedStrictnessUntilValue.equals(JSONObject.NULL)) {
+                    String relaxedStrictnessUntil = relaxedStrictnessUntilValue.toString();
+                    LocalDate relaxedStrictnessUntilDate = LocalDate.parse(relaxedStrictnessUntil);
 
-                eventTimestamp = payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
-                DateTime eventDateTime = BqUtils.convertStringToDatetime(entity, eventTimestamp);
+                    eventTimestamp = payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
+                    DateTime eventDateTime =
+                            BqUtils.convertStringToDatetime(entity, eventTimestamp);
 
-                if (eventDateTime.toLocalDate().isBefore(relaxedStrictnessUntilDate)) {
-                    relaxedStrictness = true;
+                    if (eventDateTime.toLocalDate().isBefore(relaxedStrictnessUntilDate)) {
+                        relaxedStrictness = true;
+                    }
                 }
             }
 
@@ -140,7 +146,7 @@ public class SerializeMessageToRowFn
 
             out.get(successTag).output(outputElement);
 
-        } catch (Exception e) {
+        } catch (CustomExceptionsUtils.NoSchemaException e) {
             failureCounter.inc();
 
             outputElement =
