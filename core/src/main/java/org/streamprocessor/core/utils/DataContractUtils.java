@@ -63,7 +63,7 @@ public class DataContractUtils {
             } catch (HttpResponseException e) {
                 if (e.getStatusCode() == 404) {
                     throw new CustomExceptionsUtils.InvalidEntityException(
-                            String.format("Entity [%s] don't exists.", topic));
+                            String.format("Entity [%s] don't exist.", topic));
                 }
                 Thread.sleep(2000);
                 LOG.error(
