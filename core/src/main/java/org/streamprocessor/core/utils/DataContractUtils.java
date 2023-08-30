@@ -79,6 +79,7 @@ public class DataContractUtils {
         }
         throw new IOException(
                 String.format(
-                        "Failed to get data contract [%s] after %d attempts. Error: [%s]", topic, attempt, errorMessage));
+                        "Failed to get data contract [%s] after %d attempts. Error: [%s]",
+                        topic, attempt, errorMessage));
     }
 }
