@@ -124,8 +124,7 @@ public class SerializeMessageToRowFn
             Boolean relaxedStrictness = false;
             String eventTimestamp = "";
             if (dataContract.has("relaxed_strictness_until")) {
-                Object relaxedStrictnessUntilValue =
-                        dataContract.get("relaxed_strictness_until");
+                Object relaxedStrictnessUntilValue = dataContract.get("relaxed_strictness_until");
                 if (relaxedStrictnessUntilValue != null
                         && !relaxedStrictnessUntilValue.equals(JSONObject.NULL)) {
                     String relaxedStrictnessUntil = relaxedStrictnessUntilValue.toString();
