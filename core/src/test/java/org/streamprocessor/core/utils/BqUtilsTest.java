@@ -30,6 +30,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.schemas.Schema;
+import org.apache.beam.sdk.schemas.Schema.FieldType;
 import org.apache.beam.sdk.schemas.logicaltypes.EnumerationType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
 import org.apache.beam.sdk.values.Row;
@@ -263,37 +264,58 @@ public class BqUtilsTest {
 
     @Test
     public void testToBeamRow_flat() {
-        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_FLAT_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_FLAT_ROW, false);
         assertEquals(FLAT_ROW, beamRow);
     }
 
     @Test
+    public void testToBeamValue() {
+        FieldType fieldType = Schema.FieldType.DATETIME;
+        Object datetimeWinterTime = "2020-11-02 12:34:56";
+        Object expectedWinterTimestamp = DateTime.parse("2020-11-02T11:34:56Z");
+        Object parsedWinterTime =
+                BqUtils.toBeamValue("entity", fieldType, datetimeWinterTime, true);
+        assertEquals(expectedWinterTimestamp, parsedWinterTime);
+
+        Object datetimeSummerTime = "2020-08-02 12:34:56";
+        Object expectedTimestampSummertime = DateTime.parse("2020-08-02T10:34:56Z");
+        Object parsedSummerTime =
+                BqUtils.toBeamValue("entity", fieldType, datetimeSummerTime, true);
+        assertEquals(expectedTimestampSummertime, parsedSummerTime);
+
+        Object datetimeZero = "0001-01-01 00:00:00";
+        Object expectedZero = DateTime.parse("0001-01-01T00:00:00Z");
+        Object parsedZero = BqUtils.toBeamValue("entity", fieldType, datetimeZero, true);
+        assertEquals(expectedZero, parsedZero);
+    }
+
+    @Test
     public void testToBeamRow_null() {
-        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_NULL_FLAT_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_NULL_FLAT_ROW, false);
         assertEquals(NULL_FLAT_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_enum() {
-        Row beamRow = BqUtils.toBeamRow("foo", ENUM_STRING_TYPE, BQ_ENUM_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", ENUM_STRING_TYPE, BQ_ENUM_ROW, false);
         assertEquals(ENUM_STRING_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_row() {
-        Row beamRow = BqUtils.toBeamRow("foo", ROW_TYPE, BQ_ROW_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", ROW_TYPE, BQ_ROW_ROW, false);
         assertEquals(ROW_ROW, beamRow);
     }
 
     @Test
     public void testToBeamRow_array() {
-        Row beamRow = BqUtils.toBeamRow("foo", ARRAY_TYPE, BQ_ARRAY_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", ARRAY_TYPE, BQ_ARRAY_ROW, false);
         assertEquals(ARRAY_ROW, beamRow);
     }
 
     @Test
     public void testToTableRow_map() {
-        Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE, BQ_MAP_ROW);
+        Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE, BQ_MAP_ROW, false);
         assertEquals(MAP_ROW, beamRow);
     }
 
@@ -302,7 +324,7 @@ public class BqUtilsTest {
         Map<String, Object> map = new HashMap<>();
         map.put("test", null);
         Row mapNullValue = Row.withSchema(MAP_TYPE_NULL_VALUE).addValues(map).build();
-        Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE_NULL_VALUE, BQ_MAP_ROW_NULL_VALUE);
+        Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE_NULL_VALUE, BQ_MAP_ROW_NULL_VALUE, false);
         assertEquals(mapNullValue, beamRow);
     }
 }

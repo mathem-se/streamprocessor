@@ -26,6 +26,8 @@ import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,13 +121,31 @@ public class SerializeMessageToRowFn
 
             TableRow tr = BqUtils.convertJsonToTableRow(entity, payloadJson.toString());
 
-            currentElement = BqUtils.toBeamRow(entity, schema, tr);
+            Boolean relaxedStrictness = false;
+            String eventTimestamp = "";
+            if (dataContract.has("relaxed_strictness_until")) {
+                Object relaxedStrictnessUntilValue = dataContract.get("relaxed_strictness_until");
+                if (relaxedStrictnessUntilValue != null
+                        && !relaxedStrictnessUntilValue.equals(JSONObject.NULL)) {
+                    String relaxedStrictnessUntil = relaxedStrictnessUntilValue.toString();
+                    LocalDate relaxedStrictnessUntilDate = LocalDate.parse(relaxedStrictnessUntil);
 
+                    eventTimestamp = payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
+                    DateTime eventDateTime =
+                            BqUtils.convertStringToDatetime(entity, eventTimestamp);
+
+                    if (eventDateTime.toLocalDate().isBefore(relaxedStrictnessUntilDate)) {
+                        relaxedStrictness = true;
+                    }
+                }
+            }
+
+            currentElement = BqUtils.toBeamRow(entity, schema, tr, relaxedStrictness);
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
             out.get(successTag).output(outputElement);
 
-        } catch (Exception e) {
+        } catch (CustomExceptionsUtils.NoSchemaException e) {
             failureCounter.inc();
 
             outputElement =

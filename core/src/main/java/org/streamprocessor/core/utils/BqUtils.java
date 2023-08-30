@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.beam.sdk.values.Row.toRow;
 
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -134,6 +135,7 @@ public class BqUtils {
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER;
     private static final DateTimeFormatter OFFS_TIMESTAMP_PARSER_WITHOUT_T;
     private static final DateTimeFormatter DATETIME_PARSER;
+    private static final DateTimeFormatter DATETIME_LOCAL_TIME_PARSER;
 
     static {
         DateTimeFormatter dateTimePart =
@@ -217,6 +219,12 @@ public class BqUtils {
                         .toFormatter()
                         .withZoneUTC();
 
+        DATETIME_LOCAL_TIME_PARSER =
+                new DateTimeFormatterBuilder()
+                        .append(dateTimePart)
+                        .toFormatter()
+                        .withZone(DateTimeZone.forID("Europe/Stockholm"));
+
         BIGQUERY_TIMESTAMP_PARSER =
                 new DateTimeFormatterBuilder()
                         .append(dateTimePart)
@@ -235,6 +243,35 @@ public class BqUtils {
                         .appendFractionOfSecond(6, 6)
                         .appendLiteral(" UTC")
                         .toFormatter();
+    }
+
+    private static DateTime convertToDatetime(String str, Boolean relaxedStrictness) {
+        if (str == null || str.length() == 0) {
+            return null;
+        }
+        if (str.endsWith("UTC")) {
+            return BIGQUERY_TIMESTAMP_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else if (str.endsWith("Z") && str.contains("T")) {
+            return Z_TIMESTAMP_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else if (str.endsWith("Z")) {
+            return Z_TIMESTAMP_PARSER_WITHOUT_T.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else if (str.contains("T") && str.contains("+")) {
+            return OFFS_TIMESTAMP_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else if (str.contains("T")) {
+            return DATETIME_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else if (str.contains("+")) {
+            return OFFS_TIMESTAMP_PARSER_WITHOUT_T.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else if (str.contains(" ") && relaxedStrictness) {
+            if (str == "0001-01-01 00:00:00") {
+                return DATETIME_PARSER
+                        .parseDateTime("0001-01-01T00:00:00")
+                        .toDateTime(DateTimeZone.UTC);
+            }
+            return DATETIME_LOCAL_TIME_PARSER.parseDateTime(str).toDateTime(DateTimeZone.UTC);
+        } else {
+            return new DateTime(
+                    (long) (Double.parseDouble(str) * 1000), ISOChronology.getInstanceUTC());
+        }
     }
 
     private static final Map<TypeName, StandardSQLTypeName> BEAM_TO_BIGQUERY_TYPE_MAPPING =
@@ -266,42 +303,6 @@ public class BqUtils {
                     .put(TypeName.DECIMAL, BigDecimal::new)
                     .put(TypeName.BOOLEAN, Boolean::valueOf)
                     .put(TypeName.STRING, str -> str)
-                    .put(
-                            TypeName.DATETIME,
-                            str -> {
-                                if (str == null || str.length() == 0) {
-                                    return null;
-                                }
-                                if (str.endsWith("UTC")) {
-                                    return BIGQUERY_TIMESTAMP_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.endsWith("Z") && str.contains("T")) {
-                                    return Z_TIMESTAMP_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.endsWith("Z")) {
-                                    return Z_TIMESTAMP_PARSER_WITHOUT_T
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.contains("T") && str.contains("+")) {
-                                    return OFFS_TIMESTAMP_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.contains("T")) {
-                                    return DATETIME_PARSER
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else if (str.contains("+")) {
-                                    return OFFS_TIMESTAMP_PARSER_WITHOUT_T
-                                            .parseDateTime(str)
-                                            .toDateTime(DateTimeZone.UTC);
-                                } else {
-                                    return new DateTime(
-                                            (long) (Double.parseDouble(str) * 1000),
-                                            ISOChronology.getInstanceUTC());
-                                }
-                            })
                     .put(TypeName.BYTES, str -> BaseEncoding.base64().decode(str))
                     .build();
 
@@ -507,13 +508,21 @@ public class BqUtils {
      * <p>Only supports basic types and arrays. Doesn't support date types or structs.
      */
     @Experimental(Kind.SCHEMAS)
-    public static Row toBeamRow(String entity, Schema rowSchema, TableRow jsonBqRow) {
+    public static Row toBeamRow(
+            String entity, Schema rowSchema, TableRow jsonBqRow, Boolean relaxedStrictness) {
         return rowSchema.getFields().stream()
-                .map(field -> toBeamRowFieldValue(entity, field, jsonBqRow.get(field.getName())))
+                .map(
+                        field ->
+                                toBeamRowFieldValue(
+                                        entity,
+                                        field,
+                                        jsonBqRow.get(field.getName()),
+                                        relaxedStrictness))
                 .collect(toRow(rowSchema));
     }
 
-    private static Object toBeamRowFieldValue(String entity, Field field, Object bqValue) {
+    private static Object toBeamRowFieldValue(
+            String entity, Field field, Object bqValue, Boolean relaxedStrictness) {
 
         if (bqValue == null) {
             if (field.getType().getNullable()) {
@@ -526,7 +535,7 @@ public class BqUtils {
             }
         }
         try {
-            return toBeamValue(entity, field.getType(), bqValue);
+            return toBeamValue(entity, field.getType(), bqValue, relaxedStrictness);
         } catch (Exception e) {
             throw new UnsupportedOperationException(
                     String.format(
@@ -537,8 +546,9 @@ public class BqUtils {
         }
     }
 
-    private static @Nullable Object toBeamValue(
-            String entity, FieldType fieldType, Object jsonBQValue) {
+    @VisibleForTesting
+    protected static @Nullable Object toBeamValue(
+            String entity, FieldType fieldType, Object jsonBQValue, Boolean relaxedStrictness) {
         try {
             if (jsonBQValue == null) {
                 return null;
@@ -547,7 +557,9 @@ public class BqUtils {
                     || jsonBQValue instanceof Number
                     || jsonBQValue instanceof Boolean) {
                 String jsonBQString = jsonBQValue.toString();
-                if (JSON_VALUE_PARSERS.containsKey(fieldType.getTypeName())) {
+                if (fieldType.getTypeName() == TypeName.DATETIME) {
+                    return convertToDatetime(jsonBQString, relaxedStrictness);
+                } else if (JSON_VALUE_PARSERS.containsKey(fieldType.getTypeName())) {
                     return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
                 } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
                     return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
@@ -567,14 +579,15 @@ public class BqUtils {
                                                 toBeamValue(
                                                         entity,
                                                         fieldType.getCollectionElementType(),
-                                                        v))
+                                                        v,
+                                                        relaxedStrictness))
                                 .collect(toList());
             }
 
             if (jsonBQValue instanceof Map && !(fieldType.getTypeName().isMapType())) {
                 TableRow tr = new TableRow();
                 tr.putAll((Map<String, Object>) jsonBQValue);
-                return toBeamRow(entity, fieldType.getRowSchema(), tr);
+                return toBeamRow(entity, fieldType.getRowSchema(), tr, relaxedStrictness);
             }
 
             if (jsonBQValue instanceof Map && fieldType.getTypeName().isMapType()) {
@@ -584,7 +597,11 @@ public class BqUtils {
                             ((Map<String, Object>) jsonBQValue).entrySet()) {
                         k.put(
                                 entry.getKey(),
-                                toBeamValue(entity, fieldType.getMapValueType(), entry.getValue()));
+                                toBeamValue(
+                                        entity,
+                                        fieldType.getMapValueType(),
+                                        entry.getValue(),
+                                        relaxedStrictness));
                     }
                     return k;
                 } else {
@@ -604,12 +621,16 @@ public class BqUtils {
                                                                         fieldType
                                                                                 .getMapValueType()
                                                                                 .getRowSchema(),
-                                                                        tr);
+                                                                        tr,
+                                                                        relaxedStrictness);
                                                             }));
                     return k;
                 }
             }
         } catch (Exception e) {
+            if (relaxedStrictness && fieldType.getNullable()) {
+                return null;
+            }
             LOG.error(
                     String.format(
                             "entity[%s]: Failed to convert value `%s` of type `%s` to Beam value",
@@ -642,6 +663,6 @@ public class BqUtils {
     }
 
     public static DateTime convertStringToDatetime(String entity, String timestamp) {
-        return (DateTime) JSON_VALUE_PARSERS.get(TypeName.DATETIME).apply(timestamp);
+        return convertToDatetime(timestamp, false);
     }
 }
