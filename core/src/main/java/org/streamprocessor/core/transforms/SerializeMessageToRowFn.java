@@ -122,11 +122,12 @@ public class SerializeMessageToRowFn
             TableRow tr = BqUtils.convertJsonToTableRow(entity, payloadJson.toString());
 
             Boolean relaxedStrictness = false;
+            String eventTimestamp = "";
             if (dataContract.has("relaxed_strictness_until")) {
                 String relaxedStrictnessUntil = dataContract.getString("relaxed_strictness_until");
                 LocalDate relaxedStrictnessUntilDate = LocalDate.parse(relaxedStrictnessUntil);
 
-                String eventTimestamp = payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
+                eventTimestamp = payloadJson.get(MetadataFields.EVENT_TIMESTAMP).toString();
                 DateTime eventDateTime = BqUtils.convertStringToDatetime(entity, eventTimestamp);
 
                 if (eventDateTime.toLocalDate().isBefore(relaxedStrictnessUntilDate)) {
@@ -134,6 +135,7 @@ public class SerializeMessageToRowFn
                 }
             }
 
+            LOG.info("strictness[{}] entity[{}] eventTimestamp[{}]", relaxedStrictness, entity, eventTimestamp);
             currentElement = BqUtils.toBeamRow(entity, schema, tr, relaxedStrictness);
             outputElement = new FailsafeElement<>(received.getOriginalElement(), currentElement);
 
