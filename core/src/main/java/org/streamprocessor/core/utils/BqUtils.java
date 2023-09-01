@@ -119,6 +119,8 @@ public class BqUtils {
     private static final java.time.format.DateTimeFormatter BIGQUERY_TIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern(BIGQUERY_TIME_PATTERN);
     private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER =
+            java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd' '" + BIGQUERY_TIME_PATTERN);
+    private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER_T =
             java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd'T'" + BIGQUERY_TIME_PATTERN);
 
     private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PRINTER;
@@ -489,7 +491,9 @@ public class BqUtils {
                     java.time.format.DateTimeFormatter localDateTimeFormatter =
                             (0 == localDateTime.getNano())
                                     ? ISO_LOCAL_DATE_TIME
-                                    : BIGQUERY_DATETIME_FORMATTER;
+                                    : (fieldValue.toString().contains("T")
+                                            ? BIGQUERY_DATETIME_FORMATTER_T
+                                            : BIGQUERY_DATETIME_FORMATTER);
                     return localDateTimeFormatter.format(localDateTime);
                 } else if ("Enum".equals(identifier)) {
                     return fieldType
@@ -562,7 +566,11 @@ public class BqUtils {
                 } else if (JSON_VALUE_PARSERS.containsKey(fieldType.getTypeName())) {
                     return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
                 } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
-                    return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
+                    if (jsonBQString.contains("T")) {
+                        return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
+                    } else {
+                        return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
+                    }
                 } else if (fieldType.isLogicalType(SqlTypes.DATE.getIdentifier())) {
                     return LocalDate.parse(jsonBQString.substring(0, 10));
                 } else if (fieldType.isLogicalType(SqlTypes.TIME.getIdentifier())) {
