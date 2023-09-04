@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -566,10 +567,24 @@ public class BqUtils {
                 } else if (JSON_VALUE_PARSERS.containsKey(fieldType.getTypeName())) {
                     return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
                 } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
-                    if (jsonBQString.contains("T")) {
-                        return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
-                    } else {
-                        return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
+                    try {
+                        if (jsonBQString.contains("T")) {
+                            return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
+                        } else {
+                            return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
+                        }
+                    } catch (DateTimeParseException e) {
+                        if (relaxedStrictness && fieldType.getNullable()) {
+                            return null;
+                        }
+                        LOG.error(
+                                String.format(
+                                        "entity[%s]: Failed to convert value `%s` of type `%s` to"
+                                                + " Beam value",
+                                        entity,
+                                        jsonBQValue.toString(),
+                                        fieldType.getTypeName().toString()));
+                        throw e;
                     }
                 } else if (fieldType.isLogicalType(SqlTypes.DATE.getIdentifier())) {
                     return LocalDate.parse(jsonBQString.substring(0, 10));
