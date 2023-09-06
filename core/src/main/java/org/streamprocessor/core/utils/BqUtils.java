@@ -568,6 +568,11 @@ public class BqUtils {
                     return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
                 } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
                     try {
+                        // TODO:
+                        // move to relaxed
+
+                        jsonBQString = jsonBQString.split("\\+")[0].split("Z")[0];
+
                         if (jsonBQString.contains("T")) {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
                         } else {
