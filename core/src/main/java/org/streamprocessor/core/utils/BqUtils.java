@@ -570,8 +570,15 @@ public class BqUtils {
                     try {
                         // TODO:
                         // move to relaxed
-
-                        jsonBQString = jsonBQString.split("\\+")[0].split("Z")[0];
+                        int indexOfPlus = jsonBQString.indexOf("+");
+                        int indexOfZ = jsonBQString.indexOf("Z");
+                        if (indexOfPlus != -1) {
+                            // Extract everything before the "+" sign
+                            jsonBQString = jsonBQString.substring(0, indexOfPlus);
+                        } else if (indexOfZ != -1) {
+                            // Extract everything before the "+" sign
+                            jsonBQString = jsonBQString.substring(0, indexOfZ);
+                        }
 
                         if (jsonBQString.contains("T")) {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
