@@ -203,7 +203,7 @@ public class BqUtilsTest {
             Row.withSchema(FLAT_TYPE)
                     .addValues(
                             null, null, null, null, null, null, null, null, null, null, null, null,
-                            null, null, null, null, null, null, null, null, null, null, null, null)
+                            null, null, null, null, null, null, null, null, null, null, null, null, null)
                     .build();
 
     private static final TableRow BQ_NULL_FLAT_ROW =
