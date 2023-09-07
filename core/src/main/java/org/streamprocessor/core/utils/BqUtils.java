@@ -568,17 +568,16 @@ public class BqUtils {
                     return JSON_VALUE_PARSERS.get(fieldType.getTypeName()).apply(jsonBQString);
                 } else if (fieldType.isLogicalType(SqlTypes.DATETIME.getIdentifier())) {
                     try {
-                        // TODO:
-                        // move to relaxed
-                        // Replace timezone pointers in datetime strings
-                        String[] timeZoneAlternativesToClean = {
-                            "[\\+\\-]{1}\\d{4}", // +/-ZZZZ
-                            "[\\+\\-]{1}\\d{2}:\\d{2}", // +/-ZZ:ZZ
-                            "Z" // Z
-                        };
-                        jsonBQString =
-                                jsonBQString.replaceAll(
-                                        String.join("|", timeZoneAlternativesToClean), "");
+                        if (relaxedStrictness) {
+                            String[] timeZoneAlternativesToClean = {
+                                "[\\+\\-]{1}\\d{4}", // +/-ZZZZ
+                                "[\\+\\-]{1}\\d{2}:\\d{2}", // +/-ZZ:ZZ
+                                "Z" // Z
+                            };
+                            jsonBQString =
+                                    jsonBQString.replaceAll(
+                                            String.join("|", timeZoneAlternativesToClean), "");
+                        }
 
                         if (jsonBQString.contains("T")) {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
