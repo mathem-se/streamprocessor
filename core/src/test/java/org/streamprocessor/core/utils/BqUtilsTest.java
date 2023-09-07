@@ -270,7 +270,7 @@ public class BqUtilsTest {
 
     @Test
     public void testToBeamRow_flat() {
-        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_FLAT_ROW, false);
+        Row beamRow = BqUtils.toBeamRow("foo", FLAT_TYPE, BQ_FLAT_ROW, true);
         assertEquals(FLAT_ROW, beamRow);
     }
 
@@ -309,7 +309,7 @@ public class BqUtilsTest {
 
     @Test
     public void testToBeamRow_row() {
-        Row beamRow = BqUtils.toBeamRow("foo", ROW_TYPE, BQ_ROW_ROW, false);
+        Row beamRow = BqUtils.toBeamRow("foo", ROW_TYPE, BQ_ROW_ROW, true);
         assertEquals(ROW_ROW, beamRow);
     }
 
