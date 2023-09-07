@@ -59,6 +59,7 @@ public class BqUtilsTest {
                     .addNullableField("timestamp_variant5", Schema.FieldType.DATETIME)
                     .addNullableField("timestamp_variant6", Schema.FieldType.DATETIME)
                     .addNullableField("datetime", Schema.FieldType.logicalType(SqlTypes.DATETIME))
+                    .addNullableField("datetime_w_tz", Schema.FieldType.logicalType(SqlTypes.DATETIME))
                     .addNullableField(
                             "datetime0ms", Schema.FieldType.logicalType(SqlTypes.DATETIME))
                     .addNullableField(
@@ -108,6 +109,7 @@ public class BqUtilsTest {
                                     .withZoneUTC()
                                     .parseDateTime("2023-03-06T15:29:39.766"),
                             LocalDateTime.parse("2020-11-02T12:34:56.789876"),
+                            LocalDateTime.parse("2020-11-02T12:34:58"),
                             LocalDateTime.parse("2020-11-02T12:34:56"),
                             LocalDateTime.parse("2020-11-02T12:34:00.789876"),
                             LocalDateTime.parse("2020-11-02T12:34"),
@@ -131,7 +133,7 @@ public class BqUtilsTest {
                     .put("name", "test")
                     .put("timestamp_variant1", "2019-08-16 13:52:07 UTC")
                     .put("timestamp_variant2", "2019-08-17 14:52:07.123 UTC")
-                    // we'll loose precession, but it's something BigQuery can output!
+                    // we'll loose precision, but it's something BigQuery can output!
                     .put("timestamp_variant3", "2019-08-18 15:52:07.123456 UTC")
                     .put(
                             "timestamp_variant4",
@@ -142,6 +144,7 @@ public class BqUtilsTest {
                     .put("timestamp_variant5", "2019-08-19 16:52:07Z")
                     .put("timestamp_variant6", "2023-03-06 15:29:39.766632+00:00")
                     .put("datetime", "2020-11-02T12:34:56.789876")
+                    .put("datetime_w_tz", "2020-11-02T12:34:58+02:00")
                     .put("datetime0ms", "2020-11-02T12:34:56")
                     .put("datetime0s_ns", "2020-11-02T12:34:00.789876")
                     .put("datetime0s_0ns", "2020-11-02T12:34:00")
@@ -214,6 +217,7 @@ public class BqUtilsTest {
                     .set("timestamp_variant5", null)
                     .set("timestamp_variant6", null)
                     .set("datetime", null)
+                    .set("datetime_w_tz", null)
                     .set("datetime0ms", null)
                     .set("datetime0s_ns", null)
                     .set("datetime0s_0ns", null)

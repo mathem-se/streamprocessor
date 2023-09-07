@@ -570,15 +570,13 @@ public class BqUtils {
                     try {
                         // TODO:
                         // move to relaxed
-                        int indexOfPlus = jsonBQString.indexOf("+");
-                        int indexOfZ = jsonBQString.indexOf("Z");
-                        if (indexOfPlus != -1) {
-                            // Extract everything before the "+" sign
-                            jsonBQString = jsonBQString.substring(0, indexOfPlus);
-                        } else if (indexOfZ != -1) {
-                            // Extract everything before the "+" sign
-                            jsonBQString = jsonBQString.substring(0, indexOfZ);
-                        }
+                        // Replace timezone pointers in datetime strings
+                        String[] timeZoneAlternativesToClean = {
+                            "[\\+\\-]{1}\\d{4}",        // +/-ZZZZ
+                            "[\\+\\-]{1}\\d{2}:\\d{2}", // +/-ZZ:ZZ
+                            "Z"                         // Z
+                        };
+                        jsonBQString = jsonBQString.replaceAll(String.join("|", timeZoneAlternativesToClean), "");
 
                         if (jsonBQString.contains("T")) {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
