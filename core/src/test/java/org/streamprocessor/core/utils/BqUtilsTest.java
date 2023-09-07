@@ -59,7 +59,8 @@ public class BqUtilsTest {
                     .addNullableField("timestamp_variant5", Schema.FieldType.DATETIME)
                     .addNullableField("timestamp_variant6", Schema.FieldType.DATETIME)
                     .addNullableField("datetime", Schema.FieldType.logicalType(SqlTypes.DATETIME))
-                    .addNullableField("datetime_w_tz", Schema.FieldType.logicalType(SqlTypes.DATETIME))
+                    .addNullableField(
+                            "datetime_w_tz", Schema.FieldType.logicalType(SqlTypes.DATETIME))
                     .addNullableField(
                             "datetime0ms", Schema.FieldType.logicalType(SqlTypes.DATETIME))
                     .addNullableField(

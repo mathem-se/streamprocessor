@@ -572,11 +572,13 @@ public class BqUtils {
                         // move to relaxed
                         // Replace timezone pointers in datetime strings
                         String[] timeZoneAlternativesToClean = {
-                            "[\\+\\-]{1}\\d{4}",        // +/-ZZZZ
+                            "[\\+\\-]{1}\\d{4}", // +/-ZZZZ
                             "[\\+\\-]{1}\\d{2}:\\d{2}", // +/-ZZ:ZZ
-                            "Z"                         // Z
+                            "Z" // Z
                         };
-                        jsonBQString = jsonBQString.replaceAll(String.join("|", timeZoneAlternativesToClean), "");
+                        jsonBQString =
+                                jsonBQString.replaceAll(
+                                        String.join("|", timeZoneAlternativesToClean), "");
 
                         if (jsonBQString.contains("T")) {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
