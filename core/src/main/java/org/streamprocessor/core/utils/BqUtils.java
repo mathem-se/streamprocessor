@@ -577,9 +577,6 @@ public class BqUtils {
                             jsonBQString =
                                     jsonBQString.replaceAll(
                                             String.join("|", timeZoneAlternativesToClean), "");
-                            
-                            //jsonBQString = jsonBQString.substring(0, jsonBQString.length() - 1);
-                            System.out.println("jsonBQString: " + jsonBQString + jsonBQString.length());
                         }
 
                         if (jsonBQString.contains("T")) {
