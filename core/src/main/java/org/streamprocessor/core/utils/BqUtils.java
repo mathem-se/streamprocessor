@@ -116,7 +116,7 @@ public class BqUtils {
         REPEATED
     }
 
-    private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSS]";
+    private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSS[S]]";
     private static final java.time.format.DateTimeFormatter BIGQUERY_TIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern(BIGQUERY_TIME_PATTERN);
     private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER =
@@ -577,6 +577,9 @@ public class BqUtils {
                             jsonBQString =
                                     jsonBQString.replaceAll(
                                             String.join("|", timeZoneAlternativesToClean), "");
+                            
+                            //jsonBQString = jsonBQString.substring(0, jsonBQString.length() - 1);
+                            System.out.println("jsonBQString: " + jsonBQString + jsonBQString.length());
                         }
 
                         if (jsonBQString.contains("T")) {
