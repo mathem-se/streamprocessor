@@ -116,7 +116,7 @@ public class BqUtils {
         REPEATED
     }
 
-    private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSS[S]]";
+    private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSSS][.SSSSSS][.SSSSS][.SSSS][.SSS][.SS][.S]";
     private static final java.time.format.DateTimeFormatter BIGQUERY_TIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern(BIGQUERY_TIME_PATTERN);
     private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER =

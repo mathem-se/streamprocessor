@@ -293,6 +293,7 @@ public class BqUtilsTest {
         Object expectedZero = DateTime.parse("0001-01-01T00:00:00Z");
         Object parsedZero = BqUtils.toBeamValue("entity", fieldType, datetimeZero, true);
         assertEquals(expectedZero, parsedZero);
+
     }
 
     @Test
@@ -332,5 +333,20 @@ public class BqUtilsTest {
         Row mapNullValue = Row.withSchema(MAP_TYPE_NULL_VALUE).addValues(map).build();
         Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE_NULL_VALUE, BQ_MAP_ROW_NULL_VALUE, false);
         assertEquals(mapNullValue, beamRow);
+    }
+
+    @Test
+    public void testDatetime() {
+        FieldType datetimeType = Schema.FieldType.logicalType(SqlTypes.DATETIME);
+
+        Object datetimeTest = "2022-09-28T23:59:00.0000000+02:00";
+        Object parsedTest = BqUtils.toBeamValue("entity", datetimeType, datetimeTest, true);
+        LocalDateTime dateTimeExpected = LocalDateTime.of(2022, 9, 28, 23, 59);
+        assertEquals(dateTimeExpected, parsedTest);
+
+        Object datetimeTest2 = "2023-09-20T15:04:12.394+00:00";
+        Object parsedTest2 = BqUtils.toBeamValue("entity", datetimeType, datetimeTest2, true);
+        LocalDateTime dateTimeExpected2 = LocalDateTime.of(2023, 9, 20, 15, 4, 12, 394000000);
+        assertEquals(dateTimeExpected2, parsedTest2);
     }
 }
