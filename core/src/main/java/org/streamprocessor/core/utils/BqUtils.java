@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,11 +120,18 @@ public class BqUtils {
     private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSS]";
     private static final java.time.format.DateTimeFormatter BIGQUERY_TIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern(BIGQUERY_TIME_PATTERN);
-    private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER =
-            java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd' '" + BIGQUERY_TIME_PATTERN);
-    private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER_T =
-            java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd'T'" + BIGQUERY_TIME_PATTERN);
 
+    private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER =
+            new java.time.format.DateTimeFormatterBuilder()
+                    .appendPattern("yyyy-MM-ddHH:mm:ss")
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 7, true) // min 2 max 3
+                    .toFormatter();
+
+    private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER_T =
+            new java.time.format.DateTimeFormatterBuilder()
+                    .appendPattern("yyyy-MM-dd'T'HH:mm:ss")
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 7, true) // min 2 max 3
+                    .toFormatter();
     private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PRINTER;
 
     /**

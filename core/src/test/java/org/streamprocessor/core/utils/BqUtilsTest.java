@@ -333,4 +333,29 @@ public class BqUtilsTest {
         Row beamRow = BqUtils.toBeamRow("foo", MAP_TYPE_NULL_VALUE, BQ_MAP_ROW_NULL_VALUE, false);
         assertEquals(mapNullValue, beamRow);
     }
+
+    @Test
+    public void testDatetime() {
+        FieldType datetimeType = Schema.FieldType.logicalType(SqlTypes.DATETIME);
+
+        Object datetimeTest = "2022-09-28T23:59:00.0000000+02:00";
+        Object parsedTest = BqUtils.toBeamValue("entity", datetimeType, datetimeTest, true);
+        LocalDateTime dateTimeExpected = LocalDateTime.of(2022, 9, 28, 23, 59);
+        assertEquals(dateTimeExpected, parsedTest);
+
+        Object datetimeTest2 = "2023-09-20T15:04:12.394+00:00";
+        Object parsedTest2 = BqUtils.toBeamValue("entity", datetimeType, datetimeTest2, true);
+        LocalDateTime dateTimeExpected2 = LocalDateTime.of(2023, 9, 20, 15, 4, 12, 394000000);
+        assertEquals(dateTimeExpected2, parsedTest2);
+
+        Object datetimeTest3 = "2023-09-20T15:04:12.1+00:00";
+        Object parsedTest3 = BqUtils.toBeamValue("entity", datetimeType, datetimeTest3, true);
+        LocalDateTime dateTimeExpected3 = LocalDateTime.of(2023, 9, 20, 15, 4, 12, 100000000);
+        assertEquals(dateTimeExpected3, parsedTest3);
+
+        Object datetimeTest4 = "2023-09-20T15:04:12+00:00";
+        Object parsedTest4 = BqUtils.toBeamValue("entity", datetimeType, datetimeTest4, true);
+        LocalDateTime dateTimeExpected4 = LocalDateTime.of(2023, 9, 20, 15, 4, 12);
+        assertEquals(dateTimeExpected4, parsedTest4);
+    }
 }
