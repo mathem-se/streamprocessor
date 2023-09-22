@@ -293,7 +293,6 @@ public class BqUtilsTest {
         Object expectedZero = DateTime.parse("0001-01-01T00:00:00Z");
         Object parsedZero = BqUtils.toBeamValue("entity", fieldType, datetimeZero, true);
         assertEquals(expectedZero, parsedZero);
-
     }
 
     @Test
