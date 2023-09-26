@@ -39,8 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.beam.sdk.annotations.Experimental;
-import org.apache.beam.sdk.annotations.Experimental.Kind;
 import org.apache.beam.sdk.coders.Coder.Context;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.schemas.Schema;
@@ -520,7 +518,7 @@ public class BqUtils {
      *
      * <p>Only supports basic types and arrays. Doesn't support date types or structs.
      */
-    @Experimental(Kind.SCHEMAS)
+    // @Experimental(Kind.SCHEMAS)
     public static Row toBeamRow(
             String entity, Schema rowSchema, TableRow jsonBqRow, Boolean relaxedStrictness) {
         return rowSchema.getFields().stream()
