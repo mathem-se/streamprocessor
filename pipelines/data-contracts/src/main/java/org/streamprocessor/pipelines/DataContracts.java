@@ -233,7 +233,7 @@ public class DataContracts {
                                     .to(SchemaDestinations.schemaDestination(projectId))
                                     .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
                                     .withFailedInsertRetryPolicy(
-                                            InsertRetryPolicy.retryTransientErrors())
+                                            InsertRetryPolicy.neverRetry())
                                     .withExtendedErrorInfo()
                             // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
                             // //https://issues.apache.org/jira/browse/BEAM-13954
