@@ -212,58 +212,68 @@ public class DataContracts {
          */
 
         if (options.getDataContractsServiceUrl() != null) {
-            String projectId = options.getProject();
 
-            PCollection<Row> extractRowElement =
-                    tokenized
-                            .get(DEIDENTIFY_SUCCESS_TAG)
-                            .apply("Extract Row element", ParDo.of(new ExtractCurrentElementFn<>()))
-                            .setCoder(rowCoder);
+            try {
+                String projectId = options.getProject();
 
-            WriteResult result =
-                    extractRowElement.apply(
-                            "Write de-identified Rows to BigQuery",
-                            BigQueryIO.<Row>write()
-                                    .withFormatFunction(r -> BigQueryUtils.toTableRow((Row) r))
-                                    .ignoreUnknownValues()
-                                    .withCreateDisposition(
-                                            BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-                                    .withWriteDisposition(
-                                            BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                                    .to(SchemaDestinations.schemaDestination(projectId))
-                                    .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
-                                    .withFailedInsertRetryPolicy(
-                                            InsertRetryPolicy.neverRetry())
-                                    .withExtendedErrorInfo()
-                            // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
-                            // //https://issues.apache.org/jira/browse/BEAM-13954
-                            // .withAutoSharding()
-                            );
+                PCollection<Row> extractRowElement =
+                        tokenized
+                                .get(DEIDENTIFY_SUCCESS_TAG)
+                                .apply(
+                                        "Extract Row element",
+                                        ParDo.of(new ExtractCurrentElementFn<>()))
+                                .setCoder(rowCoder);
 
-            result.getFailedInsertsWithErr()
-                    .apply(
-                            MapElements.into(TypeDescriptors.strings())
-                                    .via(
-                                            x -> {
-                                                String message =
-                                                        (new StringBuilder())
-                                                                .append(
-                                                                        " The table was "
-                                                                                + x.getTable())
-                                                                .append(
-                                                                        " The row was "
-                                                                                + x.getRow())
-                                                                .append(
-                                                                        " The error was "
-                                                                                + x.getError())
-                                                                .toString();
-                                                LOG.error(
-                                                        "exception[FailedInsertsException] step[{}]"
-                                                                + " details[{}]",
-                                                        "DataContracts.main()",
-                                                        message);
-                                                return "";
-                                            }));
+                WriteResult result =
+                        extractRowElement.apply(
+                                "Write de-identified Rows to BigQuery",
+                                BigQueryIO.<Row>write()
+                                        .withFormatFunction(r -> BigQueryUtils.toTableRow((Row) r))
+                                        .ignoreUnknownValues()
+                                        .withCreateDisposition(
+                                                BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
+                                        .withWriteDisposition(
+                                                BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                                        .to(SchemaDestinations.schemaDestination(projectId))
+                                        .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
+                                        .withFailedInsertRetryPolicy(InsertRetryPolicy.neverRetry())
+                                        .withExtendedErrorInfo()
+                                // .withMethod(BigQueryIO.Write.Method.STORAGE_API_AT_LEAST_ONCE)
+                                // //https://issues.apache.org/jira/browse/BEAM-13954
+                                // .withAutoSharding()
+                                );
+
+                result.getFailedInsertsWithErr()
+                        .apply(
+                                MapElements.into(TypeDescriptors.strings())
+                                        .via(
+                                                x -> {
+                                                    String message =
+                                                            (new StringBuilder())
+                                                                    .append(
+                                                                            " The table was "
+                                                                                    + x.getTable())
+                                                                    .append(
+                                                                            " The row was "
+                                                                                    + x.getRow())
+                                                                    .append(
+                                                                            " The error was "
+                                                                                    + x.getError())
+                                                                    .toString();
+                                                    LOG.error(
+                                                            "exception[FailedInsertsException]"
+                                                                    + " step[{}] details[{}]",
+                                                            "DataContracts.main()",
+                                                            message);
+                                                    return "";
+                                                }));
+            } catch (Exception e) {
+                LOG.error(
+                        "CatchBqInsert exception[{}] step[{}] details[{}]",
+                        e.getClass().getSimpleName(),
+                        "DataContracts.main()",
+                        e.getMessage());
+            }
         }
 
         /*
