@@ -16,6 +16,10 @@
 
 package org.streamprocessor.pipelines;
 
+import com.google.api.services.bigquery.model.TableDataInsertAllResponse;
+import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.bigquery.model.TableRow;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -23,6 +27,7 @@ import org.apache.beam.sdk.coders.CoderRegistry;
 import org.apache.beam.sdk.coders.NullableCoder;
 import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryInsertError;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
@@ -30,8 +35,10 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.DoFn.ProcessContext;
+import org.apache.beam.sdk.transforms.DoFn.ProcessElement;
 import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.values.PCollection;
@@ -40,7 +47,6 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
-import org.apache.beam.sdk.values.TypeDescriptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.application.StreamProcessorOptions;
@@ -243,30 +249,30 @@ public class DataContracts {
                                 // .withAutoSharding()
                                 );
 
-                result.getFailedInsertsWithErr()
+                // Reference to failed inserts (also works with getFailedInserts() )
+                result.getFailedInsertsWithErr() // `withExtendedErrorInfo` in `write` needed
                         .apply(
-                                MapElements.into(TypeDescriptors.strings())
-                                        .via(
-                                                x -> {
-                                                    String message =
-                                                            (new StringBuilder())
-                                                                    .append(
-                                                                            " The table was "
-                                                                                    + x.getTable())
-                                                                    .append(
-                                                                            " The row was "
-                                                                                    + x.getRow())
-                                                                    .append(
-                                                                            " The error was "
-                                                                                    + x.getError())
-                                                                    .toString();
-                                                    LOG.error(
-                                                            "exception[FailedInsertsException]"
-                                                                    + " step[{}] details[{}]",
-                                                            "DataContracts.main()",
-                                                            message);
-                                                    return "";
-                                                }));
+                                "Failed rows",
+                                ParDo.of(
+                                        new DoFn<BigQueryInsertError, TableRow>() {
+                                            @ProcessElement
+                                            public void processElement(ProcessContext c)
+                                                    throws IOException {
+                                                TableRow row = c.element().getRow();
+                                                TableDataInsertAllResponse.InsertErrors error =
+                                                        c.element().getError();
+                                                TableReference table = c.element().getTable();
+                                                LOG.error(
+                                                        "Failed to write row "
+                                                                + row.toString()
+                                                                + ".\n Table "
+                                                                + table.getDatasetId()
+                                                                + "."
+                                                                + table.getTableId()
+                                                                + ".\n Error: "
+                                                                + error.toString());
+                                            }
+                                        })); // Add dead letter here
             } catch (Exception e) {
                 LOG.error(
                         "CatchBqInsert exception[{}] step[{}] details[{}]",
