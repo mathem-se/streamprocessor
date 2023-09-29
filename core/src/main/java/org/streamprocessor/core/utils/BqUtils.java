@@ -518,7 +518,6 @@ public class BqUtils {
      *
      * <p>Only supports basic types and arrays. Doesn't support date types or structs.
      */
-    // @Experimental(Kind.SCHEMAS)
     public static Row toBeamRow(
             String entity, Schema rowSchema, TableRow jsonBqRow, Boolean relaxedStrictness) {
         return rowSchema.getFields().stream()

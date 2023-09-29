@@ -30,11 +30,10 @@ import org.apache.beam.sdk.schemas.Schema.FieldType;
 import org.apache.beam.sdk.schemas.logicaltypes.SqlTypes;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Strings;
 
-// @Experimental(Kind.SCHEMAS)
-// @SuppressWarnings({
-//     "rawtypes", // TODO(https://issues.apache.org/jira/browse/BEAM-10556)
-//     "nullness", // TODO(https://issues.apache.org/jira/browse/BEAM-10402)
-// })
+@SuppressWarnings({
+    "rawtypes", // TODO(https://issues.apache.org/jira/browse/BEAM-10556)
+    "nullness", // TODO(https://issues.apache.org/jira/browse/BEAM-10402)
+})
 class SchemaUtils {
 
     private static final Map<String, FieldType> FIELD_TYPES =
