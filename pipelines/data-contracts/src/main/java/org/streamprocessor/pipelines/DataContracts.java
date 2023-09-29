@@ -245,23 +245,34 @@ public class DataContracts {
                             MapElements.into(TypeDescriptors.strings())
                                     .via(
                                             x -> {
-                                                String message =
+                                                String details =
                                                         (new StringBuilder())
                                                                 .append(
-                                                                        " The table was "
-                                                                                + x.getTable())
+                                                                        "\nerrors["
+                                                                                + x.getError()
+                                                                                + "]")
                                                                 .append(
-                                                                        " The row was "
-                                                                                + x.getRow())
-                                                                .append(
-                                                                        " The error was "
-                                                                                + x.getError())
+                                                                        "\nrow["
+                                                                                + x.getRow()
+                                                                                        .toString()
+                                                                                + "]")
                                                                 .toString();
                                                 LOG.error(
-                                                        "exception[FailedInsertsException] step[{}]"
-                                                                + " details[{}]",
-                                                        "DataContracts.main()",
-                                                        message);
+                                                        "exception[FailedInsertsException]"
+                                                                + " step[DataContracts.main()]"
+                                                                + " details[{}] entity[{}]"
+                                                                + " target_bq_table[{}]",
+                                                        details,
+                                                        x.getTable().getTableId().toString(),
+                                                        x.getTable().getProjectId().toString()
+                                                                + "."
+                                                                + x.getTable()
+                                                                        .getDatasetId()
+                                                                        .toString()
+                                                                + "."
+                                                                + x.getTable()
+                                                                        .getTableId()
+                                                                        .toString());
                                                 return "";
                                             }));
         }
