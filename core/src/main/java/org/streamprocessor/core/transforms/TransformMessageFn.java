@@ -23,6 +23,7 @@ import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
 import org.streamprocessor.core.helpers.GoogleSheetsImportHelper;
 import org.streamprocessor.core.helpers.SalesforceHelper;
+import org.streamprocessor.core.helpers.MySQLDataStreamHelper;
 import org.streamprocessor.core.utils.BqUtils;
 import org.streamprocessor.core.utils.CustomExceptionsUtils;
 import org.streamprocessor.core.values.FailsafeElement;
@@ -144,6 +145,10 @@ public class TransformMessageFn
                 case "google_sheets_import":
                     transformedPayload =
                             GoogleSheetsImportHelper.enrichPubsubMessage(streamObject, attributes);
+                    break;
+                case "mysql_datastream":
+                    transformedPayload =
+                            MySQLDataStreamHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 default:
                     throw new CustomExceptionsUtils.UnknownProviderException(

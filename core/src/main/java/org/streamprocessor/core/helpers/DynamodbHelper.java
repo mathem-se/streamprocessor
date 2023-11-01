@@ -49,6 +49,8 @@ public class DynamodbHelper {
 
         // add event_time to payload root for streaming analytics use cases
         if (dynamodbStreamObject.isNull(MetadataFields.EVENT_TIMESTAMP)) {
+            // TODO:
+            // looks wrong
             if (!dynamodbStreamObject.isNull(PUBLISHED)) {
                 payloadObject.put(
                         MetadataFields.EVENT_TIMESTAMP, dynamodbStreamObject.getString(PUBLISHED));
