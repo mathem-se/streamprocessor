@@ -506,7 +506,9 @@ public class BqUtils {
 
                     // Setting custom formatter based on the input string
                     java.time.format.DateTimeFormatter customFormatter;
-                    if (fieldValue.toString().contains("T")) {
+                    if (0 == localDateTime.getNano()) {
+                        customFormatter = ISO_LOCAL_DATE_TIME;
+                    } else if (fieldValue.toString().contains("T")) {
                         customFormatter = BIGQUERY_DATETIME_FORMATTER_T;
                     } else if (fieldValue.toString().contains(SPACE)) {
                         customFormatter = BIGQUERY_DATETIME_FORMATTER_SPACE;
@@ -515,8 +517,7 @@ public class BqUtils {
                     }
 
                     @SuppressWarnings("JavaLocalDateTimeGetNano")
-                    java.time.format.DateTimeFormatter localDateTimeFormatter =
-                            (0 == localDateTime.getNano()) ? ISO_LOCAL_DATE_TIME : customFormatter;
+                    java.time.format.DateTimeFormatter localDateTimeFormatter = customFormatter;
                     return localDateTimeFormatter.format(localDateTime);
                 } else if ("Enum".equals(identifier)) {
                     return fieldType
