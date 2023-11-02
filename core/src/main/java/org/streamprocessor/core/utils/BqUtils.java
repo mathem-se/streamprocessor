@@ -116,6 +116,9 @@ public class BqUtils {
     }
 
     private static final String BIGQUERY_TIME_PATTERN = "HH:mm:ss[.SSSSSS]";
+
+    private static final String SPACE = " ";
+
     private static final java.time.format.DateTimeFormatter BIGQUERY_TIME_FORMATTER =
             java.time.format.DateTimeFormatter.ofPattern(BIGQUERY_TIME_PATTERN);
 
@@ -128,6 +131,12 @@ public class BqUtils {
     private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER_T =
             new java.time.format.DateTimeFormatterBuilder()
                     .appendPattern("yyyy-MM-dd'T'HH:mm:ss")
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 7, true) // min 2 max 3
+                    .toFormatter();
+
+    private static final java.time.format.DateTimeFormatter BIGQUERY_DATETIME_FORMATTER_SPACE =
+            new java.time.format.DateTimeFormatterBuilder()
+                    .appendPattern("yyyy-MM-dd HH:mm:ss")
                     .appendFraction(ChronoField.NANO_OF_SECOND, 0, 7, true) // min 2 max 3
                     .toFormatter();
     private static final DateTimeFormatter BIGQUERY_TIMESTAMP_PRINTER;
@@ -494,13 +503,21 @@ public class BqUtils {
                 } else if (SqlTypes.DATETIME.getIdentifier().equals(identifier)) {
                     // Same rationale as SqlTypes.TIME
                     LocalDateTime localDateTime = (LocalDateTime) fieldValue;
+
+                    // Setting custom formatter based on the input string
+                    java.time.format.DateTimeFormatter customFormatter;
+                    if (0 == localDateTime.getNano()) {
+                        customFormatter = ISO_LOCAL_DATE_TIME;
+                    } else if (fieldValue.toString().contains("T")) {
+                        customFormatter = BIGQUERY_DATETIME_FORMATTER_T;
+                    } else if (fieldValue.toString().contains(SPACE)) {
+                        customFormatter = BIGQUERY_DATETIME_FORMATTER_SPACE;
+                    } else {
+                        customFormatter = BIGQUERY_DATETIME_FORMATTER;
+                    }
+
                     @SuppressWarnings("JavaLocalDateTimeGetNano")
-                    java.time.format.DateTimeFormatter localDateTimeFormatter =
-                            (0 == localDateTime.getNano())
-                                    ? ISO_LOCAL_DATE_TIME
-                                    : (fieldValue.toString().contains("T")
-                                            ? BIGQUERY_DATETIME_FORMATTER_T
-                                            : BIGQUERY_DATETIME_FORMATTER);
+                    java.time.format.DateTimeFormatter localDateTimeFormatter = customFormatter;
                     return localDateTimeFormatter.format(localDateTime);
                 } else if ("Enum".equals(identifier)) {
                     return fieldType
@@ -586,6 +603,9 @@ public class BqUtils {
 
                         if (jsonBQString.contains("T")) {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER_T);
+                        } else if (jsonBQString.contains(SPACE)) {
+                            return LocalDateTime.parse(
+                                    jsonBQString, BIGQUERY_DATETIME_FORMATTER_SPACE);
                         } else {
                             return LocalDateTime.parse(jsonBQString, BIGQUERY_DATETIME_FORMATTER);
                         }
