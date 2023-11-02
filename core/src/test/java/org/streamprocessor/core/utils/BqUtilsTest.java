@@ -357,5 +357,18 @@ public class BqUtilsTest {
         Object parsedTest4 = BqUtils.toBeamValue("entity", datetimeType, datetimeTest4, true);
         LocalDateTime dateTimeExpected4 = LocalDateTime.of(2023, 9, 20, 15, 4, 12);
         assertEquals(dateTimeExpected4, parsedTest4);
+
+        Object datetimeWithSpace = "2023-09-20 15:04:12";
+        Object datetimeWithSpaceParsed =
+                BqUtils.toBeamValue("entity", datetimeType, datetimeWithSpace, true);
+        LocalDateTime datetimeWithSpaceExpected = LocalDateTime.of(2023, 9, 20, 15, 4, 12);
+        assertEquals(datetimeWithSpaceExpected, datetimeWithSpaceParsed);
+
+        Object datetimeWithSpaceNanoSeconds = "2023-09-20 15:04:12.1";
+        Object datetimeWithSpaceNanoSecondsParsed =
+                BqUtils.toBeamValue("entity", datetimeType, datetimeWithSpaceNanoSeconds, true);
+        LocalDateTime datetimeWithSpaceNanoSecondsExpected =
+                LocalDateTime.of(2023, 9, 20, 15, 4, 12, 100000000);
+        assertEquals(datetimeWithSpaceNanoSecondsExpected, datetimeWithSpaceNanoSecondsParsed);
     }
 }
