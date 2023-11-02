@@ -27,23 +27,26 @@ public class MySQLDataStreamHelper {
         String changeType = sourceMetadata.getString(CHANGE_TYPE);
         JSONObject payloadObject = mysqlDataStreamStreamObject.getJSONObject(PAYLOAD);
 
-        if (changeType == INSERT) {
+        if (changeType.equals(INSERT)) {
             metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.INSERT.getValue());
-        } else if (changeType == DELETE) {
+        } else if (changeType.equals(DELETE)) {
             metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.REMOVE.getValue());
-        } else if (changeType == UPDATE_INSERT) {
+        } else if (changeType.equals(UPDATE_INSERT)) {
             metadata.put(MetadataFields.OPERATION, MetadataFields.Operation.MODIFY.getValue());
         } else {
             throw new CustomExceptionsUtils.MalformedEventException(
                     String.format(
-                            "Unknown %s: `%s` found in message. Maybe the provider is not configured"
-                                    + " correctly?",
-                            CHANGE_TYPE, changeType)
-                            );
+                            "Unknown %s: `%s` found in message. Maybe the provider is not"
+                                    + " configured correctly?",
+                            CHANGE_TYPE, changeType));
         }
 
+        metadata.put(MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
+
         // add event_time to payload root for streaming analytics use cases
-        payloadObject.put(MetadataFields.EVENT_TIMESTAMP, mysqlDataStreamStreamObject.getString(SOURCE_TIMESTAMP));
+        payloadObject.put(
+                MetadataFields.EVENT_TIMESTAMP,
+                mysqlDataStreamStreamObject.getString(SOURCE_TIMESTAMP));
 
         // Add meta-data from dynamoDB stream event as attributes
         metadata.put(MetadataFields.EVENT_ID, mysqlDataStreamStreamObject.getString(UUID));

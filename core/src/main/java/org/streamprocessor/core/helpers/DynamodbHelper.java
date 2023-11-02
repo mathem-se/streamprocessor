@@ -49,17 +49,17 @@ public class DynamodbHelper {
 
         if (!dynamodbStreamObject.isNull(PUBLISHED)) {
             // should always exist on stream events
-            payloadObject.put(MetadataFields.EVENT_TIMESTAMP, dynamodbStreamObject.getString(PUBLISHED));
-        }
-        else if (!dynamodbStreamObject.isNull(MetadataFields.EVENT_TIMESTAMP)) {
+            payloadObject.put(
+                    MetadataFields.EVENT_TIMESTAMP, dynamodbStreamObject.getString(PUBLISHED));
+        } else if (!dynamodbStreamObject.isNull(MetadataFields.EVENT_TIMESTAMP)) {
             // if event_timestamp is specified we should use that
-            payloadObject.put(MetadataFields.EVENT_TIMESTAMP, dynamodbStreamObject.getString(MetadataFields.EVENT_TIMESTAMP));
-        }
-        else if (attributes.containsKey(TIMESTAMP)) {
+            payloadObject.put(
+                    MetadataFields.EVENT_TIMESTAMP,
+                    dynamodbStreamObject.getString(MetadataFields.EVENT_TIMESTAMP));
+        } else if (attributes.containsKey(TIMESTAMP)) {
             // fallback if backfill from source & no Published
             payloadObject.put(MetadataFields.EVENT_TIMESTAMP, attributes.get(TIMESTAMP));
-        }
-        else {
+        } else {
             throw new CustomExceptionsUtils.MissingMetadataException(
                     String.format("No `%s` found in message", MetadataFields.EVENT_TIMESTAMP));
         }
