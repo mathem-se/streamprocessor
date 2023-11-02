@@ -43,7 +43,7 @@
         <slf4j.version>1.7.36</slf4j.version>
         <mvn-target-dir>${basedir}/target</mvn-target-dir>
         <json.version>20230227</json.version>
-        <spotless-maven-plugin.version>2.31.0</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>2.40.0</spotless-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
