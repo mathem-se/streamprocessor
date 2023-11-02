@@ -146,7 +146,7 @@ public class TransformMessageFn
                     transformedPayload =
                             GoogleSheetsImportHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
-                case "mysql_datastream":
+                case "datastream_mysql":
                     transformedPayload =
                             MySQLDataStreamHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
