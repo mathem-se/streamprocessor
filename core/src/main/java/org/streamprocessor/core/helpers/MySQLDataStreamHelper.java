@@ -8,7 +8,6 @@ import org.streamprocessor.core.utils.CustomExceptionsUtils;
 public class MySQLDataStreamHelper {
 
     public static final String METADATA = "_metadata";
-    public static final String TIMESTAMP = "timestamp";
     public static final String UUID = "uuid";
     public static final String INSERT = "INSERT";
     public static final String DELETE = "DELETE";
@@ -17,8 +16,6 @@ public class MySQLDataStreamHelper {
     public static final String SOURCE_METADATA = "source_metadata";
     public static final String PAYLOAD = "payload";
     public static final String SOURCE_TIMESTAMP = "source_timestamp";
-
-
 
     public static JSONObject enrichPubsubMessage(
             JSONObject mysqlDataStreamStreamObject, HashMap<String, String> attributes)
