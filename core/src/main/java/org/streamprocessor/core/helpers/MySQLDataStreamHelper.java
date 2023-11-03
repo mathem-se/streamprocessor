@@ -42,6 +42,8 @@ public class MySQLDataStreamHelper {
         }
 
         metadata.put(MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
+        metadata.put(MetadataFields.LOG_POSITION, sourceMetadata.getString(MetadataFields.LOG_POSITION));
+        metadata.put(MetadataFields.LOG_FILE, sourceMetadata.getString(MetadataFields.LOG_FILE));
 
         // add event_time to payload root for streaming analytics use cases
         payloadObject.put(
