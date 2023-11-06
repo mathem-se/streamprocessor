@@ -16,6 +16,8 @@ public class MySQLDataStreamHelper {
     public static final String SOURCE_METADATA = "source_metadata";
     public static final String PAYLOAD = "payload";
     public static final String SOURCE_TIMESTAMP = "source_timestamp";
+    public static final String READ_METHOD = "read_method";
+    public static final String MYSQL_CDC_BINLOG = "mysql-cdc-binlog";
 
     public static JSONObject enrichPubsubMessage(
             JSONObject mysqlDataStreamStreamObject, HashMap<String, String> attributes)
@@ -41,7 +43,24 @@ public class MySQLDataStreamHelper {
                             CHANGE_TYPE, changeType));
         }
 
-        metadata.put(MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
+        if (mysqlDataStreamStreamObject.getString(READ_METHOD).equals(MYSQL_CDC_BINLOG)) {
+            metadata.put(
+                    MetadataFields.EXTRACT_METHOD, MetadataFields.ExtractMethod.CDC.getValue());
+        } else if (mysqlDataStreamStreamObject
+                .getString(READ_METHOD)
+                .contains(MetadataFields.ExtractMethod.BACKFILL.getValue())) {
+            metadata.put(
+                    MetadataFields.EXTRACT_METHOD,
+                    MetadataFields.ExtractMethod.BACKFILL.getValue());
+        } else {
+            throw new CustomExceptionsUtils.MalformedEventException(
+                    String.format(
+                            "Unknown %s: `%s` found in message. Maybe the provider is not"
+                                    + " configured correctly?",
+                            MetadataFields.EXTRACT_METHOD,
+                            mysqlDataStreamStreamObject.getString(READ_METHOD)));
+        }
+
         metadata.put(
                 MetadataFields.LOG_POSITION, sourceMetadata.getInt(MetadataFields.LOG_POSITION));
         metadata.put(MetadataFields.LOG_FILE, sourceMetadata.getString(MetadataFields.LOG_FILE));
