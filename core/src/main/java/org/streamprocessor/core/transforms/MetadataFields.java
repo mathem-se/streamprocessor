@@ -9,6 +9,8 @@ public class MetadataFields {
     public static final String EVENT_ID = "event_id";
     public static final String EXTRACT_METHOD = "extract_method";
     public static final String OPERATION = "operation";
+    public static final String LOG_POSITION = "log_position";
+    public static final String LOG_FILE = "log_file";
 
     @AllArgsConstructor
     @Getter
