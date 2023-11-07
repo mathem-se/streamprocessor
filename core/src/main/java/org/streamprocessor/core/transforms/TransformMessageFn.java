@@ -18,10 +18,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.streamprocessor.core.caches.DataContractsCache;
-import org.streamprocessor.core.helpers.CloudStorageImportHelper;
 import org.streamprocessor.core.helpers.CustomEventHelper;
 import org.streamprocessor.core.helpers.DynamodbHelper;
-import org.streamprocessor.core.helpers.GoogleSheetsImportHelper;
 import org.streamprocessor.core.helpers.MySQLDataStreamHelper;
 import org.streamprocessor.core.helpers.SalesforceHelper;
 import org.streamprocessor.core.utils.BqUtils;
@@ -135,16 +133,10 @@ public class TransformMessageFn
                 case "custom_event":
                 case "marketing_cloud":
                 case "pi":
-                    transformedPayload =
-                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
-                    break;
                 case "cloud_storage_import":
-                    transformedPayload =
-                            CloudStorageImportHelper.enrichPubsubMessage(streamObject, attributes);
-                    break;
                 case "google_sheets_import":
                     transformedPayload =
-                            GoogleSheetsImportHelper.enrichPubsubMessage(streamObject, attributes);
+                            CustomEventHelper.enrichPubsubMessage(streamObject, attributes);
                     break;
                 case "datastream_mysql":
                     transformedPayload =
